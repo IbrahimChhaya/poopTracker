@@ -132,8 +132,8 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Icons use the nearest Material outlined icons. Figma uses Lucide; adding a Lucide package would need approval.
   - Inter 4.1 static TTFs are bundled from the official rsms/inter release, with the OFL registered in the app's licences page.
   - A debug-only UI kit preview opens from the placeholder Settings tab.
-  - **Open for M6:** the warm text colour `#ac7157` (stool type labels, symptoms, entry-detail date) is 3.3:1 on sand and 3.9:1 on card, so it fails 4.5:1. It needs a darker warm text token before M6.
-  - **Open for M12:** the switch's off track `#c9cdc1` is low contrast against the card. The thumb position still shows the state, and screen readers announce it.
+  - Warm accent split in two: `warmIcon` `#ac7157` for icons and the stool form illustration (3:1 is enough), and `warmText` `#895943` for small text (4.8:1 on sand, 5.8:1 on card). Figma's "TYPE n" labels went from 10 to 11 pt.
+  - Switches follow the Material 3 pattern. Off is a light track (`#ece9df`) with a 2 px `#74796d` outline (4.4:1 on card) and a small dark thumb. On is a primary track with a large cream thumb and a check mark. Figma switches were updated to match.
 
 ### M2 — Models and pure logic
 - **Scope:**

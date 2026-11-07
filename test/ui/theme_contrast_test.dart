@@ -39,6 +39,9 @@ void main() {
       ('danger on sand', c.danger, c.sand),
       ('on-primary on danger', c.onPrimary, c.danger),
       ('card on ink (toast)', c.card, c.ink),
+      ('warm text on sand', c.warmText, c.sand),
+      ('warm text on card', c.warmText, c.card),
+      ('warm text on background', c.warmText, c.background),
     ];
     for (final (name, fg, bg) in pairs) {
       test(name, () {
@@ -55,6 +58,11 @@ void main() {
       ('warm icon on sand', c.warmIcon, c.sand),
       ('danger icon on sand', c.danger, c.sand),
       ('selected border on background', c.primary, c.background),
+      ('switch off outline on card', c.mutedIcon, c.card),
+      ('switch off outline on background', c.mutedIcon, c.background),
+      ('switch off thumb on off track', c.mutedIcon, c.switchTrackOff),
+      ('switch on track on card', c.primary, c.card),
+      ('switch on thumb on on track', c.card, c.primary),
     ];
     for (final (name, fg, bg) in pairs) {
       test(name, () {

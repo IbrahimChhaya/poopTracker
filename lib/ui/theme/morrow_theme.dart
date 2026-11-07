@@ -128,12 +128,25 @@ ThemeData buildMorrowTheme([MorrowColors c = MorrowColors.light]) {
       elevation: 0,
       pressElevation: 0,
     ),
+    // Material 3 pattern: off is an outlined track with a small dark thumb,
+    // on is a filled track with a large thumb and a check mark, so the state
+    // is shown by shape and position as well as colour.
     switchTheme: SwitchThemeData(
-      thumbColor: WidgetStatePropertyAll(c.card),
+      thumbColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? c.card : c.mutedIcon,
+      ),
       trackColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected) ? c.primary : c.switchTrackOff,
       ),
-      trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+      trackOutlineColor: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected) ? c.primary : c.mutedIcon,
+      ),
+      trackOutlineWidth: const WidgetStatePropertyAll(2),
+      thumbIcon: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected)
+            ? Icon(Icons.check, color: c.primary)
+            : null,
+      ),
     ),
     radioTheme: RadioThemeData(
       fillColor: WidgetStateProperty.resolveWith(

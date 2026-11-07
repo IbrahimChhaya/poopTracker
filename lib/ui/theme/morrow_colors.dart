@@ -26,10 +26,19 @@ abstract final class MorrowPalette {
   static const tintLine = Color(0xFFCCD5C7);
   static const sand = Color(0xFFF2E6DA);
 
-  /// Warm icon colour used on sand tiles.
+  /// Warm icon colour used on sand tiles and in the stool form
+  /// illustration. Not for text (3.3:1 on sand).
   static const warmIcon = Color(0xFFAC7157);
+
+  /// Warm accent for small text, for example "TYPE 4" or a symptom label.
+  /// Same hue as [warmIcon], darker so it meets 4.5:1 on sand, card and
+  /// background. Kept brown so it does not read as [danger].
+  static const warmText = Color(0xFF895943);
   static const danger = Color(0xFF8A4A32);
-  static const switchTrackOff = Color(0xFFC9CDC1);
+
+  /// Fill of an off switch track. The track is outlined in [mutedIcon], which
+  /// carries the 3:1 contrast, so the fill can stay light.
+  static const switchTrackOff = Color(0xFFECE9DF);
   static const disabledSurface = Color(0xFFDCDCD2);
 
   /// Label on [disabledSurface], for example "Saving…". Darker than the
@@ -54,6 +63,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
     required this.tintLine,
     required this.sand,
     required this.warmIcon,
+    required this.warmText,
     required this.danger,
     required this.switchTrackOff,
     required this.disabledSurface,
@@ -74,6 +84,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
     tintLine: MorrowPalette.tintLine,
     sand: MorrowPalette.sand,
     warmIcon: MorrowPalette.warmIcon,
+    warmText: MorrowPalette.warmText,
     danger: MorrowPalette.danger,
     switchTrackOff: MorrowPalette.switchTrackOff,
     disabledSurface: MorrowPalette.disabledSurface,
@@ -93,6 +104,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
   final Color tintLine;
   final Color sand;
   final Color warmIcon;
+  final Color warmText;
   final Color danger;
   final Color switchTrackOff;
   final Color disabledSurface;
@@ -117,6 +129,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
     Color? tintLine,
     Color? sand,
     Color? warmIcon,
+    Color? warmText,
     Color? danger,
     Color? switchTrackOff,
     Color? disabledSurface,
@@ -136,6 +149,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
       tintLine: tintLine ?? this.tintLine,
       sand: sand ?? this.sand,
       warmIcon: warmIcon ?? this.warmIcon,
+      warmText: warmText ?? this.warmText,
       danger: danger ?? this.danger,
       switchTrackOff: switchTrackOff ?? this.switchTrackOff,
       disabledSurface: disabledSurface ?? this.disabledSurface,
@@ -161,6 +175,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
       tintLine: l(tintLine, other.tintLine),
       sand: l(sand, other.sand),
       warmIcon: l(warmIcon, other.warmIcon),
+      warmText: l(warmText, other.warmText),
       danger: l(danger, other.danger),
       switchTrackOff: l(switchTrackOff, other.switchTrackOff),
       disabledSurface: l(disabledSurface, other.disabledSurface),
