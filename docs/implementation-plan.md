@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 is done. M1 is built and awaiting review on a device.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 and M1 are done. M2 is built and awaiting review.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -140,10 +140,19 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Immutable `Entry`, `Ease`, `Symptom`, `Tag` and validation.
   - Local-day and Monday-week maths.
   - Grouping for history.
-  - Weekly summaries for 4/12/26 weeks: entries per week, average, weeks logged, stool form share, symptom counts.
+  - Weekly summaries for 4/12/26 weeks: entries per week, average, weeks logged, stool form counts, symptom counts.
   - "Not enough data" rule: entries in fewer than two distinct weeks.
   - `Clock` abstraction.
 - **Accept when:** unit tests cover the comment limit, stool range, future dates, "none" exclusivity, grouping across a time-zone change and across the UK DST changes, week boundaries, and every summary figure in the Figma Trends screens reproduced from synthetic fixtures.
+- **Built (7 November 2026), decisions made while building:**
+  - Stool form is summarised as counts per type only. The "72% were type 3 or 4" headline and the "Types 3–4: formed stools" note were removed from Figma 5.4–5.6, because singling out a range is a medical interpretation. All bars with entries now share one colour.
+  - Notes are limited to 500 user-perceived characters using the `characters` package (Dart team, BSD-3, already pinned by the Flutter SDK at 1.4.1; now a direct dependency).
+  - Future times: anything more than 1 minute after now is rejected. UTC offsets must be between -12:00 and +14:00.
+  - Date grouping rule: an entry's local day and clock time come from its UTC instant plus the offset recorded with it. Entries never move when the phone changes zone. "Today" and "this week" use the phone's current offset. Within a day, entries are ordered by when they really happened.
+  - Averages divide by every week in the range, including empty weeks and the week in progress. They are rounded half up to one decimal place using whole-number maths.
+  - Labels (British English, no localisation package): "Today · 6 Nov", "Wednesday · 6:20 pm", "12 Oct – 8 Nov 2026", "Friday, 6 November 2026".
+  - `Clock` reports UTC plus the current offset, because Dart tests cannot change the device's time zone. Real time zone and clock changes still need a device check.
+  - Figma inconsistencies, not reproduced: the journal week strip shows dots on Monday and Tuesday although that week's five entries are Wednesday to Friday, and History shows "18 entries" for 24 Oct – 6 Nov although the Trends weeks put fewer entries in that span.
 
 ### M3 — Encrypted database and key bootstrap
 - **Scope:**

@@ -35,6 +35,10 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Counts user-perceived characters (grapheme clusters) for the note limit.
+  # Dart team package, already pinned by the Flutter SDK.
+  characters: ^1.4.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
