@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M3 are done (M3's iOS device check is still open). M4 is built and awaiting review.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M3 are done (M3's iOS device check is still open). M4 is done. M5 is built and awaiting review.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -206,6 +206,33 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
 - **Accept when:**
   - Widget tests cover a failed save keeping the draft, double tap creating one entry, discard, edit, delete, search with no results, and day selection.
   - The integration test add → edit → delete passes on an Android emulator.
+- **Built (7 November 2026), decisions made while building:**
+  - Home stats cover the week on screen (the current week unless paged back). "Most recent entry" shows a time if the entry was today, otherwise a relative day ("Yesterday", "Wednesday", "30 Oct"). Tapping a day shows that day's journal, and tapping it again returns to the week. The trend preview appears only when the last 4 weeks have entries.
+  - The editor is a full-screen route above the tabs, and entry detail sits inside its tab. Entry ids travel as in-memory route data (`extra`), never in route paths.
+  - Saving is guarded by an in-flight flag plus a busy button. Success is reported only after the commit. A failed save keeps the draft and offers "Try again".
+  - Editing keeps optional details not shown in the editor (stool form and context), and keeps the original instant and time-zone offset unless the time is changed.
+  - Future times can't be chosen in the time sheet, and are also rejected on save.
+  - History: search matches notes (case-insensitive) within the chosen range. Ranges are last 2 weeks (the default), last 4 weeks, last 3 months and all time. "Show earlier entries" steps to the next wider range.
+  - The delete dialog uses the Figma order, with a filled danger "Delete entry" first. Discard dialogs keep the safe choice first.
+  - The week strip now uses `LocalDate`.
+  - Small deviations from Figma: the note counter sits under the field, not inside it, and the "Other date" chip shows the chosen date.
+  - Feedback round (7 November 2026):
+    - The week strip swipes back through earlier weeks (up to about ten years), never past the current week. Previous and next week buttons and a week label do the same without gestures.
+    - The list and the stats card follow the week on screen ("This week's journal" or "Week of 26 Oct"; "Logged this week" or "Logged 26 Oct – 1 Nov"). "Most recent entry" is the latest entry in that week.
+    - The pager runs oldest to newest, because a reversed `PageView` jumped to the wrong week when a day was scrolled into view, for example by a screen reader.
+    - Future days are muted, can't be tapped, and are announced as "not available yet".
+    - A selected past day becomes the new entry's default date, at the current time of day. That isn't treated as a change, so closing needs no confirmation.
+    - The "On-device only" chip is removed from the journal home.
+    - Copy: the home title is "Your journal" (was "A little daily clarity."), and the trend link is "See your patterns" (was "Your patterns, coming into focus").
+    - Figma was updated to match (see the M5 Figma note below).
+  - **Figma updated (7 November 2026):**
+    - Journal frames 1.4, 2.1, 2.7, 3.4 and 4.1: the "On-device only" chip is removed, the title is "Your journal", and the link reads "See your patterns". A week header ("‹ This week ›", with › disabled) sits above the strip, and Saturday and Sunday are muted as future days. The stray entry dots on Monday and Tuesday are removed, so the strip matches the five Wednesday-to-Friday entries.
+    - New frame 4.12 "Journal · Earlier week" shows the week of 26 October with its own counts ("Logged 26 Oct – 1 Nov") and the "Week of 26 Oct" list.
+    - Editor frames 2.2–2.6, 3.1 and 4.9: the character counter now sits under the note box, as in the app.
+    - Read me: notes the week strip's earlier weeks and the unavailable future days.
+    - Time sheet: the highlight is now drawn behind the wheels. `CupertinoPicker` paints its selection overlay on top of the items, which hid the chosen time. Checked with a screenshot on the S20.
+  - Draft policy on lock: drafts already live only in the unlocked scope, so they're discarded on lock. The small-print note in the editor comes with app lock in M8.
+  - Device evidence, S20 (Android 13): `integration_test/journal_flow_test.dart` (add, edit and delete, against the real encrypted database in a temporary folder with an in-memory key store) passes, along with the startup and self-check tests. The test registers Flutter's test keyboard, because with the real keyboard attached the phone sent back stale text and overwrote the edit.
 
 ### M6 — Optional details
 - **Scope (3.1–3.4, 4.3, 4.8, 8.2):**

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:poop_tracker/core/time/local_date.dart';
 import 'package:poop_tracker/ui/widgets/card_group.dart';
 import 'package:poop_tracker/ui/widgets/morrow_button.dart';
 import 'package:poop_tracker/ui/widgets/morrow_chip.dart';
@@ -14,7 +15,7 @@ import '../support/harness.dart';
 final List<WeekStripDay> _week = [
   for (var d = 2; d <= 8; d++)
     WeekStripDay(
-      date: DateTime(2026, 11, d),
+      date: LocalDate(2026, 11, d),
       hasEntries: d <= 6,
       isToday: d == 6,
     ),
@@ -185,7 +186,7 @@ void main() {
         page(
           WeekStrip(
             days: _week,
-            selected: DateTime(2026, 11, 4),
+            selected: LocalDate(2026, 11, 4),
             onSelected: (_) {},
           ),
         ),
@@ -205,13 +206,13 @@ void main() {
     });
 
     testWidgets('tapping anywhere in a day reports its date', (tester) async {
-      DateTime? tapped;
+      LocalDate? tapped;
       await pumpThemed(
         tester,
         page(WeekStrip(days: _week, onSelected: (d) => tapped = d)),
       );
       await tester.tap(find.text('5'));
-      expect(tapped, DateTime(2026, 11, 5));
+      expect(tapped, LocalDate(2026, 11, 5));
     });
 
     test('rejects a week that is not seven days', () {

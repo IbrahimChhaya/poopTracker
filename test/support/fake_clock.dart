@@ -13,6 +13,25 @@ class FixedClock implements Clock {
 
   @override
   int currentUtcOffsetMinutes() => offsetMinutes;
+
+  /// Resolves using the fixed [offsetMinutes] (no daylight saving).
+  @override
+  ({DateTime utc, int offsetMinutes}) resolveLocal(
+    int year,
+    int month,
+    int day,
+    int hour,
+    int minute,
+  ) => (
+    utc: DateTime.utc(
+      year,
+      month,
+      day,
+      hour,
+      minute,
+    ).subtract(Duration(minutes: offsetMinutes)),
+    offsetMinutes: offsetMinutes,
+  );
 }
 
 /// UK offsets for 2026: BST (+60) from 29 March 01:00 UTC to 25 October

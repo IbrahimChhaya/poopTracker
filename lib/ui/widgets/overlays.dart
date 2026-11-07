@@ -8,7 +8,9 @@ import 'morrow_button.dart';
 /// chooses [confirmLabel]. Dismissing it completes with `false`.
 ///
 /// For a [destructive] action the safe choice ([cancelLabel]) is the filled
-/// primary button and comes first, as in "Discard this entry?".
+/// primary button and comes first, as in "Discard this entry?". With
+/// [dangerFilled] the destructive choice is a filled danger button and comes
+/// first, as in "Delete this entry?".
 Future<bool> showMorrowConfirmDialog(
   BuildContext context, {
   required String title,
@@ -16,26 +18,32 @@ Future<bool> showMorrowConfirmDialog(
   required String confirmLabel,
   required String cancelLabel,
   bool destructive = false,
+  bool dangerFilled = false,
 }) async {
   final result = await showDialog<bool>(
     context: context,
     builder: (context) {
       void close(bool value) => Navigator.of(context).pop(value);
+      final filledDanger = destructive && dangerFilled;
       final confirm = MorrowButton(
         label: confirmLabel,
-        variant: destructive
+        variant: filledDanger
+            ? MorrowButtonVariant.danger
+            : destructive
             ? MorrowButtonVariant.dangerOutline
             : MorrowButtonVariant.primary,
         onPressed: () => close(true),
       );
       final cancel = MorrowButton(
         label: cancelLabel,
-        variant: destructive
+        variant: destructive && !filledDanger
             ? MorrowButtonVariant.primary
             : MorrowButtonVariant.secondary,
         onPressed: () => close(false),
       );
-      final buttons = destructive ? [cancel, confirm] : [confirm, cancel];
+      final buttons = destructive && !filledDanger
+          ? [cancel, confirm]
+          : [confirm, cancel];
       return AlertDialog(
         scrollable: true,
         contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),

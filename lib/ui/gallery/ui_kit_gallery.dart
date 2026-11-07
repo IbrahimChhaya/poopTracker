@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/time/local_date.dart';
 import '../theme/morrow_tokens.dart';
 import '../theme/morrow_typography.dart';
 import '../widgets/card_group.dart';
@@ -24,12 +25,12 @@ class _UiKitGalleryState extends State<UiKitGallery> {
   bool _toggle = false;
   bool _busy = false;
   final Set<String> _chips = {'Easy'};
-  DateTime? _selectedDay;
+  LocalDate? _selectedDay;
 
   static final List<WeekStripDay> _week = [
     for (var d = 2; d <= 8; d++)
       WeekStripDay(
-        date: DateTime(2026, 11, d),
+        date: LocalDate(2026, 11, d),
         hasEntries: d <= 6,
         isToday: d == 6,
       ),

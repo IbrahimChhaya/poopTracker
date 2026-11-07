@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 
+import '../../core/time/local_date.dart';
+import '../format/labels.dart';
 import '../theme/morrow_colors.dart';
 import '../theme/morrow_tokens.dart';
 import '../theme/morrow_typography.dart';
 
-/// One day in the [WeekStrip]. [date] is a local calendar date; only its
-/// year, month and day are used.
+/// One day in the [WeekStrip].
 @immutable
 class WeekStripDay {
   const WeekStripDay({
     required this.date,
     required this.hasEntries,
     this.isToday = false,
+    this.isFuture = false,
   });
 
-  final DateTime date;
+  final LocalDate date;
   final bool hasEntries;
   final bool isToday;
+
+  /// Days after today cannot be opened: there is nothing to see yet.
+  final bool isFuture;
 }
 
 /// Monday-to-Sunday row of days, as on the journal home screen.
@@ -33,12 +38,21 @@ class WeekStrip extends StatelessWidget {
   }) : assert(days.length == 7, 'A week strip shows exactly seven days');
 
   final List<WeekStripDay> days;
-  final DateTime? selected;
-  final ValueChanged<DateTime> onSelected;
+  final LocalDate? selected;
+  final ValueChanged<LocalDate> onSelected;
+
+  /// The strip's height at [scaler], for hosts that need a fixed height (such
+  /// as a swipeable page of weeks).
+  static double heightFor(TextScaler scaler) {
+    final content =
+        20 + 6 + 8 + 4 + scaler.scale(11) * 1.2 + scaler.scale(16) * 1.2;
+    return content > MorrowSizes.dayCellMinHeight
+        ? content + 1
+        : MorrowSizes.dayCellMinHeight;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final sel = selected;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -46,16 +60,13 @@ class WeekStrip extends StatelessWidget {
           Expanded(
             child: _DayCell(
               day: day,
-              selected: sel != null && _sameDate(sel, day.date),
-              onTap: () => onSelected(day.date),
+              selected: selected == day.date,
+              onTap: day.isFuture ? null : () => onSelected(day.date),
             ),
           ),
       ],
     );
   }
-
-  static bool _sameDate(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 class _DayCell extends StatelessWidget {
@@ -67,7 +78,7 @@ class _DayCell extends StatelessWidget {
 
   final WeekStripDay day;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +88,12 @@ class _DayCell extends StatelessWidget {
     final radius = BorderRadius.circular(MorrowRadii.md);
 
     final weekdayColour = selected ? colors.onPrimaryMuted : colors.mutedText;
-    final numberColour = selected ? colors.onPrimary : colors.ink;
+    // Future days use the muted colour with no dot, and are not tappable.
+    final numberColour = selected
+        ? colors.onPrimary
+        : day.isFuture
+        ? colors.mutedText
+        : colors.ink;
     final dotColour = selected ? colors.onPrimary : colors.primary;
 
     final cell = Material(
@@ -134,6 +150,7 @@ class _DayCell extends StatelessWidget {
 
     return Semantics(
       button: true,
+      enabled: !day.isFuture,
       selected: selected,
       label: weekStripDayLabel(day),
       // The whole seventh of the row is tappable (at least 48 px wide on a
@@ -167,38 +184,18 @@ class _Fit extends StatelessWidget {
 const double _halfGap = 2.5;
 
 const List<String> _weekdayInitials = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const List<String> _weekdayNames = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
-const List<String> _monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 
 /// Screen reader label for a day, for example
 /// "Friday 6 November, today, has entries".
 String weekStripDayLabel(WeekStripDay day) {
   final d = day.date;
   final parts = <String>[
-    '${_weekdayNames[d.weekday - 1]} ${d.day} ${_monthNames[d.month - 1]}',
+    '${weekdayName(d)} ${d.day} ${monthName(d.month)}',
     if (day.isToday) 'today',
-    day.hasEntries ? 'has entries' : 'no entries',
+    if (day.isFuture)
+      'not available yet'
+    else
+      day.hasEntries ? 'has entries' : 'no entries',
   ];
   return parts.join(', ');
 }

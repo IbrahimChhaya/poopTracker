@@ -1,7 +1,3 @@
-import 'dart:collection';
-import 'dart:io';
-
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderException;
@@ -10,69 +6,11 @@ import 'package:poop_tracker/app/app.dart';
 import 'package:poop_tracker/app/lock/lock_controller.dart';
 import 'package:poop_tracker/app/providers.dart';
 import 'package:poop_tracker/app/scope.dart';
-import 'package:poop_tracker/core/database/app_database.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
-import 'package:poop_tracker/core/database/journal_reset.dart';
 import 'package:poop_tracker/ui/widgets/morrow_navigation_bar.dart';
 
-import '../support/fake_key_store.dart';
+import '../support/app_harness.dart';
 import '../support/harness.dart';
-
-/// A real (in-memory, unencrypted) database that records when it is closed.
-/// Only for widget tests of the gate; encryption is tested in M3's tests.
-class TrackingDatabase extends AppDatabase {
-  TrackingDatabase() : super(NativeDatabase.memory());
-
-  bool closed = false;
-
-  @override
-  Future<void> close() {
-    closed = true;
-    return super.close();
-  }
-}
-
-/// Bootstrap that returns scripted results in order.
-class ScriptedBootstrap extends DatabaseBootstrap {
-  ScriptedBootstrap(List<Object> results)
-    : _results = Queue.of(results),
-      super(keyStore: FakeKeyStore(), databaseFile: _noFile);
-
-  static Future<File> _noFile() async => File('unused');
-
-  final Queue<Object> _results;
-  int starts = 0;
-
-  @override
-  Future<StartupResult> start() async {
-    starts++;
-    final next = _results.length > 1 ? _results.removeFirst() : _results.first;
-    if (next is StartupResult) return next;
-    throw next as Error;
-  }
-}
-
-class FakeReset extends JournalReset {
-  FakeReset() : super(keyStore: FakeKeyStore(), databaseFile: _noFile);
-
-  static Future<File> _noFile() async => File('unused');
-
-  int erases = 0;
-  bool fail = false;
-
-  @override
-  Future<void> eraseAll() async {
-    erases++;
-    if (fail) throw const FileSystemException('simulated');
-  }
-}
-
-class TestLock extends LockController {
-  @override
-  AppLockState build() => AppLockState.unlocked;
-
-  void set(AppLockState s) => state = s;
-}
 
 const _erase = 'Erase and start fresh…';
 
@@ -120,14 +58,14 @@ void main() {
   StartupBlocked blockedBy(StartupBlockReason r) => StartupBlocked(r);
 
   group('ready', () {
-    testWidgets('opens the journal inside the shell', (tester) async {
+    appTest('opens the journal inside the shell', (tester) async {
       await pumpApp(tester, [ready()]);
       expect(find.byType(MorrowNavigationBar), findsOneWidget);
       expect(find.text('Nothing here yet'), findsOneWidget);
       expect(bootstrap.starts, 1);
     });
 
-    testWidgets('bottom navigation switches tabs', (tester) async {
+    appTest('bottom navigation switches tabs', (tester) async {
       await pumpApp(tester, [ready()]);
       await tester.tap(find.text('History'));
       await tester.pumpAndSettle();
@@ -143,7 +81,7 @@ void main() {
       expect(find.text('Nothing here yet'), findsOneWidget);
     });
 
-    testWidgets('developer pages open from Settings in debug builds', (
+    appTest('developer pages open from Settings in debug builds', (
       tester,
     ) async {
       await pumpApp(tester, [ready()]);
@@ -155,7 +93,7 @@ void main() {
     });
 
     for (final scale in textScales) {
-      testWidgets('every tab lays out at ${(scale * 100).toInt()}% text', (
+      appTest('every tab lays out at ${(scale * 100).toInt()}% text', (
         tester,
       ) async {
         await pumpApp(tester, [ready()], textScale: scale, size: smallPhone);
@@ -178,7 +116,7 @@ void main() {
     };
 
     for (final reason in StartupBlockReason.values) {
-      testWidgets('$reason: no journal, no automatic retry or creation', (
+      appTest('$reason: no journal, no automatic retry or creation', (
         tester,
       ) async {
         await pumpApp(tester, [blockedBy(reason)]);
@@ -196,9 +134,7 @@ void main() {
       });
     }
 
-    testWidgets('an unexpected error is blocked, with retry only', (
-      tester,
-    ) async {
+    appTest('an unexpected error is blocked, with retry only', (tester) async {
       await pumpApp(tester, [StateError('unexpected')]);
       expect(find.text('Your journal can’t be opened right now'), findsOne);
       expect(find.text(_erase), findsNothing);
@@ -206,7 +142,7 @@ void main() {
       expect(bootstrap.starts, 1, reason: 'no automatic retry');
     });
 
-    testWidgets('Try again runs startup again', (tester) async {
+    appTest('Try again runs startup again', (tester) async {
       await pumpApp(tester, [
         blockedBy(StartupBlockReason.storageUnavailable),
         ready(),
@@ -232,7 +168,7 @@ void main() {
       ),
     );
 
-    testWidgets('needs the acknowledgement before erasing', (tester) async {
+    appTest('needs the acknowledgement before erasing', (tester) async {
       await pumpApp(tester, [
         blockedBy(StartupBlockReason.keyMissing),
         ready(),
@@ -253,7 +189,7 @@ void main() {
       expect(find.byType(MorrowNavigationBar), findsOneWidget);
     });
 
-    testWidgets('Cancel erases nothing', (tester) async {
+    appTest('Cancel erases nothing', (tester) async {
       await pumpApp(tester, [blockedBy(StartupBlockReason.keyRejected)]);
       await openDialog(tester);
       await tester.tap(find.text('I understand this can’t be undone'));
@@ -265,9 +201,7 @@ void main() {
       expect(find.text(_erase), findsOneWidget);
     });
 
-    testWidgets('a failed erase stays blocked and can be retried', (
-      tester,
-    ) async {
+    appTest('a failed erase stays blocked and can be retried', (tester) async {
       await pumpApp(tester, [blockedBy(StartupBlockReason.keyMissing)]);
       reset.fail = true;
       await openDialog(tester);
@@ -283,7 +217,7 @@ void main() {
   });
 
   group('lock', () {
-    testWidgets('locking removes the journal and closes the database', (
+    appTest('locking removes the journal and closes the database', (
       tester,
     ) async {
       await pumpApp(tester, [ready()]);
@@ -305,7 +239,7 @@ void main() {
       AppLockState.authenticating,
       AppLockState.error,
     ]) {
-      testWidgets('$state never opens the journal', (tester) async {
+      appTest('$state never opens the journal', (tester) async {
         bootstrap = ScriptedBootstrap([ready()]);
         useScreenSize(tester, figmaPhone);
         container = ProviderContainer(
@@ -346,7 +280,7 @@ void main() {
       expect(() => root.read(entryRepositoryProvider), outsideScope());
     });
 
-    testWidgets('a widget outside the scope cannot read journal data', (
+    appTest('a widget outside the scope cannot read journal data', (
       tester,
     ) async {
       Object? outsideError;
