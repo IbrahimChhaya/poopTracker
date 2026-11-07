@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 is in progress.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 is done. M1 is built and awaiting review on a device.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -125,6 +125,15 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Shared widgets: setting row, card group, primary/secondary/danger buttons, chips, sheet, dialog, toast, empty/error/loading states, week strip, bottom navigation shell.
 - **Risk:** Inter must be bundled as an asset. Network-loaded fonts are not allowed.
 - **Accept when:** widget tests pass at 200% text scale, semantics labels exist, and contrast is at least 4.5:1 for body text (checked with a small test helper).
+- **Built (7 November 2026), decisions made while building:**
+  - Muted text is `#666b60` (5.0:1 on background, 4.6:1 on tint), not Figma's `#74796d` (4.07:1). `#74796d` stays for icons and chevrons. Figma text fills were updated to match.
+  - Labels on disabled buttons ("Saving…") use `#595e53` (4.8:1 on `#dcdcd2`).
+  - Week strip cells keep the Figma look, but each tap target is a full seventh of the row (at least 48 px on a 402 pt phone).
+  - Icons use the nearest Material outlined icons. Figma uses Lucide; adding a Lucide package would need approval.
+  - Inter 4.1 static TTFs are bundled from the official rsms/inter release, with the OFL registered in the app's licences page.
+  - A debug-only UI kit preview opens from the placeholder Settings tab.
+  - **Open for M6:** the warm text colour `#ac7157` (stool type labels, symptoms, entry-detail date) is 3.3:1 on sand and 3.9:1 on card, so it fails 4.5:1. It needs a darker warm text token before M6.
+  - **Open for M12:** the switch's off track `#c9cdc1` is low contrast against the card. The thumb position still shows the state, and screen readers announce it.
 
 ### M2 — Models and pure logic
 - **Scope:**
