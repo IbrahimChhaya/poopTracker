@@ -7,16 +7,18 @@
 - This is a personal journal, not a diagnostic or treatment tool. Do not add medical interpretations or infer entries from notifications.
 - Keep the morrow branding and the Figma theme (green and cream). The app must not advertise what it tracks: user-visible app name, launcher label, notifications, onboarding, and store-facing text use "morrow" and neutral wording ("entry", "log", "check-in"). Avoid bowel-related wording and imagery outside the entry flow and entry detail. Internal identifiers (package name, repository) may differ.
 - Required vs optional: the only required parts of an entry are the entry itself and its date/time. Everything else is optional and skippable: the note, Bristol stool type (1-7), ease, symptoms, and circumstance tags (the "A little context" step in the Figma flow). Saving with only a date/time must always work.
-- Optional details visibility: stool type, ease, symptoms and circumstance tags are hidden everywhere (add-entry flow, home list, history, detail, trends) unless the user enables "Stool type and symptoms" in Settings. The setting is off by default. The note is always available. Turning the setting off hides the fields but must not delete stored values; deleting them is a separate explicit action. (Assumption: the setting gates all four optional detail types; confirm before building the schema.)
-- Trends and analytics: simple, descriptive, weekly summaries only (for example entries per week, entries per day within a week, and a comparison with the previous week), computed on-device from stored entries. Do not focus on time-of-day or daily-rhythm patterns. No statistical modelling, forecasting, scoring, correlations, anomaly detection, "insights" or health advice. Stool type and symptom summaries appear only when the setting above is enabled. Prefer drawing simple charts with Flutter's own widgets; ask before adding a charting dependency.
-- Out of scope for v1: advanced analytics or modelling, export/import, cloud sync, accounts, medical interpretation, multiple reminders.
+- Optional details visibility is controlled by two separate Settings toggles, both off by default: "Stool form" (Bristol stool type 1-7) and "A little context" (ease, symptoms and circumstance tags). A hidden detail is hidden everywhere (add-entry flow, home list, history, detail, trends). The note is always available. Turning a setting off hides its fields but must not delete stored values; deleting them is a separate explicit action. In the add-entry flow each enabled step is skippable; the step count adapts when only one is enabled ("1 of 1"). On the "A little context" screen, say once at the top that everything is optional; do not repeat "Optional" on each section.
+- Home journal is weekly: the home screen shows "This week's journal" (counts and list cover the current Monday-to-Sunday week) unless the user selects a specific day in the week strip, in which case it shows that day's journal. Wording uses "this week", not "today".
+- Trends and analytics: simple, descriptive, weekly summaries only (entries per week, weeks logged, average entries per week), computed on-device from stored entries, with 4, 12 and 26 week ranges. Do not focus on time-of-day or daily-rhythm patterns. No statistical modelling, forecasting, scoring, correlations, anomaly detection, "insights" or health advice. Stool form and symptom summaries appear only when their setting is enabled. Prefer drawing simple charts with Flutter's own widgets; ask before adding a charting dependency.
+- Local backup and restore (in scope for v1): the user can export their entries to a backup file and restore from one, from Settings > Data & privacy and from the welcome screen on a fresh install. The app never talks to a cloud service: it hands the file to the OS share/save sheet (Files, Google Drive, iCloud Drive and similar) and reads a file the user picks with the OS file picker. Backups contain entries (date/time, note and optional details), not reminders, settings or app-lock state. Restore only adds entries: it skips entries already present, never overwrites or deletes existing ones, and reports how many were added and skipped. A backup file holds sensitive data, so proposed design: it is encrypted with a user-chosen passphrase using a maintained library (no custom cryptography); a forgotten passphrase cannot be recovered. Confirm the encrypted-backup decision, the backup file format/version and the dependencies (share, file picker, encryption) before building.
+- Out of scope for v1: advanced analytics or modelling, cloud sync or direct cloud-service integration, accounts, medical interpretation, multiple reminders, CSV or other export formats, dark mode (planned after v1).
 - Development-time package downloads and documentation access are separate from the no-network requirement for the shipped app.
 
 ## Working agreement
 - Inspect the repository and existing decisions before changing code. Do not assume scaffolding, dependencies, or tests already exist.
 - For substantial changes, give a small implementation plan, assumptions, risks, and acceptance tests before implementation.
 - Work in small, reviewable changes. Avoid unrelated refactors and speculative features.
-- Ask before adding unapproved dependencies, changing the security model, introducing network access, changing native permissions, or performing destructive operations.
+- Ask before adding unapproved dependencies, changing the security model, introducing network access, changing native permissions, or performing destructive operations. Backup/restore will need packages not yet approved (OS share/save, file picker, passphrase encryption); propose specific, maintained candidates and ask first.
 - Verify APIs against the versions in pubspec.lock and their official documentation. Do not invent APIs or copy obsolete examples.
 - Report exactly which checks ran, their results, and which device/platform checks remain unverified. Never claim security or production readiness without evidence.
 - Never read, upload, log, or commit real journal exports, device databases, credentials, signing materials, or personal health data.
@@ -48,7 +50,8 @@
 ## Data and persistence
 - Use neutral code naming for the entry model (`Entry`, not `PoopEntry`) so the codebase and generated schema do not spell out the subject.
 - Entry starts with a local primary key, occurredAtUtc, originalUtcOffsetMinutes, optional comment, optional stoolType (1-7), optional symptoms, createdAtUtc, and updatedAtUtc. Symptoms use a small fixed set of predefined options (no free-text symptom field beyond the comment); confirm the list against the Figma designs before building the schema.
-- Display preferences (such as showing stool type and symptoms) are ordinary settings stored in the database, default off.
+- Display preferences (show stool form, show "A little context") are ordinary settings stored in the database, default off.
+- Backup files carry a format version and are validated before import; restore runs in a transaction and is idempotent (duplicates are skipped by a stable entry identity). Test restore across schema versions.
 - Choose and document historical date-grouping rules. Preserve the event's original local-day meaning when the device time zone changes.
 - Store reminder intent separately: enabled, local weekday, local hour/minute, time-zone policy, and stable notification identifier.
 - Keep the reminder requested by the user separate from observed OS permission/scheduling status.
@@ -103,7 +106,8 @@
 - Configure Android backup/transfer exclusions for supported OS versions, including plugin/secure-storage artefacts. Do not rely on allowBackup=false alone.
 - Configure iOS backup exclusions and non-synchronising key accessibility. Document that OS backup-exclusion flags are not an absolute guarantee.
 - Test backup, restore, transfer, reinstall, and key-loss behaviour. An unreadable restored database must fail safely without silent data replacement.
-- Explain that there is no account recovery and data may be lost after uninstall, device loss, or key loss. No export/import in v1 without separate approval.
+- Explain that there is no account recovery and data may be lost after uninstall, device loss, or key loss, and that the user's own exported backup is the only recovery route.
+- Export and restore are limited to the local backup flow described under Product and scope. Exported files leave app-private storage once the user saves them, so say so plainly, never write them to shared storage without the user choosing the location, and never log or retain a copy. Test export/restore on physical devices with real OS share sheets and file pickers; mocks are not evidence.
 - Never log records, comments, timestamps, keys, SQL bound values, or sensitive exception payloads. Diagnostics must be redacted and local.
 - Use minimal permissions and bundled assets. Audit merged release manifests and SDK behaviour for unexpected network access and permissions.
 - Implement explicit Delete all data confirmation. Re-authenticate when app lock is enabled; close database handles, cancel reminders, remove database/companion/cache files, and delete app keys/settings.
@@ -111,9 +115,10 @@
 
 ## UI and accessibility
 - Use Figma for the journal list, entry editor, history, entry detail, trends, privacy, Settings/reminders, and lock/error states, following the existing morrow theme. Use synthetic content only. Design file: https://www.figma.com/design/k5nqDgD29IrWJ3nuKYdOLS/poopTracker
-- Designs must show the default state (stool type and symptoms hidden) as the primary state; the enabled state is a variant.
+- Designs must show the default state (both optional-detail settings off) as the primary state; the enabled state is a variant. The Figma file is organised by journey (sections 1-9), numbered in the order a person meets the screens; "Details on" screens show both settings on.
 - Implement reusable theme tokens and standard Flutter controls rather than copying generated layout code wholesale.
-- Support large text, screen readers, contrast, keyboard insets, and dark mode. Do not communicate state by colour alone.
+- Support large text, screen readers, contrast, and keyboard insets. Do not communicate state by colour alone.
+- Dark mode is planned for after v1 (no dark designs yet). Keep colours in theme tokens, never hard-coded in widgets, so a dark palette can be added later without rework.
 - Provide loading, empty, saving, success, permission-denied, locked, and error states as applicable.
 - Use plain-text comments with a documented length limit. Define what happens to an unsaved draft when the app locks.
 
