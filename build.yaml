@@ -1,0 +1,11 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Keep generated SQL portable and the schema exportable for
+          # migration tests (dart run drift_dev make-migrations).
+          databases:
+            journal: lib/core/database/app_database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/drift/

@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 and M1 are done. M2 is built and awaiting review.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M3 are done (M3's iOS device check is still open).
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -171,6 +171,14 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Reopening keeps the data.
   - Transactions roll back on failure.
 - **Device:** confirm the encrypted build on a physical Android and iOS device. A host test is not proof of the native build.
+- **Built (7 November 2026):** see [security.md](security.md) for the full design.
+  - `pubspec.yaml`: `hooks: user_defines: sqlite3: source: sqlite3mc`. Cipher `chacha20`, key via `PRAGMA hexkey`.
+  - flutter_secure_storage: Android `resetOnError: false` (the plugin default would wipe the key on a read error), ciphers pinned. iOS `unlocked_this_device`, not synchronisable.
+  - Reinstall decision: a stored key with no journal file is discarded and setup starts fresh.
+  - CHECK constraints are table-level SQL (`customConstraints`), because drift's self-referencing `.check()` trips the `recursive_getters` lint.
+  - Schema v1 is exported to `drift_schemas/journal/drift_schema_v1.json` for future migration tests.
+  - A minimal `EntryRepository` (create, update, delete, list, watch) is included so persistence and transactions are tested now.
+  - Diagnostics: Settings > Developer > Encryption self-check, in debug builds or with `--dart-define=MORROW_DIAGNOSTICS=true`.
 
 ### M4 — App shell, routing and the unlocked scope
 - **Scope:**

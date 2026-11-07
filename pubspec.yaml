@@ -38,6 +38,11 @@ dependencies:
   # Counts user-perceived characters (grapheme clusters) for the note limit.
   # Dart team package, already pinned by the Flutter SDK.
   characters: ^1.4.1
+  drift: ^2.35.3
+  sqlite3: ^3.9.0
+  flutter_secure_storage: ^11.2.0
+  path_provider: ^2.1.6
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
@@ -49,6 +54,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  drift_dev: ^2.35.2
+  build_runner: ^2.17.1
+  integration_test:
+    sdk: flutter
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -105,3 +114,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Use SQLite3MultipleCiphers (encryption) instead of plain SQLite. See
+# https://pub.dev/packages/sqlite3 (doc/hook.md). The binary is downloaded at
+# build time and checked against sha256 hashes shipped with the package.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc

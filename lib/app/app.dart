@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../core/diagnostics/encryption_self_check.dart';
 import '../ui/gallery/ui_kit_gallery.dart';
 import '../ui/theme/morrow_theme.dart';
 import '../ui/theme/morrow_tokens.dart';
@@ -9,6 +10,7 @@ import '../ui/widgets/card_group.dart';
 import '../ui/widgets/morrow_navigation_bar.dart';
 import '../ui/widgets/setting_row.dart';
 import '../ui/widgets/states.dart';
+import 'debug/self_check_screen.dart';
 
 /// Root widget. Routing, bootstrap and the lock gate are added in later
 /// milestones (see docs/implementation-plan.md).
@@ -75,17 +77,28 @@ class _PlaceholderShellState extends State<_PlaceholderShell> {
       ),
       MorrowDestination.settings => (
         'Settings',
-        kDebugMode
+        kDebugMode || diagnosticsEnabled
             ? CardGroup(
                 label: 'Developer',
                 children: [
+                  if (kDebugMode)
+                    SettingRow.navigation(
+                      icon: Icons.palette_outlined,
+                      title: 'UI kit preview',
+                      subtitle: 'Debug builds only',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const UiKitGallery(),
+                        ),
+                      ),
+                    ),
                   SettingRow.navigation(
-                    icon: Icons.palette_outlined,
-                    title: 'UI kit preview',
-                    subtitle: 'Debug builds only',
+                    icon: Icons.verified_user_outlined,
+                    title: 'Encryption self-check',
+                    subtitle: 'Uses throwaway data only',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const UiKitGallery(),
+                        builder: (_) => const SelfCheckScreen(),
                       ),
                     ),
                   ),
