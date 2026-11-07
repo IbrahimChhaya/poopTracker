@@ -1,21 +1,41 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../core/diagnostics/encryption_self_check.dart';
-import '../ui/gallery/ui_kit_gallery.dart';
+import '../core/database/bootstrap.dart';
 import '../ui/theme/morrow_theme.dart';
-import '../ui/theme/morrow_tokens.dart';
-import '../ui/theme/morrow_typography.dart';
-import '../ui/widgets/card_group.dart';
-import '../ui/widgets/morrow_navigation_bar.dart';
-import '../ui/widgets/setting_row.dart';
-import '../ui/widgets/states.dart';
-import 'debug/self_check_screen.dart';
+import 'gate/gate_screens.dart';
+import 'lock/lock_controller.dart';
+import 'router.dart';
+import 'scope.dart';
+import 'session/journal_session.dart';
 
-/// Root widget. Routing, bootstrap and the lock gate are added in later
-/// milestones (see docs/implementation-plan.md).
-class MorrowApp extends StatelessWidget {
+/// Root widget: the central gate.
+///
+/// 1. Lock gate: nothing sensitive exists until the session is unlocked.
+/// 2. Journal gate: the encrypted journal is opened (or created) only in an
+///    unlocked session. If it cannot be opened safely, the blocked screen is
+///    shown and nothing is created or replaced.
+/// 3. Unlocked scope: the database, data providers and router exist only
+///    here, and are disposed together when the session ends.
+class MorrowApp extends ConsumerWidget {
   const MorrowApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lock = ref.watch(lockControllerProvider);
+    if (lock != AppLockState.unlocked) {
+      return const _GateApp(home: LockedScreen());
+    }
+    return const _JournalGate();
+  }
+}
+
+/// A plain app for gate screens, with no router and no journal access.
+class _GateApp extends StatelessWidget {
+  const _GateApp({required this.home});
+
+  final Widget home;
 
   @override
   Widget build(BuildContext context) {
@@ -23,106 +43,70 @@ class MorrowApp extends StatelessWidget {
       title: 'morrow',
       debugShowCheckedModeBanner: false,
       theme: buildMorrowTheme(),
-      home: const _PlaceholderShell(),
+      home: home,
     );
   }
 }
 
-/// Temporary shell until routing lands in M4.
-class _PlaceholderShell extends StatefulWidget {
-  const _PlaceholderShell();
+class _JournalGate extends ConsumerWidget {
+  const _JournalGate();
 
   @override
-  State<_PlaceholderShell> createState() => _PlaceholderShellState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(journalSessionProvider);
+    final controller = ref.read(journalSessionProvider.notifier);
+
+    Widget blocked(StartupBlockReason? reason) => _GateApp(
+      home: Builder(
+        builder: (context) => BlockedScreen(
+          reason: reason,
+          onRetry: controller.retry,
+          onErase: () async {
+            if (await confirmEraseAndStartFresh(context)) {
+              await controller.eraseAndStartFresh();
+            }
+          },
+        ),
+      ),
+    );
+
+    return switch (session) {
+      AsyncData(value: StartupReady(:final database)) => UnlockedScope(
+        database: database,
+        child: const _UnlockedApp(),
+      ),
+      AsyncData(value: StartupBlocked(:final reason)) => blocked(reason),
+      AsyncError() => blocked(null),
+      _ => const _GateApp(home: StartupLoadingScreen()),
+    };
+  }
 }
 
-class _PlaceholderShellState extends State<_PlaceholderShell> {
-  MorrowDestination _selected = MorrowDestination.journal;
+/// The real app, inside the unlocked scope. Owns the router for this
+/// session only.
+class _UnlockedApp extends StatefulWidget {
+  const _UnlockedApp();
+
+  @override
+  State<_UnlockedApp> createState() => _UnlockedAppState();
+}
+
+class _UnlockedAppState extends State<_UnlockedApp> {
+  late final GoRouter _router = buildAppRouter();
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(child: _body(context)),
-      bottomNavigationBar: MorrowNavigationBar(
-        selected: _selected,
-        onSelected: (d) => setState(() => _selected = d),
-      ),
-    );
-  }
-
-  Widget _body(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final (String title, Widget content) = switch (_selected) {
-      MorrowDestination.journal => (
-        'morrow',
-        const EmptyState(
-          title: 'Nothing here yet',
-          message:
-              'Add an entry whenever you’re ready. It stays on this phone.',
-        ),
-      ),
-      MorrowDestination.history => (
-        'Your history',
-        const EmptyState(
-          title: 'Nothing here yet',
-          message: 'Your entries will appear here.',
-        ),
-      ),
-      MorrowDestination.trends => (
-        'Trends',
-        const EmptyState(
-          title: 'Not enough entries yet',
-          message: 'Weekly summaries will appear here.',
-        ),
-      ),
-      MorrowDestination.settings => (
-        'Settings',
-        kDebugMode || diagnosticsEnabled
-            ? CardGroup(
-                label: 'Developer',
-                children: [
-                  if (kDebugMode)
-                    SettingRow.navigation(
-                      icon: Icons.palette_outlined,
-                      title: 'UI kit preview',
-                      subtitle: 'Debug builds only',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const UiKitGallery(),
-                        ),
-                      ),
-                    ),
-                  SettingRow.navigation(
-                    icon: Icons.verified_user_outlined,
-                    title: 'Encryption self-check',
-                    subtitle: 'Uses throwaway data only',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const SelfCheckScreen(),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : const SizedBox.shrink(),
-      ),
-    };
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-      children: [
-        Semantics(
-          header: true,
-          child: Text(
-            title,
-            style: _selected == MorrowDestination.journal
-                ? MorrowTextStyles.of(context).wordmark
-                : text.headlineLarge,
-          ),
-        ),
-        const SizedBox(height: MorrowSpacing.xxl),
-        content,
-      ],
+    return MaterialApp.router(
+      title: 'morrow',
+      debugShowCheckedModeBanner: false,
+      theme: buildMorrowTheme(),
+      routerConfig: _router,
     );
   }
 }

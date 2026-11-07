@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M3 are done (M3's iOS device check is still open).
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M3 are done (M3's iOS device check is still open). M4 is built and awaiting review.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -187,6 +187,15 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - The nested unlocked `ProviderScope`.
   - Lock controller with app lock off: always unlocked after bootstrap.
 - **Accept when:** widget tests show no sensitive provider can be read outside the unlocked scope, and that the blocked state never offers to create a new journal automatically.
+- **Built (7 November 2026), decisions made while building:**
+  - Gate order: lock gate, then the journal is opened or created (only in an unlocked session), then the unlocked scope.
+  - The gate screens (loading, locked, blocked) use their own plain `MaterialApp`. The journal app and its go_router exist only inside the unlocked scope and are rebuilt for each session.
+  - Sensitive providers (`appDatabaseProvider`, `entryRepositoryProvider`) declare `dependencies`, so Riverpod treats them as scoped. Read anywhere else they throw `OutsideUnlockedScopeError`.
+  - The journal session provider is auto-disposed and closes the database when nothing watches it. Riverpod 3's automatic retry is turned off for it, so a blocked journal waits for the user.
+  - "Erase and start fresh…" is offered only when a journal exists but can't be opened (key missing or rejected, unencrypted or unreadable file, or a failed erase). Storage, encryption-build and setup problems offer "Try again" only.
+  - Erasing deletes the database files first and the key last, so an interrupted erase is safe.
+  - The lock controller has every lock state but always returns `unlocked` until M8. Its state enum is `AppLockState`, because Flutter already has a `LockState`.
+  - Device evidence: `integration_test/startup_test.dart` passed on the S20. A real start reached the shell, and a second start reopened the same journal (`createdNew: false`).
 
 ### M5 — Journal, logging and history (optional details off)
 - **Scope (Figma 1.4, 2.1–2.7, 4.1–4.11):**

@@ -67,6 +67,9 @@ enum StartupBlockReason {
 
   /// Creating a new journal failed. Setup resumes on the next start.
   setupFailed,
+
+  /// "Erase and start fresh" could not finish. Erasing can be tried again.
+  eraseFailed,
 }
 
 sealed class StartupResult {
