@@ -64,7 +64,7 @@ class EntryDetailScreen extends ConsumerWidget {
             Expanded(
               child: Semantics(
                 header: true,
-                child: Text('Entry details', style: text.headlineLarge),
+                child: Text('Entry details', style: text.headlineSmall),
               ),
             ),
             TextButton(
@@ -80,38 +80,37 @@ class EntryDetailScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                decoration: BoxDecoration(
-                  color: colors.sand,
-                  borderRadius: BorderRadius.circular(MorrowRadii.xxl),
+              // When: the time leads, then the date; a date-only entry leads
+              // with the date. Plain text, so the note and details lead.
+              if (entry.hasTime) ...[
+                Text(
+                  formatTime(entry.localWallClock),
+                  style: text.headlineMedium,
                 ),
-                child: Column(
-                  children: [
-                    Text(
-                      formatFullDate(entry.localDate).toUpperCase(),
-                      textAlign: TextAlign.center,
-                      style: text.labelSmall!.copyWith(
-                        color: colors.warmText,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: MorrowSpacing.sm),
-                    if (entry.hasTime)
-                      Text(
-                        formatTime(entry.localWallClock),
-                        style: text.headlineMedium,
-                      )
-                    else
-                      Text(
-                        'No time recorded',
-                        style: text.bodyLarge!.copyWith(
-                          color: colors.mutedText,
-                        ),
-                      ),
-                    if (display.showStoolForm && entry.stoolType != null) ...[
-                      const SizedBox(height: MorrowSpacing.lg),
+                const SizedBox(height: MorrowSpacing.xs),
+                Text(
+                  formatFullDate(entry.localDate),
+                  style: text.bodyMedium!.copyWith(color: colors.mutedText),
+                ),
+              ] else ...[
+                Text(formatFullDate(entry.localDate), style: text.titleLarge),
+                const SizedBox(height: MorrowSpacing.xs),
+                Text(
+                  'No time recorded',
+                  style: text.bodyMedium!.copyWith(color: colors.mutedText),
+                ),
+              ],
+              if (display.showStoolForm && entry.stoolType != null) ...[
+                const SizedBox(height: MorrowSpacing.xl),
+                // Sand marks optional detail (the Warm Edge rule).
+                Container(
+                  padding: const EdgeInsets.all(MorrowSpacing.xxl),
+                  decoration: BoxDecoration(
+                    color: colors.sand,
+                    borderRadius: BorderRadius.circular(MorrowRadii.xxl),
+                  ),
+                  child: Column(
+                    children: [
                       Container(
                         width: 90,
                         height: 56,
@@ -135,9 +134,9 @@ class EntryDetailScreen extends ConsumerWidget {
                         style: text.bodySmall,
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
+              ],
               if (display.showContext) ..._contextDetails(context, entry),
               const SizedBox(height: MorrowSpacing.xxl),
               Text('Your notes', style: text.titleMedium),
@@ -210,9 +209,12 @@ List<Widget> _contextDetails(BuildContext context, Entry entry) {
           ),
           const SizedBox(width: 6),
         ],
-        Text(
-          entry.ease == null ? notRecorded : easePhrase(entry.ease!),
-          style: text.titleSmall!.copyWith(fontSize: 14),
+        Flexible(
+          child: Text(
+            entry.ease == null ? notRecorded : easePhrase(entry.ease!),
+            textAlign: TextAlign.end,
+            style: text.titleSmall!.copyWith(fontSize: 14),
+          ),
         ),
       ],
     ),

@@ -70,25 +70,25 @@ class _JournalBody extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       children: [
         const _BrandRow(),
-        const SizedBox(height: 22),
+        const SizedBox(height: MorrowSpacing.lg),
         Semantics(
           header: true,
           child: Text('Your journal', style: text.headlineLarge),
         ),
         const SizedBox(height: 7),
         Text(formatFullDate(view.today), style: text.bodyMedium),
-        const SizedBox(height: MorrowSpacing.xxl),
+        const SizedBox(height: MorrowSpacing.xl),
         _WeekPager(view: view),
-        const SizedBox(height: MorrowSpacing.lg),
+        const SizedBox(height: MorrowSpacing.md),
         _StatCard(view: view),
-        const SizedBox(height: 14),
+        const SizedBox(height: MorrowSpacing.md),
         MorrowButton(
           label: 'Add an entry',
           icon: Icons.add,
           large: true,
           onPressed: () => context.push(AppPaths.newEntry, extra: newEntryDay),
         ),
-        const SizedBox(height: MorrowSpacing.xxl),
+        const SizedBox(height: MorrowSpacing.xl),
         SectionHeading(
           title: heading,
           trailing: formatEntryCount(view.listed.length),
@@ -108,7 +108,7 @@ class _JournalBody extends ConsumerWidget {
             EntryCard(
               entry: e,
               title: selected != null
-                  ? formatTimeOrNone(e.localTime)
+                  ? formatTimeOrEntry(e.localTime)
                   : view.selection.weeksBack == 0
                   ? formatEntryTitle(
                       e.localDate,
@@ -294,53 +294,70 @@ class _StatCard extends StatelessWidget {
         ? formatTime(recent.localWallClock)
         : relativeDay(recent.localDate, today: view.today);
 
-    Widget stat(String value, String label, String semantics) => Expanded(
-      child: Semantics(
-        label: semantics,
-        excludeSemantics: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(value, style: styles.statValue),
-            const SizedBox(height: 5),
-            Text(label, style: text.labelSmall),
-          ],
-        ),
+    Widget stat(String value, String label, String semantics) => Semantics(
+      label: semantics,
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value, style: styles.statValue),
+          const SizedBox(height: 3),
+          Text(label, style: text.labelSmall),
+        ],
       ),
     );
 
+    final count = stat(
+      formatEntryCount(view.entriesInShownWeek),
+      loggedLabel,
+      '${formatEntryCount(view.entriesInShownWeek)} '
+      '${loggedLabel.substring(0, 1).toLowerCase()}'
+      '${loggedLabel.substring(1)}',
+    );
+    final latest = stat(
+      recentLabel,
+      'Most recent entry',
+      recent == null
+          ? current
+                ? 'No entries yet this week'
+                : 'No entries that week'
+          : 'Most recent entry: $recentLabel',
+    );
+
+    // Side by side at normal sizes; stacked once text is enlarged, so a value
+    // never wraps away from its unit ("2 / entries").
+    final stacked = MediaQuery.textScalerOf(context).scale(1) > 1.15;
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: colors.tint,
         borderRadius: BorderRadius.circular(MorrowRadii.xxl),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            stat(
-              formatEntryCount(view.entriesInShownWeek),
-              loggedLabel,
-              '${formatEntryCount(view.entriesInShownWeek)} '
-              '${loggedLabel.substring(0, 1).toLowerCase()}'
-              '${loggedLabel.substring(1)}',
+      child: stacked
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                count,
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  child: Divider(height: 1, color: colors.tintLine),
+                ),
+                latest,
+              ],
+            )
+          : IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(child: count),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 11),
+                    child: VerticalDivider(width: 1, color: colors.tintLine),
+                  ),
+                  Expanded(child: latest),
+                ],
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 11),
-              child: VerticalDivider(width: 1, color: colors.tintLine),
-            ),
-            stat(
-              recentLabel,
-              'Most recent entry',
-              recent == null
-                  ? current
-                        ? 'No entries yet this week'
-                        : 'No entries that week'
-                  : 'Most recent entry: $recentLabel',
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

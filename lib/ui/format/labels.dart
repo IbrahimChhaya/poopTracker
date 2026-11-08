@@ -79,9 +79,10 @@ String formatEntryTitle(
     ? relativeDay(day, today: today)
     : '${relativeDay(day, today: today)} · ${formatTime(wall)}';
 
-/// The time on its own, or "No time" when none was recorded.
-String formatTimeOrNone(DateTime? wall) =>
-    wall == null ? 'No time' : formatTime(wall);
+/// The time on its own, or "Entry" when none was recorded (used where the
+/// day is already the heading, so the card needs no other title).
+String formatTimeOrEntry(DateTime? wall) =>
+    wall == null ? 'Entry' : formatTime(wall);
 
 /// "24 Oct – 6 Nov", "12 Oct – 8 Nov 2026" when [withYear], and
 /// "28 Dec 2026 – 3 Jan 2027" whenever the range spans two years.

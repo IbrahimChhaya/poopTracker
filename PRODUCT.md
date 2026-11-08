@@ -64,7 +64,7 @@ Privacy and discretion are a given rather than the headline: the journal is encr
 - **Language:** British English.
 - **No dark mode yet** (planned after v1). All colours live in theme tokens.
 - **Undecided:**
-  - the M6.2 refinements to the "A little context" step (for example renaming "Anything to note?")
+  - the M6.3 refinements to the "A little context" step (for example renaming "Anything to note?")
   - the store listing text
   - the launcher icon
 

@@ -12,6 +12,7 @@ import 'package:poop_tracker/features/journal/data/entry_repository.dart';
 import 'package:poop_tracker/features/journal/domain/entry.dart';
 import 'package:poop_tracker/features/journal/presentation/editor/entry_editor_screen.dart';
 import 'package:poop_tracker/ui/theme/morrow_theme.dart';
+import 'package:poop_tracker/ui/theme/morrow_typography.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_clock.dart';
@@ -90,6 +91,34 @@ void main() {
   Finder noteField() => find.byType(TextField);
 
   group('journal home', () {
+    appTest('stats sit side by side at normal text size', (tester) async {
+      await seedAt(6, 13, 35);
+      await pumpReady(tester);
+      final count = tester.getTopLeft(find.text('1 entry').first);
+      final latest = tester.getTopLeft(find.text('1:35 pm').first);
+      expect(latest.dy, count.dy);
+      expect(latest.dx, greaterThan(count.dx));
+    });
+
+    appTest('stats stack at large text, keeping each value whole', (
+      tester,
+    ) async {
+      await seedAt(6, 13, 35);
+      await pumpReady(tester, textScale: 1.3);
+      expect(tester.takeException(), isNull);
+      final count = tester.getRect(find.text('1 entry').first);
+      final latest = tester.getRect(find.text('1:35 pm').first);
+      expect(latest.top, greaterThan(count.bottom));
+      expect(latest.left, count.left);
+      // One line each: the value never wraps away from its unit.
+      final style = Theme.of(tester.element(find.text('1 entry').first))
+          .extension<MorrowTextStyles>()!
+          .statValue;
+      final lineHeight = 1.3 * style.fontSize! * style.height!;
+      expect(count.height, lessThan(lineHeight * 1.5));
+      expect(latest.height, lessThan(lineHeight * 1.5));
+    });
+
     appTest('empty journal (1.4)', (tester) async {
       await pumpReady(tester);
       expect(find.text('Your journal'), findsOneWidget);
@@ -240,7 +269,8 @@ void main() {
       expect(saved.localDate.day, 4);
       expect(saved.hasTime, isFalse);
       expect(find.text('Wednesday’s journal'), findsOneWidget);
-      expect(find.text('No time'), findsOneWidget);
+      // The day is the heading, so an untimed card is titled "Entry".
+      expect(find.text('Entry'), findsOneWidget);
     });
 
     appTest('a day with no entries says so', (tester) async {
@@ -264,7 +294,9 @@ void main() {
       expect(find.text('Entry saved'), findsOneWidget);
       expect(find.text('New entry'), findsNothing);
       expect(find.text('Today · 1:41 pm'), findsOneWidget);
-      expect(find.text('No note'), findsOneWidget);
+      // A card without a note is a single line; no "No note".
+      expect(find.text('No note'), findsNothing);
+      expect(find.bySemanticsLabel('Today · 1:41 pm'), findsOneWidget);
       expect(await seed.all(), hasLength(1));
     });
 
@@ -318,7 +350,7 @@ void main() {
       expect(saved.localDate.day, 5);
       expect(saved.hasTime, isFalse);
       // The card shows just the day.
-      expect(find.bySemanticsLabel(RegExp(r'^Yesterday\. ')), findsOneWidget);
+      expect(find.bySemanticsLabel('Yesterday'), findsOneWidget);
     });
 
     appTest('a time can be added back for a past day, and removed for today', (
@@ -343,7 +375,7 @@ void main() {
       expect(saved.hasTime, isFalse);
       expect(saved.localDate.day, 6);
       // Untimed entries show just the day.
-      expect(find.bySemanticsLabel(RegExp(r'^Today\. ')), findsOneWidget);
+      expect(find.bySemanticsLabel('Today'), findsOneWidget);
     });
   });
 
@@ -397,7 +429,7 @@ void main() {
       await pumpReady(tester);
       await tapText(tester, 'Today · 1:35 pm');
       expect(find.text('Entry details'), findsOneWidget);
-      expect(find.text('FRIDAY, 6 NOVEMBER 2026'), findsOneWidget);
+      expect(find.text('Friday, 6 November 2026'), findsOneWidget);
       expect(find.text('1:35 pm'), findsOneWidget);
       expect(find.text('Felt fine after lunch'), findsOneWidget);
       expect(

@@ -280,15 +280,15 @@
     "typographyMeta": {
       "page-title": {
         "displayName": "Page Title",
-        "purpose": "Screen titles: Your journal, Your history, Settings, Entry details."
+        "purpose": "Tab titles: Your journal, Your history, Trends, Settings."
       },
       "detail-time": {
         "displayName": "Detail Time",
-        "purpose": "The large time on entry detail."
+        "purpose": "The time that leads entry detail."
       },
       "stat-value": {
         "displayName": "Stat Value",
-        "purpose": "Figures in the stat card, in Deep Sage."
+        "purpose": "Figures in the stat card, in Deep Sage; one line each."
       },
       "wordmark": {
         "displayName": "Wordmark",
@@ -296,7 +296,7 @@
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Editor and step titles; step questions."
+        "purpose": "Titles of pushed screens (New entry, Edit entry, Entry details), step titles and step questions."
       },
       "title-large": {
         "displayName": "Title Large",
@@ -473,7 +473,7 @@
       },
       {
         "name": "The Sentence Case Rule",
-        "body": "Everything is in sentence case. Upper case is limited to two cases: the \"TYPE n\" tile label and the date line on entry detail.",
+        "body": "Everything is in sentence case. Upper case is limited to one case: the \"TYPE n\" tile label.",
         "section": "typography"
       },
       {
@@ -518,7 +518,7 @@
       "**Don't** set text in Muted Icon, Clay, Sage Tint Line or any colour below 4.5:1 on its surface.",
       "**Don't** use weights other than 400, 500 and 600, italics, or a second typeface.",
       "**Don't** hard-code colours in widgets. Use the theme tokens (`MorrowColors`, `ColorScheme`) so a dark palette can follow after v1.",
-      "**Don't** use upper case beyond the \"TYPE n\" tile and the entry-detail date line."
+      "**Don't** use upper case beyond the \"TYPE n\" tile."
     ]
   }
 }

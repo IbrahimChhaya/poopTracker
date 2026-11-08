@@ -80,9 +80,9 @@ class MorrowTextStyles extends ThemeExtension<MorrowTextStyles> {
       ),
       statValue: TextStyle(
         fontFamily: morrowFontFamily,
-        fontSize: 25,
+        fontSize: 20,
         fontWeight: _semiBold,
-        letterSpacing: -0.7,
+        letterSpacing: -0.4,
         height: 1.2,
         color: c.primary,
       ),

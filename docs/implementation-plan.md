@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is built and awaiting review; M6.2 is proposed.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is built and awaiting review; M6.3 is proposed.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -282,7 +282,17 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - **Device test runs:** run integration tests with `flutter test integration_test/<file> -d <device> --no-uninstall`. Without the flag, flutter_tools uninstalls the app after the run, which deletes the dev journal and its Keystore key. This happened once after the M6.1 runs; the migration was not at fault.
 - **CLAUDE.md updated:** the date is the only required part; the time defaults; no symptoms; skippable steps without "Optional" labels; trends show stool form summaries only.
 
-### M6.2 — "A little context" refinements (proposed, not started)
+### M6.2 — Journal polish from the design critique (built)
+- **Source:** an `/impeccable critique` of `lib/features/journal` on 8 November (27/40), with the fixes mocked in Figma section 10 ("Critique pass") and approved before building.
+- **Stat card:** values at 20 px (was 25), 14 × 18 px padding. At text scales above 1.15 the two figures stack with a horizontal divider, so a value never wraps away from its unit ("2 / entries" at 130% before).
+- **Journal home:** tighter spacing above the list (brand to title 16, date to week 20, week to stats 12, button to list 20), so the first entry shows sooner.
+- **Entry cards:** no "No note" line; a card with neither a note nor shown details is a single line. In day-grouped lists (History, a selected day) an untimed entry is titled "Entry" instead of "No time". The screen-reader label drops the summary too.
+- **Entry detail:** title at the headline size (20 px), the rule for screens you navigate into ("New entry" already used it). The time leads in 27 px, then the date in sentence case in Muted Text; a date-only entry leads with the date and "No time recorded". The Sand date card is gone; Sand now frames only the stool form panel (Warm Edge rule). The "Ease of passage" value wraps instead of overflowing at 200%.
+- **Docs:** DESIGN.md and `.impeccable/design.json` updated (stat value, title rule, sentence case now has one exception, entry card content).
+- **Tests:** 297 pass, including new stat-card layout tests at 100% and 130%. On the S20: journal at 100/130/200%, History, and timed and untimed detail checked. Not checked on the device: the details-on detail screen (stool form panel), covered by the 200% widget test only.
+- **Not changed:** the entry counts beside "This week's journal" and History's day headings (the mocks were cloned from frames without them, but removing them wasn't part of the critique); the step headers in the details flow keep the page-title size from Figma 3.2/3.3.
+
+### M6.3 — "A little context" refinements (proposed, not started)
 Suggestions, each to confirm before building:
 1. **Rename "Anything to note?".** Options: "What was going on?", "Around this time" or "Anything going on?". My pick is "What was going on?": it's plain, describes circumstances rather than a diagnosis, and reads well above chips like "Coffee" or "On my period". The step could also become "Context" in Settings, with "A little context" kept as the screen title.
 2. **"How did it feel?" as a three-way segmented control** instead of chips. It's a single choice, and a segmented control shows that, takes less space and is easier to use with a screen reader ("1 of 3, selected").

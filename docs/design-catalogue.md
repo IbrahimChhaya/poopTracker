@@ -6,6 +6,17 @@ Status shows where each screen is built. **Built** means it's in the app, and th
 
 ## Change log
 
+### 8 November 2026: critique pass (M6.2)
+
+Mocked in a new section, **10 · Critique pass**, after an `/impeccable critique` of the journal screens, approved by the product owner and built in M6.2. The original frames in sections 2 and 4 are unchanged; where they differ, section 10 wins.
+
+| Frame | Change |
+|---|---|
+| 10.1 Journal | Tighter spacing above the list; stat values at 20 px on one line; cards without a note drop the "No note" line. |
+| 10.2 Journal at 130% text | The two stats stack, each value kept on one line with its unit. |
+| 10.3 History | An untimed entry is titled "Entry" (the day is already the group heading); no "No note" line. |
+| 10.4 Entry detail | Title at the 20 px headline size, like "New entry". The time leads, then the date in sentence case; no Sand date card, so the note leads. |
+
 ### 8 November 2026: design pass
 
 These changes were made in Figma by the product owner and catalogued from a full scan of every frame (text and structure) plus screenshots of the changed frames. The direction: less explanatory and reassurance copy, and a shorter add-details flow.
@@ -86,7 +97,11 @@ The following decisions were made with the product owner after the scan:
 ### 9 · Back up and restore (M11)
 - **9.1 Export a backup, 9.2 Creating backup, 9.3 Native save picker** (documentation only), **9.4 Backup saved, 9.5 Restore from a backup, 9.6 Native file picker** (documentation only), **9.7 Enter passphrase, 9.8 Restoring entries, 9.9 Restore complete, 9.10 Couldn't restore.**
 
+### 10 · Critique pass, built (M6.2)
+10.1 Journal, 10.2 Journal at 130% text, 10.3 History, 10.4 Entry detail, and 10.0, a note on what changed.
+
 ## Known gaps between Figma and the app
 
+- Section 10's rules (no "No note" line, "Entry" for untimed entries in day-grouped lists, the 20 px stat values, the plain date and time on entry detail with Sand only around the stool form) aren't yet copied into the other frames that show the same components, for example 1.4, 3.4, 4.1, 4.3, 4.8 and 4.12.
 - The app has screens Figma doesn't draw: the blocked states other than the key problem (storage unavailable, encryption unavailable, setup failed), the locked placeholder, and the debug-only developer tools.
 - Entry detail (4.8) uses a longer type description ("Soft pieces with clear-cut edges") than the stool step (3.2, "Clear-cut edges"). The app uses the step's wording in both places.

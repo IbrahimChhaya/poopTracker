@@ -10,7 +10,8 @@ import 'stool_form_icon.dart';
 
 /// One entry in a list: a title (for example "Today · 1:35 pm") and a
 /// summary: "form · ease" when those details are shown (3.4, 4.3), otherwise
-/// the note, or "No note".
+/// the note. With neither, the card is a single line: a missing note isn't
+/// worth announcing on every card.
 class EntryCard extends ConsumerWidget {
   const EntryCard({
     required this.entry,
@@ -37,13 +38,11 @@ class EntryCard extends ConsumerWidget {
       if (type != null) stoolForms[type]!.name,
       if (ease != null) easePhrase(ease),
     ].join(' · ');
-    final summary = detailLine.isNotEmpty
-        ? detailLine
-        : entry.comment ?? 'No note';
+    final summary = detailLine.isNotEmpty ? detailLine : entry.comment;
 
     return Semantics(
       button: true,
-      label: [title, if (type != null) 'Type $type', summary].join('. '),
+      label: [title, if (type != null) 'Type $type', ?summary].join('. '),
       excludeSemantics: true,
       child: Material(
         color: colors.card,
@@ -67,13 +66,15 @@ class EntryCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title, style: text.titleSmall),
-                      const SizedBox(height: 6),
-                      Text(
-                        summary,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: text.bodySmall,
-                      ),
+                      if (summary != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          summary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: text.bodySmall,
+                        ),
+                      ],
                     ],
                   ),
                 ),

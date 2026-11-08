@@ -189,7 +189,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           for (final e in g.entries) ...[
             EntryCard(
               entry: e,
-              title: formatTimeOrNone(e.localTime),
+              title: formatTimeOrEntry(e.localTime),
               onTap: () => context.go(AppPaths.historyEntry, extra: e.id),
             ),
             const SizedBox(height: 10),

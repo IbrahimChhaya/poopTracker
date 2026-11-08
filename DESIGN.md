@@ -34,10 +34,10 @@ typography:
     letterSpacing: "-0.8px"
   stat-value:
     fontFamily: "Inter"
-    fontSize: "25px"
+    fontSize: "20px"
     fontWeight: 600
     lineHeight: 1.2
-    letterSpacing: "-0.7px"
+    letterSpacing: "-0.4px"
   wordmark:
     fontFamily: "Inter"
     fontSize: "23px"
@@ -165,7 +165,7 @@ components:
     backgroundColor: "{colors.sage-tint}"
     textColor: "{colors.deep-sage}"
     rounded: "{rounded.xxl}"
-    padding: "18px"
+    padding: "14px 18px"
   icon-tile:
     backgroundColor: "{colors.sage-tint}"
     textColor: "{colors.deep-sage}"
@@ -265,9 +265,9 @@ A warm, paper-and-ink palette: cream neutrals, one deep sage accent, and a small
 - **On-Sage Muted** (#dce6dc): secondary text on a Deep Sage surface (the weekday letter on the selected day).
 
 ### Tertiary
-- **Sand** (#f2e6da): the warm surface. Used for error banners, the warm icon tile (Delete all data, the "See your patterns" link), the stool form tile and the entry-detail date card.
+- **Sand** (#f2e6da): the warm surface. Used for error banners, the warm icon tile (Delete all data, the "See your patterns" link), the stool form tile and the entry-detail stool form panel.
 - **Clay** (#ac7157): warm icons and the stool form drawings on Sand. It's 3.3:1, so it's for icons only and never for text.
-- **Clay Text** (#895943): small warm text, such as "TYPE 4" and the uppercase date on entry detail. It's 4.8:1 on Sand.
+- **Clay Text** (#895943): small warm text, such as "TYPE 4". It's 4.8:1 on Sand.
 - **Rust** (#8a4a32): destructive and error. Used for danger buttons, "Delete this entry", error titles and the error icon. It's 5.5:1 on Sand and 6.7:1 on Card Paper.
 
 ### Neutral
@@ -275,7 +275,7 @@ A warm, paper-and-ink palette: cream neutrals, one deep sage accent, and a small
 - **Card Paper** (#fffdf8): cards, sheets, dialogs, inputs and unselected chips. It's also the text colour on Deep Sage and Ink.
 - **Pencil Line** (#dddcd0): the 1 px outline on every card, input and chip, plus dividers and the sheet handle.
 - **Ink** (#293b34): primary text (10.8:1 on Cream Paper). It's also the toast background.
-- **Muted Text** (#666b60): secondary text such as subtitles, dates, "No note", captions and labels. It's darker than the original Figma muted value so it reaches 4.5:1 on every surface.
+- **Muted Text** (#666b60): secondary text such as subtitles, dates, "No time recorded", captions and labels. It's darker than the original Figma muted value so it reaches 4.5:1 on every surface.
 - **Muted Icon** (#74796d): chevrons, inactive navigation icons, the off-switch outline and thumb, and the search icon. It's 3:1 or better, so icons only.
 - **Switch Track Off** (#ece9df): the fill of an off switch, with the contrast carried by its Muted Icon outline.
 - **Disabled Surface** (#dcdcd2) and **Disabled Text** (#595e53): busy or disabled primary buttons, such as "Saving…" (4.8:1).
@@ -296,11 +296,11 @@ A warm, paper-and-ink palette: cream neutrals, one deep sage accent, and a small
 **Character:** One neutral, highly legible sans in three weights. It reads as a plain, competent notebook: confident titles in SemiBold with slightly tightened tracking, and calm Regular body text.
 
 ### Hierarchy
-- **Page title** (600, 30 px, 1.2, −1 px tracking): screen titles such as "Your journal", "Your history", "Settings" and "Entry details".
-- **Detail time** (600, 27 px, 1.2, −0.8 px): the large time on entry detail.
-- **Stat value** (600, 25 px, −0.7 px, Deep Sage): the stat-card figures ("5 entries", "1:35 pm").
+- **Page title** (600, 30 px, 1.2, −1 px tracking): the titles of the four tabs: "Your journal", "Your history", "Trends" and "Settings". Screens you navigate into use the headline size instead.
+- **Detail time** (600, 27 px, 1.2, −0.8 px): the time on entry detail, which leads the page (the date follows in Muted Text body).
+- **Stat value** (600, 20 px, −0.4 px, Deep Sage): the stat-card figures ("5 entries", "1:35 pm"). Each figure stays on one line with its unit.
 - **Wordmark** (600, 23 px, −1 px, Deep Sage): "morrow", always lower case, next to the sprout mark.
-- **Headline** (600, 20 px, 1.25): editor and step titles, and "What was the form?".
+- **Headline** (600, 20 px, 1.25): titles of screens you navigate into ("New entry", "Edit entry", "Entry details"), step titles, and "What was the form?".
 - **Title large** (600, 18 px, 1.33): dialog and sheet titles.
 - **Title** (600, 16 px, 1.2, −0.3 px): section headings ("This week's journal", "How did it feel?") and the week-strip date numbers.
 - **Title small** (600, 15 px, 1.2): entry card titles ("Today · 1:35 pm").
@@ -315,7 +315,7 @@ A warm, paper-and-ink palette: cream neutrals, one deep sage accent, and a small
 ### Named Rules
 **The Three Weights Rule.** Inter at 400, 500 and 600 only. Emphasis is weight or size, never italics, never a second family, never colour alone.
 
-**The Sentence Case Rule.** Everything is in sentence case. Upper case is limited to two cases: the "TYPE n" tile label and the date line on entry detail.
+**The Sentence Case Rule.** Everything is in sentence case. Upper case is limited to one case: the "TYPE n" tile label.
 
 **The Scales With You Rule.** All text follows the system text size up to 200%. Layouts grow, wrap or scroll rather than clip, and a single-line figure may shrink to fit only when there's no room.
 
@@ -344,7 +344,7 @@ The shapes are soft and friendly, with nothing sharp. Corner radii follow the si
 - **Buttons, day cells, banners and the toast:** 14 px.
 - **Grouped cards, inputs and the large "Add an entry" button:** 16 px.
 - **Entry and empty-state cards:** 18 px.
-- **The stat card, dialogs and the entry-detail date card:** 20 px.
+- **The stat card, dialogs and the entry-detail stool form panel:** 20 px.
 - **Sheets:** 28 px on the top corners.
 - **Chips, badges, the navigation indicator and switches:** fully round.
 
@@ -374,10 +374,11 @@ The components should feel tidy and tactile, like well-made stationery: plain sh
 
 ### Cards / Containers
 - **Corner style:** 16 px for grouped cards, 18 px for entry cards and 20 px for the stat card.
-- **Background:** Card Paper. The stat card uses Sage Tint; the entry-detail date card and error banner use Sand.
+- **Background:** Card Paper. The stat card uses Sage Tint; the entry-detail stool form panel and error banner use Sand. The entry-detail date and time sit on the page with no card.
 - **Shadow strategy:** none (see Elevation & Depth).
 - **Border:** 1 px Pencil Line on Card Paper surfaces. None on tinted surfaces.
-- **Internal padding:** 16 px for entry cards; 14 × 16 px for setting rows (icon tile, then a 12 px gap, then text, then a trailing chevron or switch); 18 px for the stat card.
+- **Internal padding:** 16 px for entry cards; 14 × 16 px for setting rows (icon tile, then a 12 px gap, then text, then a trailing chevron or switch); 14 × 18 px for the stat card.
+- **Entry card content:** a title, then the note (or "form · ease" when those details are on) in body-small. With neither, the card is a single line; it never says "No note". In lists grouped by day, the title is the time, or "Entry" when no time was recorded.
 
 ### Inputs / Fields
 - **Style:** Card Paper fill, 1 px Pencil Line, 16 px corners, 16 px padding, and body-large Ink text with a Muted Text hint.
@@ -399,7 +400,7 @@ The components should feel tidy and tactile, like well-made stationery: plain sh
 - **Earlier weeks:** the strip swipes horizontally. Above it, a "‹ This week ›" header does the same thing for people who can't swipe. The tappable area of each day is a full seventh of the row, even though the visible cell keeps a 5 px gap.
 
 ### Stat Card (signature)
-A Sage Tint panel (20 px corners, 18 px padding) holding two figures: the entry count for the week on screen, and the most recent entry. Each figure is in stat-value Deep Sage over a label-small caption, separated by a 1 px Sage Tint Line.
+A Sage Tint panel (20 px corners, 14 × 18 px padding) holding two figures: the entry count for the week on screen, and the most recent entry. Each figure is in stat-value Deep Sage over a label-small caption, separated by a 1 px Sage Tint Line. They sit side by side at normal text sizes and stack (with a horizontal line between) once text is enlarged past about 115%, so a figure never wraps away from its unit.
 
 ### Sheets, Dialogs and Toasts
 - **Sheet:** Card Paper with 28 px top corners, a 40 × 4 px Pencil Line handle and a title-large heading. Content sits 24 px in from the sides and 36 px above the bottom.
@@ -429,4 +430,4 @@ A Sage Tint panel (20 px corners, 18 px padding) holding two figures: the entry 
 - **Don't** set text in Muted Icon, Clay, Sage Tint Line or any colour below 4.5:1 on its surface.
 - **Don't** use weights other than 400, 500 and 600, italics, or a second typeface.
 - **Don't** hard-code colours in widgets. Use the theme tokens (`MorrowColors`, `ColorScheme`) so a dark palette can follow after v1.
-- **Don't** use upper case beyond the "TYPE n" tile and the entry-detail date line.
+- **Don't** use upper case beyond the "TYPE n" tile.
