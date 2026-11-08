@@ -255,7 +255,9 @@ void main() {
             child: const MorrowApp(),
           ),
         );
-        await tester.pumpAndSettle();
+        // The locked screen may show a busy spinner, which never settles.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(bootstrap.starts, 0);
         expect(find.byType(MorrowNavigationBar), findsNothing);
       });

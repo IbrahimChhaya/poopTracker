@@ -120,8 +120,8 @@ The following decisions were made with the product owner after the scan:
 ### 6 · Weekly reminder (M9)
 - **6.1 Off, 6.2 Allow notifications?, 6.3 On** (day and time, preview, status), **6.4 Notifications off, 6.5 Reminder notification.**
 
-### 7 · App lock (M8)
-- **7.1 Off, 7.2 Confirm to turn on, 7.3 On, 7.4 Locked, 7.5 Couldn't unlock, 7.6 Confirm to turn off.**
+### 7 · App lock, built (M8)
+- **7.1 Off, 7.2 Confirm to turn on, 7.3 On, 7.4 Locked, 7.5 Couldn't unlock, 7.6 Confirm to turn off.** 7.2 and 7.6 are the phone's own prompt. The app adds messages for lockout ("Too many tries"), no screen lock ("Set up a screen lock"), a prompt failure and an unreadable setting. Settings 8.1 gains Privacy > App lock.
 
 ### 8 · Settings, privacy and deleting data
 - **8.1 Settings, 8.2 Settings · Details on:** the Journal switches are *built (M6)*. Figma now says "Context" (was "A little context") with new descriptions; built in M6.3. The Reminders, Privacy and Data rows come in M8–M10.

@@ -8,7 +8,10 @@ import '../core/database/database_location.dart';
 import '../core/database/journal_reset.dart';
 import '../core/diagnostics/diagnostic_log.dart';
 import '../core/platform/file_export.dart';
+import '../core/platform/privacy_shield.dart';
+import '../core/security/device_auth.dart';
 import '../core/security/key_store.dart';
+import '../core/security/lock_settings.dart';
 
 // Root (always available) providers. None of these hold journal data; the
 // database and everything that reads it live in the unlocked scope (see
@@ -25,6 +28,21 @@ final diagnosticLogProvider = Provider<DiagnosticLog>(
 /// The phone's save and share sheets.
 final fileExportProvider = Provider<FileExport>(
   (ref) => const PlatformFileExport(),
+);
+
+/// The phone's biometric / passcode prompt (app lock).
+final deviceAuthenticatorProvider = Provider<DeviceAuthenticator>(
+  (ref) => LocalDeviceAuthenticator(),
+);
+
+/// Whether app lock is on, in secure storage.
+final lockSettingsProvider = Provider<LockSettingsStore>(
+  (ref) => SecureLockSettings(),
+);
+
+/// Hides the recent-apps thumbnail while app lock is on (Android 13+).
+final privacyShieldProvider = Provider<PrivacyShield>(
+  (ref) => const PlatformPrivacyShield(),
 );
 
 final keyStoreProvider = Provider<KeyStore>((ref) => SecureStorageKeyStore());

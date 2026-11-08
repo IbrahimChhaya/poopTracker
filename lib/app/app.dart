@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/database/bootstrap.dart';
+import '../ui/theme/morrow_colors.dart';
 import '../ui/theme/morrow_theme.dart';
 import 'gate/gate_screens.dart';
 import 'lock/lock_controller.dart';
@@ -18,16 +19,76 @@ import 'session/journal_session.dart';
 ///    shown and nothing is created or replaced.
 /// 3. Unlocked scope: the database, data providers and router exist only
 ///    here, and are disposed together when the session ends.
-class MorrowApp extends ConsumerWidget {
+class MorrowApp extends ConsumerStatefulWidget {
   const MorrowApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MorrowApp> createState() => _MorrowAppState();
+}
+
+class _MorrowAppState extends ConsumerState<MorrowApp> {
+  late final AppLifecycleListener _lifecycle;
+
+  /// True while app lock is on and the app is not in the foreground: a
+  /// plain cover hides the screen before the phone takes its app-switcher
+  /// snapshot.
+  bool _covered = false;
+
+  LockController get _lock => ref.read(lockControllerProvider.notifier);
+
+  void _onLifecycle(AppLifecycleState s) {
+    _lock.onLifecycle(s);
+    final cover = _lock.enabled && s != AppLifecycleState.resumed;
+    if (cover != _covered) setState(() => _covered = cover);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final lock = ref.watch(lockControllerProvider);
-    if (lock != AppLockState.unlocked) {
-      return const _GateApp(home: LockedScreen());
-    }
-    return const _JournalGate();
+    final Widget app = lock == AppLockState.unlocked
+        ? const _JournalGate()
+        : _GateApp(
+            home: LockedScreen(
+              state: lock,
+              problem: _lock.problem,
+              onUnlock: _lock.unlock,
+            ),
+          );
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [app, if (_covered) const _PrivacyCover()],
+      ),
+    );
+  }
+}
+
+/// A plain cover with the morrow mark and nothing else.
+class _PrivacyCover extends StatelessWidget {
+  const _PrivacyCover() : super(key: const ValueKey('privacy-cover'));
+
+  @override
+  Widget build(BuildContext context) {
+    const colors = MorrowColors.light;
+    return ColoredBox(
+      color: colors.background,
+      child: Center(
+        child: Icon(Icons.spa_outlined, color: colors.primary, size: 40),
+      ),
+    );
   }
 }
 

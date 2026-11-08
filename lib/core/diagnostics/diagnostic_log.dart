@@ -57,6 +57,15 @@ enum DiagnosticEvent {
   entryDetailFailed('entry.detail_failed', 'Couldn’t save a detail'),
   entryDeleteFailed('entry.delete_failed', 'Couldn’t delete an entry'),
   entryUndoFailed('entry.undo_failed', 'Couldn’t undo an entry'),
+  lockTurnedOn('lock.on', 'App lock turned on'),
+  lockTurnedOff('lock.off', 'App lock turned off'),
+  unlockFailed('lock.unlock_failed', 'Couldn’t unlock'),
+  unlockLockedOut('lock.locked_out', 'Unlock paused after too many tries'),
+  unlockUnavailable('lock.unavailable', 'Unlock not available on this phone'),
+  lockSettingFailed(
+    'lock.setting_failed',
+    'Couldn’t read the app lock setting',
+  ),
   logTurnedOn('log.on', 'Log turned on'),
   logSaved('log.saved', 'Log saved'),
   logShared('log.shared', 'Log shared');

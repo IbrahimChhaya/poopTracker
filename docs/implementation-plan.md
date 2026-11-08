@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20. M8 (app lock) is built and checked on the S20; iOS and lockout checks remain.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -434,7 +434,7 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
     - **M10:** add `diagnostics/` to the backup exclusions and clear it in "Delete all data".
     - **M11:** clear share_plus's cache copy.
 
-### M8 — App lock
+### M8 — App lock (built)
 - **Scope (1.2, 1.3, 7.1–7.6):**
   - local_auth adapter, biometrics with device-credential fallback.
   - Lock states: uninitialised, locked, authenticating, unlocked, error.
@@ -446,6 +446,49 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Cancellation or lockout never turns the lock off.
 - **Native:** `FlutterFragmentActivity`, `USE_BIOMETRIC`, `NSFaceIDUsageDescription`, and app-switcher protection (Android recents screenshot setting, iOS cover view). These need approval.
 - **Accept when:** unit tests cover every state transition and a stale-callback test passes with a fake authenticator and fake clock. Manual checks on physical devices: Face ID or fingerprint, passcode fallback, lockout, app-switcher preview.
+- **Decided on 8 November:**
+  - The native changes as proposed.
+  - A blank recent-apps preview with screenshots still allowed (no FLAG_SECURE).
+  - Relock immediately on going to the background.
+- **Built (8 November):**
+  - **Code:**
+    - `core/security/device_auth.dart`: local_auth 3.0.2 with device-credential fallback and `persistAcrossBackgrounding`. Errors map to cancelled, failed, lockedOut, notAvailable or error.
+    - `core/security/lock_settings.dart`: the setting in secure storage, outside the journal database, with the same platform options as the key.
+    - `core/platform/privacy_shield.dart` and `MainActivity`: the `morrow/privacy` channel calls `setRecentsScreenshotEnabled(false)` on Android 13+ while app lock is on.
+    - `app/lock/lock_controller.dart`: starting up, locked, unlocking, unlocked and error states, and a session token that discards stale results.
+      - It fails closed when the setting can't be read.
+      - It relocks on `hidden` or `paused`, never on `inactive`, and asks again on return. The prompt's own lifecycle changes are ignored, and a cancelled prompt is never reopened by itself.
+      - Turning the lock on or off needs authentication first. A cancelled or failed confirmation changes nothing.
+    - `app/app.dart`: an `AppLifecycleListener` drives the controller. While the lock is on, a plain privacy cover is shown whenever the app isn't resumed.
+    - The locked screen (7.4, 7.5), with messages for lockout, no screen lock, a prompt failure and an unreadable setting.
+    - Settings > Privacy > App lock, and the App lock screen (7.1, 7.3). The system prompt serves as 7.2 and 7.6.
+    - Diagnostics events for turning the lock on and off, failed unlocks, lockout, unavailable unlock and an unreadable setting.
+  - **Native:**
+    - `FlutterFragmentActivity`.
+    - `USE_BIOMETRIC`, declared explicitly. The merged manifest also gains `USE_FINGERPRINT` from androidx.biometric, for Android 9 and older.
+    - An AppCompat `LaunchTheme`, which local_auth needs on Android 8 and older.
+    - `minSdk = 24`, pinned.
+    - iOS `NSFaceIDUsageDescription`: "morrow uses Face ID to unlock the app."
+    - INTERNET is in the debug and profile manifests only (Flutter tooling).
+  - **Draft policy:** locking removes the unlocked scope, so the database closes and unsaved date, time or note changes on the entry page are discarded. The entry itself is already saved. The app reopens on the journal home.
+  - **Tests:** 356 pass.
+    - Controller: every transition, every failure outcome keeping the lock on, backgrounding versus inactive, the prompt's own pauses, the stale result, and turning the lock on and off (cancelled, failed save, its own prompt).
+    - App: nothing sensitive while locked, Couldn't unlock with Try again, lockout and no screen lock, the cover on inactive, relocking on hidden and paused with the database closed, no cover with the lock off, Settings > App lock, and 100% and 200% text.
+    - The integration tests now use a fake lock setting, so they never read or change the phone's real one.
+  - **Device check (S20, 8 November):**
+    - Turning the lock on with the fingerprint or PIN prompt works.
+    - The recent-apps card is blank.
+    - Returning asks again.
+    - Cancelling shows Couldn't unlock without reopening the prompt, and Try again then unlock works.
+    - The journal, trends, startup and encryption device tests pass.
+  - **Not checked:**
+    - Lockout after repeated failures.
+    - PIN fallback, as distinct from the fingerprint.
+    - A cold start with the lock on.
+    - TalkBack.
+    - iOS: Face ID, and the app-switcher cover, which isn't guaranteed.
+    - The first-launch screens (1.1–1.3), which wait for the welcome flow.
+  - **Security note:** the lock is an app gate. A successful local_auth result does not unlock the database key cryptographically; binding the key to authentication remains a separate enhancement.
 
 ### M9 — Weekly reminder
 - **Scope (6.1–6.5):**

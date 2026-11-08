@@ -14,10 +14,13 @@ import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/core/database/journal_reset.dart';
 import 'package:poop_tracker/core/diagnostics/diagnostic_log.dart';
 import 'package:poop_tracker/core/platform/file_export.dart';
+import 'package:poop_tracker/core/security/device_auth.dart';
+import 'package:poop_tracker/core/security/lock_settings.dart';
 
 import 'fake_clock.dart';
 import 'fake_diagnostics.dart';
 import 'fake_key_store.dart';
+import 'fake_lock.dart';
 import 'harness.dart';
 
 /// A real (in-memory, unencrypted) database that records when it is closed.
@@ -106,6 +109,8 @@ Future<AppUnderTest> pumpMorrowApp(
   Size size = figmaPhone,
   DiagnosticLog? log,
   FileExport? fileExport,
+  DeviceAuthenticator? authenticator,
+  LockSettingsStore? lockSettings,
 }) async {
   final bootstrap = ScriptedBootstrap(results);
   final diagnostics = log ?? MemoryDiagnosticLog();
@@ -115,7 +120,16 @@ Future<AppUnderTest> pumpMorrowApp(
     overrides: [
       databaseBootstrapProvider.overrideWithValue(bootstrap),
       journalResetProvider.overrideWithValue(reset),
-      lockControllerProvider.overrideWith(TestLock.new),
+      // With a lock setting, the real lock controller runs (M8 tests);
+      // otherwise the session is simply unlocked.
+      if (lockSettings == null)
+        lockControllerProvider.overrideWith(TestLock.new)
+      else
+        lockSettingsProvider.overrideWithValue(lockSettings),
+      deviceAuthenticatorProvider.overrideWithValue(
+        authenticator ?? FakeAuthenticator(),
+      ),
+      privacyShieldProvider.overrideWithValue(FakePrivacyShield()),
       clockProvider.overrideWithValue(clock ?? figmaNow),
       diagnosticLogProvider.overrideWithValue(diagnostics),
       fileExportProvider.overrideWithValue(fileExport ?? FakeFileExport()),
@@ -134,6 +148,12 @@ Future<AppUnderTest> pumpMorrowApp(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (lockSettings == null) {
+    await tester.pumpAndSettle();
+  } else {
+    // A prompt may be showing, with a busy spinner that never settles.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+  }
   return AppUnderTest(container, bootstrap, reset, diagnostics);
 }

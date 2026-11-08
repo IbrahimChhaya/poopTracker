@@ -6,6 +6,7 @@ import '../../ui/theme/morrow_tokens.dart';
 import '../../ui/theme/morrow_typography.dart';
 import '../../ui/widgets/morrow_button.dart';
 import '../../ui/widgets/states.dart';
+import '../lock/lock_controller.dart';
 
 /// The wordmark and a full-screen layout shared by the gate screens. These
 /// screens never show journal content.
@@ -86,21 +87,98 @@ class StartupLoadingScreen extends StatelessWidget {
   }
 }
 
-/// Shown while the app is locked. Contains no journal content.
+/// "morrow is locked" (7.4) and "Couldn’t unlock" (7.5). Contains no
+/// journal content.
 class LockedScreen extends StatelessWidget {
-  const LockedScreen({super.key});
+  const LockedScreen({
+    required this.state,
+    required this.problem,
+    required this.onUnlock,
+    super.key,
+  });
+
+  final AppLockState state;
+  final LockProblem? problem;
+  final VoidCallback onUnlock;
 
   @override
   Widget build(BuildContext context) {
+    final colors = MorrowColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final busy =
+        state == AppLockState.authenticating ||
+        state == AppLockState.uninitialised;
+    final (String title, String message)? banner = switch (problem) {
+      null => null,
+      LockProblem.didNotUnlock => (
+        'Couldn’t unlock',
+        'Authentication was cancelled or didn’t match. Try again, or wait '
+            'a moment if you’ve tried several times.',
+      ),
+      LockProblem.lockedOut => (
+        'Too many tries',
+        'Unlocking is paused for a while. Wait a moment, then try again.',
+      ),
+      LockProblem.notAvailable => (
+        'Set up a screen lock',
+        'morrow unlocks with your phone’s fingerprint, face or passcode. '
+            'Set a screen lock in your phone’s settings, then try again.',
+      ),
+      LockProblem.promptFailed => (
+        'Couldn’t show the unlock prompt',
+        'Nothing has changed. Try again.',
+      ),
+      LockProblem.settingUnreadable => (
+        'Couldn’t check app lock',
+        'This phone’s secure storage didn’t respond. Nothing has '
+            'changed. Try again in a moment.',
+      ),
+    };
     return _GateLayout(
+      actions: [
+        MorrowButton(
+          label: banner == null ? 'Unlock' : 'Try again',
+          busy: busy,
+          busyLabel: 'Unlocking…',
+          onPressed: onUnlock,
+        ),
+      ],
       children: [
+        const SizedBox(height: 80),
+        Center(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: colors.tint,
+              shape: BoxShape.circle,
+            ),
+            child: ExcludeSemantics(
+              child: Icon(Icons.lock_outline, color: colors.primary),
+            ),
+          ),
+        ),
+        const SizedBox(height: MorrowSpacing.lg),
         Semantics(
           header: true,
           child: Text(
             'morrow is locked',
-            style: Theme.of(context).textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+            style: text.headlineSmall,
           ),
         ),
+        const SizedBox(height: MorrowSpacing.sm),
+        Text(
+          banner == null
+              ? 'Unlock with your fingerprint, face or phone passcode.'
+              : 'Your journal stays locked until you unlock it.',
+          textAlign: TextAlign.center,
+          style: text.bodyMedium!.copyWith(color: colors.mutedText),
+        ),
+        if (banner != null) ...[
+          const SizedBox(height: MorrowSpacing.xl),
+          ErrorBanner(title: banner.$1, message: banner.$2),
+        ],
       ],
     );
   }

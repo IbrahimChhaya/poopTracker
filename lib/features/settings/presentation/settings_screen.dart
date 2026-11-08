@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/lock/lock_controller.dart';
 import '../../../app/scope.dart';
 import '../../../core/diagnostics/encryption_self_check.dart';
 import '../../../ui/theme/morrow_tokens.dart';
@@ -17,14 +18,28 @@ class SettingsScreen extends ConsumerWidget {
   static const String uiKitPath = '/settings/ui-kit';
   static const String selfCheckPath = '/settings/self-check';
   static const String diagnosticsPath = '/settings/diagnostics';
+  static const String appLockPath = '/settings/app-lock';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final display = ref.watch(displayProvider);
     final repo = ref.read(settingsRepositoryProvider);
+    final lockOn = ref.watch(appLockEnabledProvider);
     return PageBody(
       title: 'Settings',
       children: [
+        CardGroup(
+          label: 'Privacy',
+          children: [
+            SettingRow.navigation(
+              icon: Icons.lock_outline,
+              title: 'App lock',
+              subtitle: lockOn ? 'On' : 'Off',
+              onTap: () => context.go(appLockPath),
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
         // Turning a setting off hides its details everywhere but keeps any
         // values already saved.
         CardGroup(

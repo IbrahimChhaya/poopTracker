@@ -6,6 +6,8 @@ import 'package:poop_tracker/app/providers.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/ui/widgets/morrow_navigation_bar.dart';
 
+import '../test/support/fake_lock.dart';
+
 /// Real startup on a device: platform secure storage, the encrypted journal
 /// in app-private storage, the gate and the shell. On a device that already
 /// has a journal from an older build, this also runs its schema migration.
@@ -33,8 +35,15 @@ void main() {
     await second.database.close();
     container.dispose();
 
-    // And the real app reaches the shell through the gate.
-    await tester.pumpWidget(const ProviderScope(child: MorrowApp()));
+    // And the real app reaches the shell through the gate. App lock is
+    // checked by hand on the device (it needs a real fingerprint or PIN), so
+    // the phone's own lock setting is neither read nor changed here.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [lockSettingsProvider.overrideWithValue(FakeLockSettings())],
+        child: const MorrowApp(),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(MorrowNavigationBar), findsOneWidget);
     expect(find.text('Your journal'), findsOneWidget);

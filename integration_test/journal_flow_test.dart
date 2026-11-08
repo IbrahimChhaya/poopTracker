@@ -8,6 +8,7 @@ import 'package:poop_tracker/app/app.dart';
 import 'package:poop_tracker/app/providers.dart';
 
 import '../test/support/fake_key_store.dart';
+import '../test/support/fake_lock.dart';
 
 /// Add (one tap), change, undo and delete entries on a real device, through the real app and
 /// the real encrypted database.
@@ -35,6 +36,8 @@ void main() {
       ProviderScope(
         overrides: [
           keyStoreProvider.overrideWithValue(FakeKeyStore()),
+          // Never read or change the phone's real app-lock setting.
+          lockSettingsProvider.overrideWithValue(FakeLockSettings()),
           databaseFileProvider.overrideWithValue(
             () async => File('${dir.path}/journal.db'),
           ),

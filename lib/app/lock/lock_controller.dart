@@ -1,28 +1,207 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/diagnostics/diagnostic_log.dart';
+import '../../core/security/device_auth.dart';
+import '../providers.dart';
 
 /// The application lock. Every sensitive screen and data provider exists
 /// only while this is [unlocked].
 enum AppLockState {
-  /// Startup has not decided yet. Nothing sensitive is shown.
+  /// Startup has not read the lock setting yet. Nothing sensitive is shown.
   uninitialised,
   locked,
   authenticating,
   unlocked,
 
-  /// Authentication could not run (for example, no credentials enrolled).
-  /// The app stays locked.
+  /// Unlocking cannot work right now (too many tries, no screen lock set
+  /// up, the prompt failed, or the setting could not be read). The app
+  /// stays locked; "Try again" is offered.
   error,
 }
 
-/// Decides whether the session is unlocked.
-///
-/// M4: app lock is not available yet, so the session is unlocked as soon as
-/// the app starts. M8 adds the optional device-authentication lock here.
-/// The unlocked state is never persisted.
-class LockController extends Notifier<AppLockState> {
-  @override
-  AppLockState build() => AppLockState.unlocked;
+/// Why the last attempt did not unlock, for the locked screen (7.5).
+enum LockProblem {
+  didNotUnlock,
+  lockedOut,
+  notAvailable,
+  promptFailed,
+  settingUnreadable,
 }
+
+/// Decides whether the session is unlocked (M8).
+///
+/// - App lock is off by default. When it is on, the app is locked on cold
+///   start and whenever it really goes to the background, and asks again
+///   when it comes back.
+/// - The unlock prompt's own pauses are ignored, so it never loops.
+/// - Every attempt carries a session token: a result that arrives after
+///   the app was locked again (or a newer attempt started) is discarded.
+/// - Cancelling, failing or being locked out never turns app lock off.
+/// - The unlocked state is never persisted.
+class LockController extends Notifier<AppLockState> {
+  int _session = 0;
+  bool _promptShowing = false;
+
+  /// Set when the app locked itself on going to the background, so it asks
+  /// again once it is back. A cancelled prompt does not set it, so
+  /// cancelling never re-opens the prompt by itself.
+  bool _askOnResume = false;
+
+  /// Why the last attempt did not unlock, or null.
+  LockProblem? problem;
+
+  /// Whether app lock is on (as last read or written).
+  bool get enabled => ref.read(appLockEnabledProvider);
+
+  set _enabled(bool on) => ref.read(appLockEnabledProvider.notifier).set(on);
+  bool get _enabled => enabled;
+
+  DeviceAuthenticator get _auth => ref.read(deviceAuthenticatorProvider);
+  DiagnosticLog get _log => ref.read(diagnosticLogProvider);
+
+  @override
+  AppLockState build() {
+    unawaited(Future.microtask(_start));
+    return AppLockState.uninitialised;
+  }
+
+  Future<void> _start() async {
+    final bool on;
+    try {
+      on = await ref.read(lockSettingsProvider).readEnabled();
+    } on Object {
+      // Fail closed: if the setting can't be read, don't assume it's off.
+      _log.record(DiagnosticEvent.lockSettingFailed);
+      problem = LockProblem.settingUnreadable;
+      state = AppLockState.error;
+      return;
+    }
+    _enabled = on;
+    unawaited(ref.read(privacyShieldProvider).setRecentsPreviewHidden(on));
+    if (!on) {
+      state = AppLockState.unlocked;
+      return;
+    }
+    state = AppLockState.locked;
+    await unlock();
+  }
+
+  /// Shows the system prompt and unlocks on success. From the "setting
+  /// unreadable" error, reads the setting again instead.
+  Future<void> unlock() async {
+    if (problem == LockProblem.settingUnreadable) {
+      problem = null;
+      state = AppLockState.uninitialised;
+      await _start();
+      return;
+    }
+    if (state == AppLockState.unlocked ||
+        state == AppLockState.authenticating ||
+        state == AppLockState.uninitialised) {
+      return;
+    }
+    final token = ++_session;
+    _askOnResume = false;
+    state = AppLockState.authenticating;
+    final outcome = await _prompt('Unlock morrow');
+    // A newer lock or attempt has happened since: ignore this result.
+    if (token != _session || state != AppLockState.authenticating) return;
+    switch (outcome) {
+      case AuthOutcome.success:
+        problem = null;
+        state = AppLockState.unlocked;
+      case AuthOutcome.cancelled || AuthOutcome.failed:
+        _log.record(DiagnosticEvent.unlockFailed);
+        problem = LockProblem.didNotUnlock;
+        state = AppLockState.locked;
+      case AuthOutcome.lockedOut:
+        _log.record(DiagnosticEvent.unlockLockedOut);
+        problem = LockProblem.lockedOut;
+        state = AppLockState.error;
+      case AuthOutcome.notAvailable:
+        _log.record(DiagnosticEvent.unlockUnavailable);
+        problem = LockProblem.notAvailable;
+        state = AppLockState.error;
+      case AuthOutcome.error:
+        _log.record(DiagnosticEvent.unlockFailed);
+        problem = LockProblem.promptFailed;
+        state = AppLockState.error;
+    }
+  }
+
+  Future<AuthOutcome> _prompt(String reason) async {
+    _promptShowing = true;
+    try {
+      return await _auth.authenticate(reason);
+    } on Object {
+      return AuthOutcome.error;
+    } finally {
+      _promptShowing = false;
+    }
+  }
+
+  /// Locks now: disposes the unlocked scope (the router, the database and
+  /// any unsaved changes) and invalidates any prompt still running.
+  void lock() {
+    _session++;
+    problem = null;
+    state = AppLockState.locked;
+  }
+
+  /// Called for every app lifecycle change.
+  void onLifecycle(AppLifecycleState s) {
+    if (!_enabled || _promptShowing) return;
+    switch (s) {
+      case AppLifecycleState.hidden || AppLifecycleState.paused:
+        if (state == AppLockState.unlocked) {
+          lock();
+          _askOnResume = true;
+        }
+      case AppLifecycleState.resumed:
+        if (_askOnResume && state == AppLockState.locked) unawaited(unlock());
+      case AppLifecycleState.inactive || AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  /// Turns app lock on or off after the user confirms with the system
+  /// prompt (7.2, 7.6). The setting changes only on success and only once
+  /// it is stored.
+  Future<AuthOutcome> setEnabled(bool on) async {
+    if (on == _enabled) return AuthOutcome.success;
+    final outcome = await _prompt(
+      on ? 'Confirm to turn on app lock' : 'Confirm to turn off app lock',
+    );
+    if (outcome != AuthOutcome.success) return outcome;
+    try {
+      await ref.read(lockSettingsProvider).writeEnabled(on);
+    } on Object {
+      return AuthOutcome.error;
+    }
+    _enabled = on;
+    _log.record(
+      on ? DiagnosticEvent.lockTurnedOn : DiagnosticEvent.lockTurnedOff,
+    );
+    unawaited(ref.read(privacyShieldProvider).setRecentsPreviewHidden(on));
+    return AuthOutcome.success;
+  }
+}
+
+/// Whether app lock is on, for screens to watch. Written only by
+/// [LockController].
+class AppLockEnabled extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool on) => state = on;
+}
+
+final appLockEnabledProvider = NotifierProvider<AppLockEnabled, bool>(
+  AppLockEnabled.new,
+);
 
 final lockControllerProvider = NotifierProvider<LockController, AppLockState>(
   LockController.new,
