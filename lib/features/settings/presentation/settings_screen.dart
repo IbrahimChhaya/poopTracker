@@ -13,7 +13,7 @@ import '../../../ui/widgets/setting_row.dart';
 import '../../reminders/presentation/reminder_controller.dart';
 import '../../reminders/presentation/reminder_screen.dart';
 
-/// Settings (8.1, 8.2). Reminders, app lock and data rows arrive in M8–M10.
+/// Settings (8.1, 8.2).
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -22,6 +22,8 @@ class SettingsScreen extends ConsumerWidget {
   static const String diagnosticsPath = '/settings/diagnostics';
   static const String appLockPath = '/settings/app-lock';
   static const String reminderPath = '/settings/reminder';
+  static const String dataPath = '/settings/data';
+  static const String deletePath = '/settings/delete';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,6 +56,12 @@ class SettingsScreen extends ConsumerWidget {
               title: 'App lock',
               subtitle: lockOn ? 'On' : 'Off',
               onTap: () => context.go(appLockPath),
+            ),
+            SettingRow.navigation(
+              icon: Icons.phone_android_outlined,
+              title: 'Local data and privacy',
+              subtitle: 'Everything stays on this phone',
+              onTap: () => context.go(dataPath),
             ),
           ],
         ),
@@ -92,6 +100,19 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Diagnostics',
               subtitle: 'App events only, never your entries',
               onTap: () => context.go(diagnosticsPath),
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
+        CardGroup(
+          label: 'Data',
+          children: [
+            SettingRow.navigation(
+              icon: Icons.delete_outline,
+              title: 'Delete all data',
+              subtitle: 'Removes every entry from this phone',
+              destructive: true,
+              onTap: () => context.go(deletePath),
             ),
           ],
         ),

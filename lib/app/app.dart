@@ -10,6 +10,7 @@ import 'gate/gate_screens.dart';
 import 'lock/lock_controller.dart';
 import 'router.dart';
 import 'scope.dart';
+import 'session/data_reset.dart';
 import 'session/journal_session.dart';
 
 /// Root widget: the central gate.
@@ -58,7 +59,18 @@ class _MorrowAppState extends ConsumerState<MorrowApp> {
   @override
   Widget build(BuildContext context) {
     final lock = ref.watch(lockControllerProvider);
-    final Widget app = lock == AppLockState.unlocked
+    final reset = ref.watch(dataResetProvider);
+    final resetter = ref.read(dataResetProvider.notifier);
+    final Widget app = reset != ResetPhase.idle
+        // "Delete all data" in progress or done: nothing else exists.
+        ? _GateApp(
+            home: DataResetScreen(
+              phase: reset,
+              onStartAgain: resetter.startAgain,
+              onRetry: resetter.retry,
+            ),
+          )
+        : lock == AppLockState.unlocked
         ? const _JournalGate()
         : _GateApp(
             home: LockedScreen(

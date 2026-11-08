@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../core/clock.dart';
+import '../core/data/data_eraser.dart';
 import '../core/database/bootstrap.dart';
 import '../core/database/database_location.dart';
 import '../core/database/journal_reset.dart';
@@ -75,3 +77,22 @@ final journalResetProvider = Provider<JournalReset>(
     databaseFile: ref.watch(databaseFileProvider),
   ),
 );
+
+/// The app's temporary folder (share-sheet copies), emptied by "Delete all
+/// data".
+final cacheDirectoryProvider = Provider<Future<Directory> Function()>(
+  (ref) => getTemporaryDirectory,
+);
+
+/// "Delete all data", including resuming an interrupted deletion.
+final dataEraserProvider = Provider<DataEraser>((ref) {
+  final databaseFile = ref.watch(databaseFileProvider);
+  return DataEraser(
+    journalReset: ref.watch(journalResetProvider),
+    lockSettings: ref.watch(lockSettingsProvider),
+    diagnostics: ref.watch(diagnosticLogProvider),
+    reminders: ref.watch(reminderSchedulerProvider),
+    markerFile: () => erasingMarkerFor(databaseFile),
+    cacheDirectory: ref.watch(cacheDirectoryProvider),
+  );
+});

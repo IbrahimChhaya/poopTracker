@@ -9,9 +9,11 @@ import 'package:poop_tracker/app/app.dart';
 import 'package:poop_tracker/app/lock/lock_controller.dart';
 import 'package:poop_tracker/app/providers.dart';
 import 'package:poop_tracker/core/clock.dart';
+import 'package:poop_tracker/core/data/data_eraser.dart';
 import 'package:poop_tracker/core/database/app_database.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/core/database/journal_reset.dart';
+import 'package:poop_tracker/core/database/tables.dart';
 import 'package:poop_tracker/core/diagnostics/diagnostic_log.dart';
 import 'package:poop_tracker/core/notifications/reminder_scheduler.dart';
 import 'package:poop_tracker/core/platform/file_export.dart';
@@ -72,6 +74,40 @@ class FakeReset extends JournalReset {
   }
 }
 
+/// "Delete all data" without touching files (file behaviour is covered by
+/// test/core/data_eraser_test.dart): it runs the same non-file steps on the
+/// harness fakes.
+class FakeEraser extends DataEraser {
+  FakeEraser({
+    required super.journalReset,
+    required super.lockSettings,
+    required super.diagnostics,
+    required super.reminders,
+  }) : super(markerFile: () async => File('unused'), cacheDirectory: _noDir);
+
+  static Future<Directory> _noDir() async => Directory('unused');
+
+  /// A deletion that did not finish last time.
+  bool pendingFromLastTime = false;
+  bool fail = false;
+  int erases = 0;
+
+  @override
+  Future<bool> interrupted() async => pendingFromLastTime;
+
+  @override
+  Future<void> eraseEverything() async {
+    erases++;
+    pendingFromLastTime = true;
+    if (fail) throw const FileSystemException('simulated');
+    await reminders.cancel(reminderNotificationId);
+    await journalReset.eraseAll();
+    await lockSettings.writeEnabled(false);
+    await diagnostics.eraseAll();
+    pendingFromLastTime = false;
+  }
+}
+
 class TestLock extends LockController {
   @override
   AppLockState build() => AppLockState.unlocked;
@@ -91,12 +127,21 @@ void appTest(String description, WidgetTesterCallback body) {
 
 /// The pumped app and its fakes.
 class AppUnderTest {
-  AppUnderTest(this.container, this.bootstrap, this.reset, this.log);
+  AppUnderTest(
+    this.container,
+    this.bootstrap,
+    this.reset,
+    this.log,
+    this.eraser,
+    this.reminders,
+  );
 
   final ProviderContainer container;
   final ScriptedBootstrap bootstrap;
   final FakeReset reset;
   final DiagnosticLog log;
+  final FakeEraser eraser;
+  final ReminderScheduler reminders;
 
   TestLock get lock =>
       container.read(lockControllerProvider.notifier) as TestLock;
@@ -114,10 +159,19 @@ Future<AppUnderTest> pumpMorrowApp(
   DeviceAuthenticator? authenticator,
   LockSettingsStore? lockSettings,
   ReminderScheduler? reminders,
+  void Function(FakeEraser eraser)? configureEraser,
 }) async {
   final bootstrap = ScriptedBootstrap(results);
   final diagnostics = log ?? MemoryDiagnosticLog();
   final reset = FakeReset();
+  final scheduler = reminders ?? FakeReminderScheduler();
+  final eraser = FakeEraser(
+    journalReset: reset,
+    lockSettings: lockSettings ?? FakeLockSettings(),
+    diagnostics: diagnostics,
+    reminders: scheduler,
+  );
+  configureEraser?.call(eraser);
   useScreenSize(tester, size);
   final container = ProviderContainer(
     overrides: [
@@ -133,8 +187,10 @@ Future<AppUnderTest> pumpMorrowApp(
         authenticator ?? FakeAuthenticator(),
       ),
       privacyShieldProvider.overrideWithValue(FakePrivacyShield()),
-      reminderSchedulerProvider.overrideWithValue(
-        reminders ?? FakeReminderScheduler(),
+      reminderSchedulerProvider.overrideWithValue(scheduler),
+      dataEraserProvider.overrideWithValue(eraser),
+      databaseFileProvider.overrideWithValue(
+        () async => File('/test-support/journal/morrow.db'),
       ),
       clockProvider.overrideWithValue(clock ?? figmaNow),
       diagnosticLogProvider.overrideWithValue(diagnostics),
@@ -161,5 +217,12 @@ Future<AppUnderTest> pumpMorrowApp(
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
   }
-  return AppUnderTest(container, bootstrap, reset, diagnostics);
+  return AppUnderTest(
+    container,
+    bootstrap,
+    reset,
+    diagnostics,
+    eraser,
+    scheduler,
+  );
 }

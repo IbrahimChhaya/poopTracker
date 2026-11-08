@@ -9,6 +9,8 @@ import '../features/journal/presentation/history_screen.dart';
 import '../features/journal/presentation/journal_screen.dart';
 import '../features/reminders/presentation/reminder_screen.dart';
 import '../features/settings/presentation/app_lock_screen.dart';
+import '../features/settings/presentation/data_privacy_screen.dart';
+import '../features/settings/presentation/delete_all_data_screen.dart';
 import '../features/settings/presentation/diagnostics_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/trends/presentation/trends_screen.dart';
@@ -73,6 +75,14 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
                   GoRoute(
                     path: 'app-lock',
                     builder: (_, _) => const AppLockScreen(),
+                  ),
+                  GoRoute(
+                    path: 'data',
+                    builder: (_, _) => const DataPrivacyScreen(),
+                  ),
+                  GoRoute(
+                    path: 'delete',
+                    builder: (_, _) => const DeleteAllDataScreen(),
                   ),
                   GoRoute(
                     path: 'diagnostics',

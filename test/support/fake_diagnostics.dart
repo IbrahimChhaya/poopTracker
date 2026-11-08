@@ -37,6 +37,12 @@ class MemoryDiagnosticLog implements DiagnosticLog {
       enabled ? _events.reversed.toList() : const [];
 
   @override
+  Future<void> eraseAll() async {
+    enabled = true;
+    _events.clear();
+  }
+
+  @override
   Future<String> exportText() async =>
       formatDiagnosticExport(await recent(), exportedAt: clock.nowLocalWall());
 }

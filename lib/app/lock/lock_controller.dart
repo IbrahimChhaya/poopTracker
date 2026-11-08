@@ -167,6 +167,21 @@ class LockController extends Notifier<AppLockState> {
     }
   }
 
+  /// Before "Delete all data" (8.5): when app lock is on, the person must
+  /// confirm it's them. With app lock off there is nothing to confirm.
+  Future<AuthOutcome> confirmDeletion() async {
+    if (!_enabled) return AuthOutcome.success;
+    return _prompt('Confirm to delete all data');
+  }
+
+  /// After "Delete all data": app lock is off again (its setting was
+  /// erased with everything else). Not a way to switch the lock off.
+  void forgetAfterErase() {
+    _enabled = false;
+    problem = null;
+    unawaited(ref.read(privacyShieldProvider).setRecentsPreviewHidden(false));
+  }
+
   /// Turns app lock on or off after the user confirms with the system
   /// prompt (7.2, 7.6). The setting changes only on success and only once
   /// it is stored.

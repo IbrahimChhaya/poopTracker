@@ -76,6 +76,10 @@ enum DiagnosticEvent {
     'reminder.permission_denied',
     'Notifications not allowed',
   ),
+  dataDeletionResumed(
+    'data.deletion_resumed',
+    'Finished deleting data from last time',
+  ),
   logTurnedOn('log.on', 'Log turned on'),
   logSaved('log.saved', 'Log saved'),
   logShared('log.shared', 'Log shared');
@@ -127,6 +131,10 @@ abstract interface class DiagnosticLog {
 
   /// The whole log as a plain-text file for saving or sharing.
   Future<String> exportText();
+
+  /// "Delete all data": removes the log and the off marker, so the log is
+  /// back to its default (on, empty).
+  Future<void> eraseAll();
 }
 
 /// [DiagnosticLog] in app-private storage: `diagnostics/events.log` under
@@ -234,6 +242,13 @@ class FileDiagnosticLog implements DiagnosticLog {
   @override
   Future<String> exportText() async =>
       formatDiagnosticExport(await recent(), exportedAt: _now());
+
+  @override
+  Future<void> eraseAll() => _serial(() async {
+    for (final f in [await _file(), await _offMarker()]) {
+      if (await f.exists()) await f.delete();
+    }
+  });
 }
 
 /// "2026-11-06T13:41:05".

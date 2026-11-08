@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Hides morrow's thumbnail in the phone's recent-apps view while app lock
@@ -6,6 +7,10 @@ import 'package:flutter/services.dart';
 /// allowed.
 abstract interface class PrivacyShield {
   Future<void> setRecentsPreviewHidden(bool hidden);
+
+  /// iOS: marks [directoryPath] as excluded from iCloud and device backups.
+  /// Android needs nothing here: its backup rules exclude every domain.
+  Future<void> excludeFromBackup(String directoryPath);
 }
 
 class PlatformPrivacyShield implements PrivacyShield {
@@ -21,6 +26,18 @@ class PlatformPrivacyShield implements PrivacyShield {
       // Not on Android (for example iOS or tests).
     } on PlatformException {
       // Best effort; the in-app cover still applies.
+    }
+  }
+
+  @override
+  Future<void> excludeFromBackup(String directoryPath) async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    try {
+      await _channel.invokeMethod<void>('excludeFromBackup', directoryPath);
+    } on MissingPluginException {
+      // Older build without the channel.
+    } on PlatformException {
+      // Best effort; documented as not an absolute guarantee.
     }
   }
 }

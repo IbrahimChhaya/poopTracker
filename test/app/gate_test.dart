@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderException;
@@ -10,6 +12,9 @@ import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/ui/widgets/morrow_navigation_bar.dart';
 
 import '../support/app_harness.dart';
+import '../support/fake_diagnostics.dart';
+import '../support/fake_lock.dart';
+import '../support/fake_reminders.dart';
 import '../support/harness.dart';
 
 const _erase = 'Erase and start fresh…';
@@ -34,6 +39,18 @@ void main() {
         databaseBootstrapProvider.overrideWithValue(bootstrap),
         journalResetProvider.overrideWithValue(reset),
         lockControllerProvider.overrideWith(TestLock.new),
+        dataEraserProvider.overrideWithValue(
+          FakeEraser(
+            journalReset: reset,
+            lockSettings: FakeLockSettings(),
+            diagnostics: MemoryDiagnosticLog(),
+            reminders: FakeReminderScheduler(),
+          ),
+        ),
+        databaseFileProvider.overrideWithValue(
+          () async => File('/test-support/journal/morrow.db'),
+        ),
+        privacyShieldProvider.overrideWithValue(FakePrivacyShield()),
       ],
     );
     addTearDown(container.dispose);
@@ -75,7 +92,7 @@ void main() {
       expect(find.text('Your weeks'), findsOneWidget);
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
-      expect(find.text('Encryption self-check'), findsOneWidget);
+      expect(find.text('Weekly reminder'), findsOneWidget);
       await tester.tap(find.text('Journal').last);
       await tester.pumpAndSettle();
       expect(find.text('Nothing here yet'), findsOneWidget);

@@ -125,7 +125,7 @@ The following decisions were made with the product owner after the scan:
 
 ### 8 · Settings, privacy and deleting data
 - **8.1 Settings, 8.2 Settings · Details on:** the Journal switches are *built (M6)*. Figma now says "Context" (was "A little context") with new descriptions; built in M6.3. The Reminders, Privacy and Data rows come in M8–M10.
-- **8.3 Data & privacy, 8.4 Delete all data, 8.5 Confirm to delete, 8.6 Deleting data, 8.7 All data deleted:** *M10.*
+- **8.3 Data & privacy, 8.4 Delete all data, 8.5 Confirm to delete, 8.6 Deleting data, 8.7 All data deleted:** built (M10). 8.3 has no Export or Restore rows, no backup wording and no version footer until M11, and App lock is a navigation row rather than a toggle.
 - **8.8 Journal unavailable, 8.9 Erase and start fresh?:** *Built (M4).*
 
 ### 9 · Back up and restore (M11)

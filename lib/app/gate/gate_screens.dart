@@ -7,6 +7,7 @@ import '../../ui/theme/morrow_typography.dart';
 import '../../ui/widgets/morrow_button.dart';
 import '../../ui/widgets/states.dart';
 import '../lock/lock_controller.dart';
+import '../session/data_reset.dart';
 
 /// The wordmark and a full-screen layout shared by the gate screens. These
 /// screens never show journal content.
@@ -181,6 +182,95 @@ class LockedScreen extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+/// "Deleting your data…" (8.6), "All data deleted" (8.7) and the
+/// failure screen. No journal exists at this point.
+class DataResetScreen extends StatelessWidget {
+  const DataResetScreen({
+    required this.phase,
+    required this.onStartAgain,
+    required this.onRetry,
+    super.key,
+  });
+
+  final ResetPhase phase;
+  final VoidCallback onStartAgain;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = MorrowColors.of(context);
+    final text = Theme.of(context).textTheme;
+
+    Widget centred(Widget icon, String title, String message) => Column(
+      children: [
+        const SizedBox(height: 80),
+        Center(child: icon),
+        const SizedBox(height: MorrowSpacing.lg),
+        Semantics(
+          header: true,
+          liveRegion: true,
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: text.headlineSmall,
+          ),
+        ),
+        const SizedBox(height: MorrowSpacing.sm),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: text.bodyMedium!.copyWith(color: colors.mutedText),
+        ),
+      ],
+    );
+
+    Widget badge(IconData icon, Color background, Color foreground) =>
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+          child: ExcludeSemantics(child: Icon(icon, color: foreground)),
+        );
+
+    return switch (phase) {
+      ResetPhase.deleted => _GateLayout(
+        actions: [MorrowButton(label: 'Start again', onPressed: onStartAgain)],
+        children: [
+          centred(
+            badge(Icons.check, colors.tint, colors.primary),
+            'All data deleted',
+            'Your entries, settings and reminder have been removed from this '
+                'phone.',
+          ),
+        ],
+      ),
+      ResetPhase.failed => _GateLayout(
+        actions: [MorrowButton(label: 'Try again', onPressed: onRetry)],
+        children: [
+          centred(
+            badge(Icons.error_outline, colors.sand, colors.danger),
+            'Couldn’t finish deleting',
+            'Some data may still be on this phone. Nothing will be opened '
+                'until deleting finishes. Try again.',
+          ),
+        ],
+      ),
+      _ => _GateLayout(
+        children: [
+          centred(
+            const SizedBox.square(
+              dimension: 40,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            'Deleting your data…',
+            'Please keep morrow open until this finishes.',
+          ),
+        ],
+      ),
+    };
   }
 }
 

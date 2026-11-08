@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20. M8 (app lock) is built and checked on the S20; iOS and lockout checks remain. M9 (weekly reminder) is built and checked on the S20; delivery and reboot checks remain.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20. M8 (app lock) is built and checked on the S20; iOS and lockout checks remain. M9 (weekly reminder) is built and checked on the S20; delivery and reboot checks remain. M10 (data & privacy, delete all data, OS backup exclusion) is built and checked on the S20; iOS and device-transfer checks remain.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -554,13 +554,49 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
     - TalkBack.
   - **Behaviour while closed:** the OS keeps the reminder at the wall-clock time in the zone it was scheduled in. After travelling, it moves to the new zone the next time morrow is opened.
 
-### M10 — Data & privacy and Delete all data
+### M10 — Data & privacy and Delete all data (built)
 - **Scope (8.1, 8.3–8.9):**
   - Settings and Data & privacy screens.
   - Delete all data with an acknowledgement checkbox and re-authentication when the lock is on. It closes the database, cancels the reminder and removes delivered notifications, deletes the database, companion and cache files, then keys and settings, with markers so an interrupted delete can resume.
   - Android backup and data-extraction exclusions, including secure-storage files.
   - iOS backup exclusion on the database directory.
 - **Accept when:** tests cover an interrupted deletion resuming and nothing remaining afterwards (file listing in tests). Manual device checks: Android backup/transfer and iOS backup and restore show the blocked state, not silent data replacement.
+- **Decided on 8 November:**
+  - Everything is excluded from OS backups: on Android, `allowBackup="false"` plus full-backup and data-extraction rules; on iOS, a native exclusion.
+  - The Export and Restore rows stay hidden until M11, and no screen mentions a backup until then.
+- **Built (8 November):**
+  - **Android:** `res/xml/backup_rules.xml` and `data_extraction_rules.xml` exclude the root, file, database, sharedpref and external domains, for both cloud backup and device transfer.
+  - **iOS:** the `excludeFromBackup` method on the `morrow/privacy` channel sets `isExcludedFromBackup` on the app-support folder (journal and diagnostics) each time the journal opens. It is not compiled or checked yet (no Mac).
+  - **`core/data/data_eraser.dart`:** writes an `erasing` marker next to the journal folder, then:
+    1. cancels the reminder (a failure is ignored),
+    2. erases the journal files, key and setup marker,
+    3. erases the app-lock setting and the diagnostics log,
+    4. empties the cache folder,
+    5. removes the marker.
+    Every step can run again.
+  - **Startup:** an interrupted deletion is finished before the bootstrap runs (logged as "Finished deleting data from last time"). If it still fails, startup is blocked and nothing opens.
+  - **`app/session/data_reset.dart`:** `DataResetController` goes idle → deleting → deleted or failed. While not idle, the app shows only 8.6, 8.7 or "Couldn't finish deleting" (Try again). The unlocked scope, router and database are gone, and "Start again" opens a fresh journal.
+  - **Screens:**
+    - Settings: Privacy gains "Local data and privacy", and a new Data group holds "Delete all data".
+    - 8.3 Data & privacy: App lock is a row that opens the App lock screen, so turning it on or off has one code path. Without M11 it has no version footer and no backup wording.
+    - 8.4 has the "I understand" checkbox. 8.5 uses the system prompt "Confirm to delete all data" when app lock is on; a cancel or lockout deletes nothing.
+  - **Tests:** 393 pass.
+    - Eraser tests run on real temporary folders: everything is removed (file listing), the marker sits outside the journal folder, a failure part way leaves the marker and resume finishes, running twice is safe, and a reminder that can't be cancelled doesn't stop deletion.
+    - Flow tests: 8.3 content, checkbox gating and Cancel, delete, then Start again; re-authentication (cancel, lockout, success); a failure then Try again; resuming at startup; a resume that still fails blocks startup; 100% and 200% text.
+  - **Device check (S20, Android 13, 8 November):**
+    - The merged debug manifest has `allowBackup="false"` and both rule files.
+    - The installed package has no `ALLOW_BACKUP` flag, and `bmgr backupnow` reports "Backup is not allowed".
+    - The four device tests pass.
+    - **Mistake:** the device tests were run without `--no-uninstall`, so flutter_tools uninstalled the app and the phone's synthetic dev journal, reminder and notification permission were lost. Always pass `--no-uninstall`.
+    - **Delete all data on the phone** (with one synthetic entry):
+      - 8.3 showed "1 entry" and "Journal started 8 November 2026".
+      - Tapping the button before ticking did nothing, and Cancel returned to Data & privacy. Cancel first went back to Settings; fixed by pushing the route, with a test.
+      - After deleting, 8.7 showed. `run-as` file listing: `files/journal/journal.db` and `files/diagnostics/events.log` were gone. Secure storage kept only the plugin's own wrapping-key entry, with no morrow key, marker or lock setting. The plugin's schedule cache was `[]`, and no morrow alarm was pending.
+      - Start again opened an empty journal with a new encrypted database.
+  - **Not checked:**
+    - Android device-to-device transfer.
+    - iOS (build, backup exclusion, restore).
+    - TalkBack.
 
 ### M11 — Backup and restore (needs decision 1 and dependency approval)
 - **Scope (9.1–9.10, Welcome "Restore from a backup"):**

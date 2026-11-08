@@ -61,6 +61,12 @@ class FakeLockSettings implements LockSettingsStore {
 class FakePrivacyShield implements PrivacyShield {
   final List<bool> calls = [];
 
+  final List<String> excluded = [];
+
   @override
   Future<void> setRecentsPreviewHidden(bool hidden) async => calls.add(hidden);
+
+  @override
+  Future<void> excludeFromBackup(String directoryPath) async =>
+      excluded.add(directoryPath);
 }

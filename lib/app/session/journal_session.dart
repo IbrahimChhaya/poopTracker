@@ -16,6 +16,16 @@ class JournalSessionController extends AsyncNotifier<StartupResult> {
   @override
   Future<StartupResult> build() async {
     final log = ref.read(diagnosticLogProvider);
+    // An interrupted "Delete all data" is finished before anything opens,
+    // so a half-deleted journal is never shown or reused.
+    try {
+      if (await ref.read(dataEraserProvider).resumeIfInterrupted()) {
+        log.record(DiagnosticEvent.dataDeletionResumed);
+      }
+    } on Object {
+      log.record(DiagnosticEvent.journalBlockedErase);
+      return const StartupBlocked(StartupBlockReason.eraseFailed);
+    }
     final StartupResult result;
     try {
       result = await ref.read(databaseBootstrapProvider).start();
@@ -29,7 +39,15 @@ class JournalSessionController extends AsyncNotifier<StartupResult> {
       StartupBlocked(:final reason) => _blockedEvent(reason),
     });
     if (result case StartupReady(:final database)) {
-      ref.onDispose(() => unawaited(database.close()));
+      ref.onDispose(
+        () => unawaited(database.close().catchError((Object _) {})),
+      );
+      // iOS: keep the app's private folder (journal, diagnostics) out of
+      // iCloud and device backups. Android excludes it in its backup rules.
+      final support = (await ref.read(databaseFileProvider)()).parent.parent;
+      unawaited(
+        ref.read(privacyShieldProvider).excludeFromBackup(support.path),
+      );
     }
     return result;
   }
