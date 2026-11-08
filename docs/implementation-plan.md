@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is proposed, with designs in Figma.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -358,9 +358,53 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
     - The disabled "Saved" button uses the theme's Disabled Surface rather than Sage Tint, like every other disabled button.
     - Both detail cards say "Not added" (Figma updated to match).
 
-### M7 — Weekly trends
+### M7 — Weekly trends (built)
 - **Scope (5.1–5.7):** 4/12/26-week ranges with previous/next navigation, summary tiles, weekly bar chart (Flutter widgets or CustomPaint), stool form and symptom sections behind their settings, not-enough-data state, and no health advice.
 - **Accept when:** golden-free widget tests check the figures against M2 fixtures, and the bars have semantic labels such as "Week of 2 Nov, 5 entries".
+- **Built (8 November):**
+  - **Code:**
+    - `trends/presentation/trends_controller.dart`: the range and how many ranges back, and a view computed from the stored entries with `summariseWeeks`.
+    - `trends_screen.dart`: range tabs, pager, three figure tiles, the weekly bar chart and the stool form card, all plain Flutter widgets with no charting package.
+    - New colour token `chartBar` (#83917a) so bars meet 3:1.
+  - **Tests:** 315 pass. The new widget tests check:
+    - the Figma figures for 4, 12 and 26 weeks
+    - bar labels ("Week of 2 Nov, 5 entries, in progress")
+    - the pager (earlier, later, never the future, not before the first entry)
+    - the stool card only with its setting on
+    - no advice wording
+    - 100% and 200% text
+  - **Device:** `integration_test/trends_test.dart` passes on the S20 with the synthetic Figma journal in a temporary database. `--dart-define=MORROW_HOLD=true` holds each screen for a look. 4 and 26 weeks and the stool form card were checked visually.
+  - **Differences from Figma:**
+    - The bars for completed weeks are a darker sage, for contrast.
+    - With 26 weeks the middle axis label is the 14th week (10 Aug), not 3 Aug.
+    - "Optional · Bristol scale" is kept on the stool card (decision 8).
+  - **Still to check:** TalkBack reading the bars and tabs; 200% on the device (covered by widget tests only).
+
+### M7.5 — On-device diagnostics log (proposed, designs in Figma 10.1–10.6)
+- **Why:** app lock, reminders, key storage and saves fail in ways that are hard to see on a phone. A local log of what the app did lets the user send evidence without the app ever collecting anything itself.
+- **What is logged:**
+  - Fixed event codes from an allowlist (for example `app.open`, `journal.unlocked`, `entry.saved`, `entry.save_failed.storage`, `reminder.scheduled`, `key.read_failed`), each with the local time.
+  - Never: entries, notes, details, entry dates or times, ids, keys, SQL, file paths, or raw exception text. A log line can only be built from a code, so free text can't get in.
+- **Storage:**
+  - A rotating file in app-private storage: the last 30 days, up to 500 events.
+  - Excluded from OS backup, like the journal.
+  - Not in the user's own backups.
+  - Erased by "Delete all data" and by turning the log off.
+  - Logging must never block or fail a user action.
+- **Screens (Figma 10):**
+  - **10.1:** Settings > Support > Diagnostics.
+  - **10.2:** what is and isn't recorded, the "Keep a diagnostic log" switch (on by default) and recent events.
+  - **10.3 to 10.5:** "Save a copy" opens the phone's save sheet and leads to "Log saved" (10.5). "Share by email" asks first ("Share the log?", 10.3), then opens the phone's share sheet (10.4), and the email app sends it. morrow has no network access and never sends email itself.
+  - **10.6:** the log off, with buttons disabled.
+- **To confirm before building:**
+  - The share and save package (an OS share sheet plugin such as `share_plus`, also needed by M11 backups), checked for advisories, licence and native permissions.
+  - The on-by-default choice.
+  - The 30-day and 500-event limits.
+  - Whether the plain-text file is acceptable, given that it holds no personal content.
+- **Accept when:**
+  - Unit tests prove only allowlisted codes can be written, rotation works, and turning the log off or deleting all data erases it.
+  - A test scans log output from failure paths for entry content (none).
+  - On the S20: saving through the save sheet, and sharing to an email app with the file attached.
 
 ### M8 — App lock
 - **Scope (1.2, 1.3, 7.1–7.6):**

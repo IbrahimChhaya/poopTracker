@@ -7,9 +7,10 @@ import '../theme/morrow_tokens.dart';
 ///
 /// Tapping the chosen segment again clears the choice. The chosen segment
 /// shows a check mark and bolder text as well as colour, and screen readers
-/// hear it as a selected item in a group ("1 of 3"). When a label would not
-/// fit its segment on one line (large text), the segments stack as full-width
-/// rows instead, so no word is ever broken.
+/// hear it as a selected item in a group ("1 of 3"). The segments always sit
+/// in one row: labels wrap between words, and a word too wide for its
+/// segment at very large text shrinks just enough to fit, so no word is ever
+/// broken.
 class MorrowSegmented<T> extends StatelessWidget {
   const MorrowSegmented({
     required this.values,
@@ -35,7 +36,26 @@ class MorrowSegmented<T> extends StatelessWidget {
         ? base.copyWith(color: colors.primary, fontWeight: FontWeight.w600)
         : base.copyWith(color: colors.ink);
 
-    Widget segment(int i) {
+    /// The text scaler for [label] in a segment [width] wide: the system
+    /// size, or smaller if the label's longest word would not fit.
+    TextScaler fitted(String label, TextStyle style, double width) {
+      final scaler = MediaQuery.textScalerOf(context);
+      var widest = 0.0;
+      for (final word in label.split(' ')) {
+        final painter = TextPainter(
+          text: TextSpan(text: word, style: style),
+          textDirection: Directionality.of(context),
+          textScaler: scaler,
+          maxLines: 1,
+        )..layout();
+        if (painter.width > widest) widest = painter.width;
+        painter.dispose();
+      }
+      if (widest == 0 || widest <= width) return scaler;
+      return TextScaler.linear(scaler.scale(1) * width / widest);
+    }
+
+    Widget segment(int i, double segmentWidth) {
       final v = values[i];
       final on = v == selected;
       final label = labelOf(v);
@@ -70,6 +90,13 @@ class MorrowSegmented<T> extends StatelessWidget {
                         label,
                         textAlign: TextAlign.center,
                         style: styleFor(on),
+                        textScaler: fitted(
+                          label,
+                          styleFor(on),
+                          segmentWidth -
+                              2 * MorrowSpacing.sm -
+                              (on ? 16 + MorrowSpacing.xs : 0),
+                        ),
                       ),
                     ),
                   ],
@@ -81,26 +108,6 @@ class MorrowSegmented<T> extends StatelessWidget {
       );
     }
 
-    /// True when every label fits its segment on one line, with the check
-    /// mark and padding.
-    bool fitsInRow(double width) {
-      final scaler = MediaQuery.textScalerOf(context);
-      final segment = (width - (values.length - 1)) / values.length;
-      const chrome = 2 * MorrowSpacing.sm + 16 + MorrowSpacing.xs;
-      for (final v in values) {
-        final painter = TextPainter(
-          text: TextSpan(text: labelOf(v), style: styleFor(true)),
-          textDirection: Directionality.of(context),
-          textScaler: scaler,
-          maxLines: 1,
-        )..layout();
-        final w = painter.width;
-        painter.dispose();
-        if (w + chrome > segment) return false;
-      }
-      return true;
-    }
-
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.card,
@@ -110,28 +117,21 @@ class MorrowSegmented<T> extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(MorrowRadii.md - 1),
         child: LayoutBuilder(
-          builder: (context, constraints) => fitsInRow(constraints.maxWidth)
-              ? IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < values.length; i++) ...[
-                        if (i > 0)
-                          VerticalDivider(width: 1, color: colors.line),
-                        Expanded(child: segment(i)),
-                      ],
-                    ],
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var i = 0; i < values.length; i++) ...[
-                      if (i > 0) Divider(height: 1, color: colors.line),
-                      segment(i),
-                    ],
+          builder: (context, constraints) {
+            final segmentWidth =
+                (constraints.maxWidth - (values.length - 1)) / values.length;
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < values.length; i++) ...[
+                    if (i > 0) VerticalDivider(width: 1, color: colors.line),
+                    Expanded(child: segment(i, segmentWidth)),
                   ],
-                ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

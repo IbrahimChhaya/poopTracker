@@ -266,9 +266,11 @@ class _ContextPage extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: MorrowSpacing.md),
-        ChipWrap(children: chips(_foodAndDrink)),
-        const SizedBox(height: MorrowSpacing.sm),
-        ChipWrap(children: chips(_bodyAndMind)),
+        // Two short groups, close together: food and drink, then body and
+        // mind. The chips' own tap areas keep a visible gap between rows.
+        ChipWrap(runSpacing: 0, children: chips(_foodAndDrink)),
+        const SizedBox(height: MorrowSpacing.xs),
+        ChipWrap(runSpacing: 0, children: chips(_bodyAndMind)),
         const SizedBox(height: MorrowSpacing.lg),
       ],
     );

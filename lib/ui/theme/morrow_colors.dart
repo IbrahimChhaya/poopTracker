@@ -24,6 +24,10 @@ abstract final class MorrowPalette {
 
   /// Divider used on tint surfaces (for example the stat card).
   static const tintLine = Color(0xFFCCD5C7);
+
+  /// Bars for completed weeks on Trends (the current week uses [primary]).
+  /// Darker than the Figma sage (#a0ab92) so a bar meets 3:1 on card.
+  static const chartBar = Color(0xFF83917A);
   static const sand = Color(0xFFF2E6DA);
 
   /// Warm icon colour used on sand tiles and in the stool form
@@ -61,6 +65,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
     required this.onPrimaryMuted,
     required this.tint,
     required this.tintLine,
+    required this.chartBar,
     required this.sand,
     required this.warmIcon,
     required this.warmText,
@@ -82,6 +87,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
     onPrimaryMuted: MorrowPalette.onPrimaryMuted,
     tint: MorrowPalette.tint,
     tintLine: MorrowPalette.tintLine,
+    chartBar: MorrowPalette.chartBar,
     sand: MorrowPalette.sand,
     warmIcon: MorrowPalette.warmIcon,
     warmText: MorrowPalette.warmText,
@@ -102,6 +108,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
   final Color onPrimaryMuted;
   final Color tint;
   final Color tintLine;
+  final Color chartBar;
   final Color sand;
   final Color warmIcon;
   final Color warmText;
@@ -127,6 +134,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
     Color? onPrimaryMuted,
     Color? tint,
     Color? tintLine,
+    Color? chartBar,
     Color? sand,
     Color? warmIcon,
     Color? warmText,
@@ -147,6 +155,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
       onPrimaryMuted: onPrimaryMuted ?? this.onPrimaryMuted,
       tint: tint ?? this.tint,
       tintLine: tintLine ?? this.tintLine,
+      chartBar: chartBar ?? this.chartBar,
       sand: sand ?? this.sand,
       warmIcon: warmIcon ?? this.warmIcon,
       warmText: warmText ?? this.warmText,
@@ -173,6 +182,7 @@ class MorrowColors extends ThemeExtension<MorrowColors> {
       onPrimaryMuted: l(onPrimaryMuted, other.onPrimaryMuted),
       tint: l(tint, other.tint),
       tintLine: l(tintLine, other.tintLine),
+      chartBar: l(chartBar, other.chartBar),
       sand: l(sand, other.sand),
       warmIcon: l(warmIcon, other.warmIcon),
       warmText: l(warmText, other.warmText),

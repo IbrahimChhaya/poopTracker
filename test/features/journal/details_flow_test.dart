@@ -405,11 +405,13 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'entry page');
       await tapText(tester, 'Easy · After a meal, Coffee');
       expect(tester.takeException(), isNull, reason: 'context page');
-      // Labels that would break mid-word stack as rows instead.
-      expect(
-        tester.getTopLeft(find.text('Some straining')).dy,
-        greaterThan(tester.getTopLeft(find.text('Easy')).dy),
+      // The three choices stay in one row, even at 200%.
+      final easy = tester.getRect(find.bySemanticsLabel('Easy, 1 of 3'));
+      final some = tester.getRect(
+        find.bySemanticsLabel('Some straining, 2 of 3'),
       );
+      expect(some.top, easy.top);
+      expect(some.left, greaterThan(easy.left));
       await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: 'stool form page');

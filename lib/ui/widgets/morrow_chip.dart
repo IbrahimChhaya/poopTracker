@@ -36,15 +36,23 @@ class MorrowChip extends StatelessWidget {
 
 /// Lays chips out in wrapping rows with the Figma spacing.
 class ChipWrap extends StatelessWidget {
-  const ChipWrap({required this.children, super.key});
+  const ChipWrap({
+    required this.children,
+    this.runSpacing = MorrowSpacing.sm,
+    super.key,
+  });
 
   final List<Widget> children;
+
+  /// Space between wrapped rows. Chips already carry a 48 px tap area, so
+  /// dense groups can use 0 and still keep a visible gap.
+  final double runSpacing;
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
       spacing: MorrowSpacing.sm,
-      runSpacing: MorrowSpacing.sm,
+      runSpacing: runSpacing,
       children: children,
     );
   }

@@ -262,6 +262,7 @@ A warm, paper-and-ink palette: cream neutrals, one deep sage accent, and a small
 - **Deep Sage** (#3d6552): the only accent. Used for primary and secondary buttons, the selected day in the week strip, the today outline, selected chips and their check marks, the navigation indicator's icon and label, links ("Change", "Undo", "Clear", "Show earlier entries"), stat values and the morrow wordmark. It's 6.0:1 on Cream Paper and 6.5:1 behind Card Paper text.
 - **Sage Tint** (#e7ede2): the quiet green surface. Used for the stat card, icon tiles, the selected chip fill, the navigation indicator pill, the date-range chip and the picker highlight. Deep Sage text on it is 5.5:1.
 - **Sage Tint Line** (#ccd5c7): the divider inside Sage Tint surfaces, such as between the two stat-card figures.
+- **Chart Sage** (#83917a): bars for completed weeks on Trends; the week in progress is Deep Sage. Darker than the Figma sage (#a0ab92) so every bar meets 3:1 on Card Paper. The two bar colours are close (2:1), so the footnote and each bar's screen-reader label ("in progress") say which week is current.
 - **On-Sage Muted** (#dce6dc): secondary text on a Deep Sage surface (the weekday letter on the selected day).
 
 ### Tertiary
@@ -370,12 +371,12 @@ The components should feel tidy and tactile, like well-made stationery: plain sh
 ### Chips
 - **Style:** fully round. Unselected chips are Card Paper with a 1 px Pencil Line and an Ink label in body-small.
 - **Selected:** Sage Tint fill, a 1 px Deep Sage outline, a Deep Sage check mark, and a Deep Sage label in SemiBold. Selection shows in three ways: fill, check mark and weight.
-- **Behaviour:** tapping a chosen chip again clears it. Chips are for multi-choice groups (the Context tags, in two rows: food and drink, then body and mind).
+- **Behaviour:** tapping a chosen chip again clears it. Chips are for multi-choice groups (the Context tags, in two groups: food and drink, then body and mind). Wrapped rows have no extra run spacing and the groups sit 4 px apart; the 48 px tap area of each chip provides the visible gap.
 
 ### Segmented Control
 - **Style:** one Card Paper bar with a 1 px Pencil Line and 14 px corners, split into equal segments by 1 px lines. At least 48 px tall.
 - **Selected:** a Sage Tint segment with a Deep Sage check mark and a Deep Sage SemiBold label (fill, check and weight, never colour alone).
-- **Behaviour:** single choice ("How did it feel?"). Tapping the chosen segment again clears it. When a label would not fit its segment on one line (large text), the segments stack as full-width rows, so no word is broken. Screen readers hear "Easy, 1 of 3, selected".
+- **Behaviour:** single choice ("How did it feel?"). Tapping the chosen segment again clears it. The segments always sit in one row: labels wrap between words, and at very large text a word too wide for its segment shrinks just enough to fit, so no word is broken. Screen readers hear "Easy, 1 of 3, selected".
 
 ### Cards / Containers
 - **Corner style:** 16 px for grouped cards, 18 px for entry cards and 20 px for the stat card.
@@ -403,6 +404,13 @@ The components should feel tidy and tactile, like well-made stationery: plain sh
 - **Selected day:** a Deep Sage fill with a Card Paper number, an On-Sage Muted initial and a Card Paper dot.
 - **Future days:** Muted Text with no dot, and not selectable.
 - **Earlier weeks:** the strip swipes horizontally. Above it, a "‹ This week ›" header does the same thing for people who can't swipe. The tappable area of each day is a full seventh of the row, even though the visible cell keeps a 5 px gap.
+
+### Trends (5.1–5.7)
+- **Range tabs:** 4, 12 and 26 weeks on a Sage Tint track; the chosen tab is Card Paper with a Deep Sage SemiBold label. Always one chosen.
+- **Range pager:** "‹ 12 Oct – 8 Nov 2026 ›". It steps by a whole range, never into the future, and not before the first entry.
+- **Figure tiles:** three Card Paper tiles (16 px corners) with the value in Deep Sage at 27 px (headline medium) over a SemiBold label and a label-small caption. Above about 115% text they stack.
+- **Entries each week:** a Card Paper panel (20 px corners) with plain-widget bars. Top-rounded corners, an axis of 0, half and top (an even number), and the chart grows with text size. With 4 weeks, every week is labelled; with 12 or 26, the first, middle and last.
+- **Stool form (setting on only):** the count of entries with a type, then seven columns showing the count, a bar (a flat Pencil Line bar for zero) and the type number. Counts only.
 
 ### Stat Card (signature)
 A Sage Tint panel (20 px corners, 14 × 18 px padding) holding two figures: the entry count for the week on screen, and the most recent entry. Each figure is in stat-value Deep Sage over a label-small caption, separated by a 1 px Sage Tint Line. They sit side by side at normal text sizes and stack (with a horizontal line between) once text is enlarged past about 115%, so a figure never wraps away from its unit.

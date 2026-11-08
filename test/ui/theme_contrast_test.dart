@@ -63,6 +63,8 @@ void main() {
       ('switch off thumb on off track', c.mutedIcon, c.switchTrackOff),
       ('switch on track on card', c.primary, c.card),
       ('switch on thumb on on track', c.card, c.primary),
+      ('trend bar on card', c.chartBar, c.card),
+      ('current-week bar on card', c.primary, c.card),
     ];
     for (final (name, fg, bg) in pairs) {
       test(name, () {
