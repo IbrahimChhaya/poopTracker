@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/paths.dart';
+import '../../../app/scope.dart';
 import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
@@ -10,6 +11,7 @@ import '../../../ui/theme/morrow_typography.dart';
 import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/overlays.dart';
 import '../../../ui/widgets/states.dart';
+import 'detail_labels.dart';
 import 'history_controller.dart';
 import 'widgets/entry_card.dart';
 
@@ -53,6 +55,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       case null:
         break;
     }
+  }
+
+  Future<void> _openTypeFilter(int? current) async {
+    final chosen = await showMorrowSheet<_TypeChoice>(
+      context,
+      title: 'Stool form',
+      builder: (_) => _TypeSheet(current: current),
+    );
+    if (chosen != null) _query.setStoolType(chosen.type);
   }
 
   @override
@@ -117,32 +128,45 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final rangeLabel = formatDateRange(v.from!, v.today);
 
     return [
-      Align(
-        alignment: Alignment.centerLeft,
-        child: Semantics(
-          button: true,
-          label: 'Date range: ${v.query.range.label}, $rangeLabel. Change',
-          excludeSemantics: true,
-          child: ActionChip(
-            onPressed: () => _openFilter(v.query.range),
-            backgroundColor: colors.tint,
-            side: BorderSide.none,
-            shape: const StadiumBorder(),
-            label: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    rangeLabel,
-                    style: text.bodySmall!.copyWith(color: colors.ink),
+      Wrap(
+        spacing: MorrowSpacing.sm,
+        runSpacing: MorrowSpacing.sm,
+        children: [
+          Semantics(
+            button: true,
+            label: 'Date range: ${v.query.range.label}, $rangeLabel. Change',
+            excludeSemantics: true,
+            child: ActionChip(
+              onPressed: () => _openFilter(v.query.range),
+              backgroundColor: colors.tint,
+              side: BorderSide.none,
+              shape: const StadiumBorder(),
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      rangeLabel,
+                      style: text.bodySmall!.copyWith(color: colors.ink),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                Icon(Icons.expand_more, size: 16, color: colors.mutedIcon),
-              ],
+                  const SizedBox(width: 6),
+                  Icon(Icons.expand_more, size: 16, color: colors.mutedIcon),
+                ],
+              ),
             ),
           ),
-        ),
+          if (ref.watch(displayProvider).showStoolForm)
+            _FilterChip(
+              label: v.query.stoolType == null
+                  ? 'All types'
+                  : 'Type ${v.query.stoolType}',
+              semantics: v.query.stoolType == null
+                  ? 'Stool form filter: all types. Change'
+                  : 'Stool form filter: type ${v.query.stoolType}. Change',
+              onPressed: () => _openTypeFilter(v.query.stoolType),
+            ),
+        ],
       ),
       const SizedBox(height: MorrowSpacing.sm),
       Text(
@@ -329,6 +353,108 @@ class _FilterSheetState extends State<_FilterSheet> {
           label: 'Clear filters',
           variant: MorrowButtonVariant.secondary,
           onPressed: () => Navigator.of(context).pop(const _FilterClear()),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.semantics,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String semantics;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = MorrowColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: semantics,
+      excludeSemantics: true,
+      child: ActionChip(
+        onPressed: onPressed,
+        backgroundColor: colors.tint,
+        side: BorderSide.none,
+        shape: const StadiumBorder(),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                style: text.bodySmall!.copyWith(color: colors.ink),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.expand_more, size: 16, color: colors.mutedIcon),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _TypeChoice {
+  const _TypeChoice(this.type);
+
+  final int? type;
+}
+
+class _TypeSheet extends StatefulWidget {
+  const _TypeSheet({required this.current});
+
+  final int? current;
+
+  @override
+  State<_TypeSheet> createState() => _TypeSheetState();
+}
+
+class _TypeSheetState extends State<_TypeSheet> {
+  // 0 means all types.
+  late int _value = widget.current ?? 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RadioGroup<int>(
+          groupValue: _value,
+          onChanged: (v) => setState(() => _value = v ?? 0),
+          child: Column(
+            children: [
+              for (final t in [0, ...stoolForms.keys]) ...[
+                RadioListTile<int>(
+                  value: t,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.trailing,
+                  title: Text(
+                    t == 0 ? 'All types' : stoolFormLabel(t),
+                    style: text.bodyLarge!.copyWith(
+                      fontWeight: t == _value ? FontWeight.w600 : null,
+                    ),
+                  ),
+                ),
+                if (t != 7) const Divider(),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: MorrowSpacing.lg),
+        MorrowButton(
+          label: 'Apply',
+          onPressed: () =>
+              Navigator.of(context)
+                  .pop(_TypeChoice(_value == 0 ? null : _value)),
         ),
       ],
     );

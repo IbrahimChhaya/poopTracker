@@ -20,6 +20,8 @@ final class EntryEditorState {
     required this.comment,
     required this.timeChanged,
     required this.commentChanged,
+    this.details = const EntryDetails(),
+    this.detailsChanged = false,
     this.saving = false,
     this.saveFailed = false,
     this.errors = const [],
@@ -40,7 +42,12 @@ final class EntryEditorState {
   final bool saveFailed;
   final List<EntryValidationError> errors;
 
-  bool get hasChanges => timeChanged || commentChanged;
+  /// Optional details. Kept even while their setting is off, so saving
+  /// never drops stored values the user cannot currently see.
+  final EntryDetails details;
+  final bool detailsChanged;
+
+  bool get hasChanges => timeChanged || commentChanged || detailsChanged;
 
   /// Wall-clock fields as a [DateTime], for formatting.
   DateTime get wall =>
@@ -53,6 +60,8 @@ final class EntryEditorState {
     String? comment,
     bool? timeChanged,
     bool? commentChanged,
+    EntryDetails? details,
+    bool? detailsChanged,
     bool? saving,
     bool? saveFailed,
     List<EntryValidationError>? errors,
@@ -63,9 +72,54 @@ final class EntryEditorState {
     comment: comment ?? this.comment,
     timeChanged: timeChanged ?? this.timeChanged,
     commentChanged: commentChanged ?? this.commentChanged,
+    details: details ?? this.details,
+    detailsChanged: detailsChanged ?? this.detailsChanged,
     saving: saving ?? this.saving,
     saveFailed: saveFailed ?? this.saveFailed,
     errors: errors ?? this.errors,
+  );
+}
+
+/// The optional details of a draft.
+final class EntryDetails {
+  const EntryDetails({
+    this.stoolType,
+    this.ease,
+    this.symptoms = const {},
+    this.tags = const {},
+  });
+
+  factory EntryDetails.of(Entry e) => EntryDetails(
+    stoolType: e.stoolType,
+    ease: e.ease,
+    symptoms: e.symptoms,
+    tags: e.tags,
+  );
+
+  final int? stoolType;
+  final Ease? ease;
+  final Set<Symptom> symptoms;
+  final Set<Tag> tags;
+
+  /// True when nothing on the "A little context" step is filled in.
+  bool get contextEmpty => ease == null && symptoms.isEmpty && tags.isEmpty;
+
+  @override
+  bool operator ==(Object other) =>
+      other is EntryDetails &&
+      other.stoolType == stoolType &&
+      other.ease == ease &&
+      other.symptoms.length == symptoms.length &&
+      other.symptoms.containsAll(symptoms) &&
+      other.tags.length == tags.length &&
+      other.tags.containsAll(tags);
+
+  @override
+  int get hashCode => Object.hash(
+    stoolType,
+    ease,
+    Object.hashAllUnordered(symptoms),
+    Object.hashAllUnordered(tags),
   );
 }
 
@@ -114,6 +168,84 @@ class EntryEditorController extends Notifier<EntryEditorState> {
       comment: o.comment ?? '',
       timeChanged: false,
       commentChanged: false,
+      details: EntryDetails.of(o),
+    );
+  }
+
+  EntryDetails get _initialDetails {
+    final o = original;
+    return o == null ? const EntryDetails() : EntryDetails.of(o);
+  }
+
+  void _setDetails(EntryDetails d) => state = state.copyWith(
+    details: d,
+    detailsChanged: d != _initialDetails,
+    errors: const [],
+  );
+
+  /// Chooses a stool form type, or clears it if [type] is already chosen.
+  void toggleStoolType(int type) {
+    final d = state.details;
+    _setDetails(
+      EntryDetails(
+        stoolType: d.stoolType == type ? null : type,
+        ease: d.ease,
+        symptoms: d.symptoms,
+        tags: d.tags,
+      ),
+    );
+  }
+
+  /// Chooses how it felt, or clears it if already chosen.
+  void toggleEase(Ease ease) {
+    final d = state.details;
+    _setDetails(
+      EntryDetails(
+        stoolType: d.stoolType,
+        ease: d.ease == ease ? null : ease,
+        symptoms: d.symptoms,
+        tags: d.tags,
+      ),
+    );
+  }
+
+  /// Adds or removes a symptom. "None" and the other symptoms exclude each
+  /// other: choosing one clears the other kind.
+  void toggleSymptom(Symptom symptom) {
+    final d = state.details;
+    final next = {...d.symptoms};
+    if (next.contains(symptom)) {
+      next.remove(symptom);
+    } else if (symptom == Symptom.none) {
+      next
+        ..clear()
+        ..add(Symptom.none);
+    } else {
+      next
+        ..remove(Symptom.none)
+        ..add(symptom);
+    }
+    _setDetails(
+      EntryDetails(
+        stoolType: d.stoolType,
+        ease: d.ease,
+        symptoms: next,
+        tags: d.tags,
+      ),
+    );
+  }
+
+  void toggleTag(Tag tag) {
+    final d = state.details;
+    final next = {...d.tags};
+    if (!next.remove(tag)) next.add(tag);
+    _setDetails(
+      EntryDetails(
+        stoolType: d.stoolType,
+        ease: d.ease,
+        symptoms: d.symptoms,
+        tags: next,
+      ),
     );
   }
 
@@ -203,15 +335,16 @@ class EntryEditorController extends Notifier<EntryEditorState> {
         state.minute,
       );
     }
-    // Optional details not shown in this editor are kept as they are.
+    // Details hidden by a setting are still in the draft, unchanged.
+    final d = state.details;
     return EntryDraft(
       occurredAtUtc: time.utc,
       originalUtcOffsetMinutes: time.offsetMinutes,
       comment: state.comment,
-      stoolType: o?.stoolType,
-      ease: o?.ease,
-      symptoms: o?.symptoms ?? const {},
-      tags: o?.tags ?? const {},
+      stoolType: d.stoolType,
+      ease: d.ease,
+      symptoms: d.symptoms,
+      tags: d.tags,
     );
   }
 }

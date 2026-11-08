@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/scope.dart';
 import '../../../../ui/theme/morrow_colors.dart';
 import '../../../../ui/theme/morrow_tokens.dart';
 import '../../domain/entry.dart';
+import '../detail_labels.dart';
+import 'stool_form_icon.dart';
 
-/// One entry in a list: a title (for example "Today · 1:35 pm") and the note,
-/// or "No note". Optional details are not shown here until M6.
-class EntryCard extends StatelessWidget {
+/// One entry in a list: a title (for example "Today · 1:35 pm") and a
+/// summary. Optional details appear only when their setting is on (3.4,
+/// 4.3); otherwise the note, or "No note".
+class EntryCard extends ConsumerWidget {
   const EntryCard({
     required this.entry,
     required this.title,
@@ -19,14 +24,35 @@ class EntryCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final display = ref.watch(displayProvider);
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
-    final note = entry.comment;
     final radius = BorderRadius.circular(MorrowRadii.xl);
+
+    final type = display.showStoolForm ? entry.stoolType : null;
+    final ease = display.showContext ? entry.ease : null;
+    final symptoms = display.showContext
+        ? symptomSummary(entry.symptoms)
+        : null;
+
+    final detailLine = [
+      if (type != null) stoolForms[type]!.name,
+      if (ease != null) easePhrase(ease),
+    ].join(' · ');
+    final summary = detailLine.isNotEmpty
+        ? detailLine
+        : entry.comment ?? 'No note';
+    final noSymptoms = entry.symptoms.contains(Symptom.none);
+
     return Semantics(
       button: true,
-      label: '$title. ${note ?? 'No note'}',
+      label: [
+        title,
+        if (type != null) 'Type $type',
+        summary,
+        ?symptoms,
+      ].join('. '),
       excludeSemantics: true,
       child: Material(
         color: colors.card,
@@ -41,6 +67,10 @@ class EntryCard extends StatelessWidget {
             padding: const EdgeInsets.all(MorrowSpacing.lg),
             child: Row(
               children: [
+                if (type != null) ...[
+                  StoolFormTile(type: type),
+                  const SizedBox(width: MorrowSpacing.md),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,11 +78,24 @@ class EntryCard extends StatelessWidget {
                       Text(title, style: text.titleSmall),
                       const SizedBox(height: 6),
                       Text(
-                        note ?? 'No note',
+                        summary,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: text.bodySmall,
                       ),
+                      if (symptoms != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          symptoms,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: text.labelSmall!.copyWith(
+                            color: noSymptoms
+                                ? colors.primary
+                                : colors.warmText,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

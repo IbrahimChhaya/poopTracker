@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/database/app_database.dart';
 import '../features/journal/data/entry_repository.dart';
 import '../features/journal/domain/entry.dart';
+import '../features/settings/data/settings_repository.dart';
 import 'providers.dart';
 
 // Sensitive providers. They declare `dependencies`, which marks them as
@@ -40,6 +41,23 @@ final entryRepositoryProvider = Provider<EntryRepository>(
 final entriesProvider = StreamProvider<List<Entry>>(
   (ref) => ref.watch(entryRepositoryProvider).watchAll(),
   dependencies: [entryRepositoryProvider],
+);
+
+final settingsRepositoryProvider = Provider<SettingsRepository>(
+  (ref) => SettingsRepository(ref.watch(appDatabaseProvider)),
+  dependencies: [appDatabaseProvider],
+);
+
+/// Which optional details are shown (both off until the first value loads).
+final displaySettingsProvider = StreamProvider<DisplaySettings>(
+  (ref) => ref.watch(settingsRepositoryProvider).watchDisplay(),
+  dependencies: [settingsRepositoryProvider],
+);
+
+/// The current display settings, or the defaults while loading.
+final displayProvider = Provider<DisplaySettings>(
+  (ref) => ref.watch(displaySettingsProvider).value ?? DisplaySettings.defaults,
+  dependencies: [displaySettingsProvider],
 );
 
 /// Holds the sensitive providers for one unlocked session. Removing this

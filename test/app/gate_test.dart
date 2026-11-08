@@ -76,7 +76,7 @@ void main() {
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
       expect(find.text('Encryption self-check'), findsOneWidget);
-      await tester.tap(find.text('Journal'));
+      await tester.tap(find.text('Journal').last);
       await tester.pumpAndSettle();
       expect(find.text('Nothing here yet'), findsOneWidget);
     });

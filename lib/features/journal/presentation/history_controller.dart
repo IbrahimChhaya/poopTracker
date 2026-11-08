@@ -45,13 +45,27 @@ LocalDate _monthsBefore(LocalDate d, int months) {
 }
 
 final class HistoryQuery {
-  const HistoryQuery({this.search = '', this.range = HistoryRange.initial});
+  const HistoryQuery({
+    this.search = '',
+    this.range = HistoryRange.initial,
+    this.stoolType,
+  });
 
   final String search;
   final HistoryRange range;
 
-  HistoryQuery copyWith({String? search, HistoryRange? range}) =>
-      HistoryQuery(search: search ?? this.search, range: range ?? this.range);
+  /// Only entries of this stool form type; null for all types. Ignored while
+  /// the stool form setting is off.
+  final int? stoolType;
+
+  HistoryQuery copyWith({String? search, HistoryRange? range}) => HistoryQuery(
+    search: search ?? this.search,
+    range: range ?? this.range,
+    stoolType: stoolType,
+  );
+
+  HistoryQuery withStoolType(int? type) =>
+      HistoryQuery(search: search, range: range, stoolType: type);
 }
 
 /// Search text and date range for History. Scoped to the session, so the
@@ -63,7 +77,8 @@ class HistoryQueryController extends Notifier<HistoryQuery> {
   void setSearch(String text) => state = state.copyWith(search: text);
   void clearSearch() => state = state.copyWith(search: '');
   void setRange(HistoryRange range) => state = state.copyWith(range: range);
-  void clearFilters() => state = state.copyWith(range: HistoryRange.initial);
+  void clearFilters() => state = HistoryQuery(search: state.search);
+  void setStoolType(int? type) => state = state.withStoolType(type);
 
   void showEarlier() {
     final wider = state.range.wider;
@@ -102,7 +117,9 @@ final class HistoryView {
   /// Entries exist before the current range (offer "Show earlier entries").
   final bool hasEarlier;
 
-  bool get searching => query.search.trim().isNotEmpty;
+  /// Searching or filtering by type, so an empty result means "no match".
+  bool get searching =>
+      query.search.trim().isNotEmpty || query.stoolType != null;
 }
 
 /// Case-insensitive match of [search] inside the note. Entries without a
@@ -116,25 +133,27 @@ bool noteMatches(Entry e, String search) {
 final historyViewProvider = Provider<AsyncValue<HistoryView>>((ref) {
   final today = ref.watch(clockProvider).today();
   final query = ref.watch(historyQueryProvider);
+  final showStool = ref.watch(displayProvider).showStoolForm;
+  final type = showStool ? query.stoolType : null;
+  bool matches(Entry e) =>
+      noteMatches(e, query.search) && (type == null || e.stoolType == type);
   return ref.watch(entriesProvider).whenData((entries) {
     final from = query.range.firstDay(today);
     final inRange = from == null
         ? entries
         : entriesBetween(entries, from: from, to: today);
-    final matches = inRange.where((e) => noteMatches(e, query.search)).toList();
+    final found = inRange.where(matches).toList();
     final hasEarlier =
         from != null &&
-        entries.any(
-          (e) => e.localDate.isBefore(from) && noteMatches(e, query.search),
-        );
+        entries.any((e) => e.localDate.isBefore(from) && matches(e));
     return HistoryView(
       today: today,
       query: query,
       from: from ?? (entries.isEmpty ? today : entries.last.localDate),
-      groups: groupByLocalDay(matches),
-      matchCount: matches.length,
+      groups: groupByLocalDay(found),
+      matchCount: found.length,
       journalIsEmpty: entries.isEmpty,
       hasEarlier: hasEarlier,
     );
   });
-}, dependencies: [entriesProvider, historyQueryProvider]);
+}, dependencies: [entriesProvider, historyQueryProvider, displayProvider]);

@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M3 are done (M3's iOS device check is still open). M4 is done. M5 is built and awaiting review.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M3 are done (M3's iOS device check is still open). M4 and M5 are done. M6 is built and awaiting review.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -241,6 +241,17 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Details shown in the journal, history and detail screens only when their setting is on.
   - Turning a setting off hides values but keeps them.
 - **Accept when:** tests cover all four on/off combinations, values surviving off → on, and that the default build shows no stool or symptom wording anywhere in the main flows.
+- **Built (8 November 2026), decisions made while building:**
+  - Settings > Journal has the "Stool form" and "A little context" switches, stored in the `app_settings` row and both off by default.
+  - The editor is the hub (3.1). With a setting on, an "Optional details" card shows a row per enabled step with its current value ("Not set", "Type 4 · Smooth and soft", "Easy · No symptoms · Coffee"). A row opens its step.
+  - Steps (3.2, 3.3): the count adapts ("1 OF 1" with one setting on). Each step can be skipped ("Skip", "Skip and save entry"), and tapping a chosen type or chip again clears it. Only the stool form eyebrow says "OPTIONAL"; the context step says it once, in its first line. Saving from a step closes the steps and the editor.
+  - Symptoms: "None" and other symptoms clear each other. No severity (decision 4): Figma's "Mild bloating" and "Bloating · Mild" now read "Bloating". "Optional" labels stay on Entry detail (decision 8).
+  - Cards (3.4, 4.3) show the type tile, "form · ease", and a symptoms line ("No symptoms" for an explicit None; nothing when unanswered). With no details shown, the card falls back to the note.
+  - History has an "All types" filter while stool form is on. The filter is ignored while it's off, so hidden values never filter entries invisibly.
+  - Stool drawings are simple shapes painted by Flutter (no image assets), decorative and excluded from semantics.
+  - Turning a setting off hides its details everywhere, keeps stored values, and an edit made while they're hidden keeps them (tested). Deleting stored details is a separate action, not built yet.
+  - The default-build check: with both settings off, no stool or symptom wording appears in the journal, editor, entry detail or History, including in screen-reader labels (tested).
+  - Device check, S20: Settings switches, the editor hub and both steps were screenshotted and look right.
 
 ### M7 — Weekly trends
 - **Scope (5.1–5.7):** 4/12/26-week ranges with previous/next navigation, summary tiles, weekly bar chart (Flutter widgets or CustomPaint), stool form and symptom sections behind their settings, not-enough-data state, and no health advice.

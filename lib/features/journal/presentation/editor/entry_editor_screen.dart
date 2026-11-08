@@ -17,6 +17,8 @@ import '../../../../ui/widgets/setting_row.dart';
 import '../../../../ui/widgets/states.dart';
 import '../../domain/entry.dart';
 import '../delete_entry.dart';
+import '../detail_labels.dart';
+import 'detail_steps.dart';
 import 'entry_editor_controller.dart';
 import 'entry_time_sheet.dart';
 
@@ -77,6 +79,16 @@ class _EditEntryScreenState extends ConsumerState<EditEntryScreen> {
     _original = found;
     return EntryEditor(original: found);
   }
+}
+
+/// "Easy · Bloating · After a meal, Coffee", or "Not set".
+String _contextSummary(EntryDetails d) {
+  if (d.contextEmpty) return 'Not set';
+  return [
+    if (d.ease != null) easeChip(d.ease!),
+    ?symptomSummary(d.symptoms),
+    if (d.tags.isNotEmpty) sortedTags(d.tags).map(tagLabel).join(', '),
+  ].join(' · ');
 }
 
 /// The editor itself, shared by new and edit.
@@ -161,6 +173,13 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(entryEditorProvider(_target));
+    final display = ref.watch(displayProvider);
+    final steps = enabledSteps(display);
+    // The note can also be edited on the context step; keep this field in
+    // step with the draft.
+    ref.listen(entryEditorProvider(_target).select((s) => s.comment), (_, c) {
+      if (_note.text != c) _note.text = c;
+    });
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
     final today = ref.watch(clockProvider).today();
@@ -225,6 +244,40 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
                         ),
                       ],
                     ),
+                    if (steps.isNotEmpty) ...[
+                      const SizedBox(height: MorrowSpacing.xxl),
+                      CardGroup(
+                        label: 'Optional details',
+                        children: [
+                          if (display.showStoolForm)
+                            SettingRow.navigation(
+                              icon: Icons.notes,
+                              title: 'Stool form',
+                              subtitle: s.details.stoolType == null
+                                  ? 'Not set'
+                                  : stoolFormLabel(s.details.stoolType!),
+                              onTap: () => openDetailStep(
+                                context,
+                                target: _target,
+                                steps: steps,
+                                step: DetailStep.stoolForm,
+                              ),
+                            ),
+                          if (display.showContext)
+                            SettingRow.navigation(
+                              icon: Icons.monitor_heart_outlined,
+                              title: 'A little context',
+                              subtitle: _contextSummary(s.details),
+                              onTap: () => openDetailStep(
+                                context,
+                                target: _target,
+                                steps: steps,
+                                step: DetailStep.context,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: MorrowSpacing.xxl),
                     Text('Note (optional)', style: text.labelMedium),
                     const SizedBox(height: MorrowSpacing.sm),

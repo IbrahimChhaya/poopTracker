@@ -112,6 +112,55 @@ void main() {
     expect(await repo.all(), hasLength(1));
   });
 
+  group('optional details', () {
+    test('choosing and clearing a stool type', () {
+      final e = editor(null)..toggleStoolType(4);
+      expect(stateOf(null).details.stoolType, 4);
+      expect(stateOf(null).hasChanges, isTrue);
+      e.toggleStoolType(4);
+      expect(stateOf(null).details.stoolType, isNull);
+      expect(stateOf(null).hasChanges, isFalse);
+    });
+
+    test('"None" and other symptoms exclude each other', () {
+      final e = editor(null)
+        ..toggleSymptom(Symptom.bloating)
+        ..toggleSymptom(Symptom.cramping);
+      expect(stateOf(null).details.symptoms, {
+        Symptom.bloating,
+        Symptom.cramping,
+      });
+      e.toggleSymptom(Symptom.none);
+      expect(stateOf(null).details.symptoms, {Symptom.none});
+      e.toggleSymptom(Symptom.urgency);
+      expect(stateOf(null).details.symptoms, {Symptom.urgency});
+    });
+
+    test('ease is single choice and clears on a second tap', () {
+      final e = editor(null)
+        ..toggleEase(Ease.easy)
+        ..toggleEase(Ease.difficult);
+      expect(stateOf(null).details.ease, Ease.difficult);
+      e.toggleEase(Ease.difficult);
+      expect(stateOf(null).details.ease, isNull);
+    });
+
+    test('details are saved', () async {
+      final e = editor(null)
+        ..toggleStoolType(3)
+        ..toggleEase(Ease.someStraining)
+        ..toggleSymptom(Symptom.mucus)
+        ..toggleTag(Tag.stress)
+        ..toggleTag(Tag.exercise);
+      expect(await e.save(), SaveOutcome.saved);
+      final saved = (await repo.all()).single;
+      expect(saved.stoolType, 3);
+      expect(saved.ease, Ease.someStraining);
+      expect(saved.symptoms, {Symptom.mucus});
+      expect(saved.tags, {Tag.stress, Tag.exercise});
+    });
+  });
+
   group('editing', () {
     late Entry original;
 

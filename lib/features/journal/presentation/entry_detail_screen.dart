@@ -10,6 +10,8 @@ import '../../../ui/theme/morrow_tokens.dart';
 import '../../../ui/widgets/states.dart';
 import '../domain/entry.dart';
 import 'delete_entry.dart';
+import 'detail_labels.dart';
+import 'widgets/stool_form_icon.dart';
 
 /// "Entry details" (4.7). Closes itself if the entry no longer exists.
 class EntryDetailScreen extends ConsumerWidget {
@@ -45,6 +47,7 @@ class EntryDetailScreen extends ConsumerWidget {
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
     final note = entry.comment;
+    final display = ref.watch(displayProvider);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 12, 24, 24),
@@ -99,9 +102,37 @@ class EntryDetailScreen extends ConsumerWidget {
                       formatTime(entry.localWallClock),
                       style: text.headlineMedium,
                     ),
+                    if (display.showStoolForm && entry.stoolType != null) ...[
+                      const SizedBox(height: MorrowSpacing.lg),
+                      Container(
+                        width: 90,
+                        height: 56,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: colors.card,
+                          borderRadius: BorderRadius.circular(MorrowRadii.lg),
+                        ),
+                        child: StoolFormIcon(type: entry.stoolType!, size: 52),
+                      ),
+                      const SizedBox(height: MorrowSpacing.md),
+                      Text(
+                        stoolFormLabel(entry.stoolType!),
+                        textAlign: TextAlign.center,
+                        style: text.titleLarge,
+                      ),
+                      const SizedBox(height: MorrowSpacing.xs),
+                      Text(
+                        stoolForms[entry.stoolType!]!.description,
+                        textAlign: TextAlign.center,
+                        style: text.bodySmall,
+                      ),
+                      const SizedBox(height: MorrowSpacing.xs),
+                      Text('Optional detail', style: text.labelSmall),
+                    ],
                   ],
                 ),
               ),
+              if (display.showContext) ..._contextDetails(context, entry),
               const SizedBox(height: MorrowSpacing.xxl),
               Text('Your notes', style: text.titleMedium),
               const SizedBox(height: MorrowSpacing.md),
@@ -155,4 +186,95 @@ class EntryDetailScreen extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Ease, symptoms and context tags (4.8). Shown only when "A little context"
+/// is on.
+List<Widget> _contextDetails(BuildContext context, Entry entry) {
+  final colors = MorrowColors.of(context);
+  final text = Theme.of(context).textTheme;
+  const notRecorded = 'Not recorded';
+
+  Widget heading(String title) => Row(
+    children: [
+      Expanded(
+        child: Semantics(
+          header: true,
+          child: Text(title, style: text.titleMedium),
+        ),
+      ),
+      Text('Optional', style: text.labelSmall),
+    ],
+  );
+
+  Widget chip(String label, {bool warm = false}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: warm ? colors.sand : colors.card,
+      borderRadius: BorderRadius.circular(MorrowRadii.pill),
+      border: warm ? null : Border.all(color: colors.line),
+    ),
+    child: Text(
+      label,
+      style: text.bodySmall!.copyWith(
+        color: warm ? colors.warmText : colors.ink,
+      ),
+    ),
+  );
+
+  final symptoms = entry.symptoms;
+  return [
+    const SizedBox(height: MorrowSpacing.xl),
+    Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Ease of passage · Optional',
+            style: text.bodyMedium!.copyWith(color: colors.mutedText),
+          ),
+        ),
+        if (entry.ease != null) ...[
+          ExcludeSemantics(
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 18,
+              color: colors.primary,
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+        Text(
+          entry.ease == null ? notRecorded : easePhrase(entry.ease!),
+          style: text.titleSmall!.copyWith(fontSize: 14),
+        ),
+      ],
+    ),
+    const SizedBox(height: MorrowSpacing.lg),
+    const Divider(),
+    const SizedBox(height: MorrowSpacing.lg),
+    heading('Symptoms'),
+    const SizedBox(height: MorrowSpacing.md),
+    Wrap(
+      spacing: MorrowSpacing.sm,
+      runSpacing: MorrowSpacing.sm,
+      children: symptoms.isEmpty
+          ? [Text(notRecorded, style: text.bodySmall)]
+          : symptoms.contains(Symptom.none)
+          ? [chip('No symptoms')]
+          : [
+              for (final s in sortedSymptoms(symptoms))
+                chip(symptomLabel(s), warm: true),
+            ],
+    ),
+    const SizedBox(height: MorrowSpacing.xl),
+    heading('Context'),
+    const SizedBox(height: MorrowSpacing.md),
+    Wrap(
+      spacing: MorrowSpacing.sm,
+      runSpacing: MorrowSpacing.sm,
+      children: entry.tags.isEmpty
+          ? [Text(notRecorded, style: text.bodySmall)]
+          : [for (final t in sortedTags(entry.tags)) chip(tagLabel(t))],
+    ),
+  ];
 }
