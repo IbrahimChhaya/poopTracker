@@ -34,14 +34,13 @@ Privacy and discretion are a given rather than the headline: the journal is encr
 
 - **Getting started:** opening the app goes straight to the weekly journal, with no account or sign-in.
 - **Logging an entry:**
-  - The user taps "Add an entry". The date defaults to today and the time to now.
-  - Logging for a past day leaves the time out unless the user adds one.
-  - Optional steps (stool form, "a little context") appear only when switched on in Settings.
-  - A note is always available.
+  - One tap on "Add an entry" saves the entry straight away (today at the current time, or a past day selected in the week strip with no time) and opens its page, with Undo for a mistaken tap.
+  - On the same page the user can change the date and time, add a note, and, when switched on in Settings, add Context and Stool form through a swipeable sheet.
+  - Nothing else is asked for: closing the page leaves a complete entry.
 - **Looking back:**
   - The home screen shows this week's journal, with swipeable earlier weeks and a selectable day.
   - History shows entries grouped by day, with note search and a date filter.
-  - Each entry has its own detail screen, where it can be edited or deleted.
+  - Tapping an entry opens the same entry page, where it can be changed or deleted. There is no separate view or edit screen.
   - Trends shows weekly counts over 4, 12 or 26 weeks.
 - **Optional extras:** one weekly reminder with generic wording ("Weekly check-in"), and an optional app lock using the phone's own biometrics or passcode.
 - **Backups:** the user can export an encrypted backup through the phone's own save sheet and restore from a file through its file picker. The backup is their only recovery route.
@@ -51,12 +50,12 @@ Privacy and discretion are a given rather than the headline: the journal is encr
 - **Local only.**
   - No accounts, backend, sync, analytics, advertising, remote crash reporting, runtime AI or network-loaded assets.
   - The journal database is always encrypted.
-- **Discreet everywhere outside the entry flow.** The app name, launcher label, notifications, onboarding and store text say "morrow" and use neutral words ("entry", "log", "check-in"). Bowel-related wording and imagery appear only inside the entry flow and entry detail, and only when the user has switched those details on.
+- **Discreet everywhere outside the entry flow.** The app name, launcher label, notifications, onboarding and store text say "morrow" and use neutral words ("entry", "log", "check-in"). Bowel-related wording and imagery appear only on the entry page and its details sheet, and only when the user has switched those details on.
 - **What an entry holds:**
   - **Required:** the entry and its date.
   - **Optional:** the time of day, a plain-text note (up to 500 characters), Bristol stool form (1–7), ease ("How did it feel?"), and circumstance tags (After a meal, Coffee, Stress, Low fluids, Medication, On my period, Feeling sick).
   - **Not recorded:** symptoms.
-- **Optional detail settings.** Two Settings switches, "Stool form" and "A little context", are both off by default. A hidden detail is hidden everywhere, but its stored values are kept.
+- **Optional detail settings.** Two Settings switches, "Stool form" and "Context", are both off by default. A hidden detail is hidden everywhere, but its stored values are kept.
 - **Weekly by design.**
   - Weeks run Monday to Sunday.
   - The home screen is "This week's journal"; earlier weeks can be viewed, future days can't.
@@ -64,7 +63,6 @@ Privacy and discretion are a given rather than the headline: the journal is encr
 - **Language:** British English.
 - **No dark mode yet** (planned after v1). All colours live in theme tokens.
 - **Undecided:**
-  - the M6.3 refinements to the "A little context" step (for example renaming "Anything to note?")
   - the store listing text
   - the launcher icon
 

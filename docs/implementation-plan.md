@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is built and awaiting review; M6.3 is proposed.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is approved and not started.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -282,7 +282,7 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - **Device test runs:** run integration tests with `flutter test integration_test/<file> -d <device> --no-uninstall`. Without the flag, flutter_tools uninstalls the app after the run, which deletes the dev journal and its Keystore key. This happened once after the M6.1 runs; the migration was not at fault.
 - **CLAUDE.md updated:** the date is the only required part; the time defaults; no symptoms; skippable steps without "Optional" labels; trends show stool form summaries only.
 
-### M6.2 — Journal polish from the design critique (built)
+### M6.2 — Journal polish from the design critique (done)
 - **Source:** an `/impeccable critique` of `lib/features/journal` on 8 November (27/40), with the fixes mocked in Figma section 10 ("Critique pass") and approved before building.
 - **Stat card:** values at 20 px (was 25), 14 × 18 px padding. At text scales above 1.15 the two figures stack with a horizontal divider, so a value never wraps away from its unit ("2 / entries" at 130% before).
 - **Journal home:** tighter spacing above the list (brand to title 16, date to week 20, week to stats 12, button to list 20), so the first entry shows sooner.
@@ -292,16 +292,38 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
 - **Tests:** 297 pass, including new stat-card layout tests at 100% and 130%. On the S20: journal at 100/130/200%, History, and timed and untimed detail checked. Not checked on the device: the details-on detail screen (stool form panel), covered by the 200% widget test only.
 - **Not changed:** the entry counts beside "This week's journal" and History's day headings (the mocks were cloned from frames without them, but removing them wasn't part of the critique); the step headers in the details flow keep the page-title size from Figma 3.2/3.3.
 
-### M6.3 — "A little context" refinements (proposed, not started)
-Suggestions, each to confirm before building:
-1. **Rename "Anything to note?".** Options: "What was going on?", "Around this time" or "Anything going on?". My pick is "What was going on?": it's plain, describes circumstances rather than a diagnosis, and reads well above chips like "Coffee" or "On my period". The step could also become "Context" in Settings, with "A little context" kept as the screen title.
-2. **"How did it feel?" as a three-way segmented control** instead of chips. It's a single choice, and a segmented control shows that, takes less space and is easier to use with a screen reader ("1 of 3, selected").
-3. **Show the chosen chips on the editor's context row** as small chips (not only text), so the hub shows what was picked at a glance.
-4. **Group the tags into two short rows**: food and drink (After a meal, Coffee, Low fluids), and body and mind (Stress, Medication, On my period, Feeling sick). With seven chips that keeps scanning easy; no headings are needed.
-5. **Make the step a sheet over the editor** rather than a full screen. It's short now that symptoms are gone, and a sheet keeps the entry in view.
-6. **Notes on the context step.** Either drop the second notes field (the editor already has one) or keep it as the only notes field when context is on. Two places to edit the same note is confusing.
-7. **A "Clear" link on the context step** that resets ease and tags in one tap, alongside tapping each chip again.
-8. **Order the chips by how often the user picks them.** Purely local and descriptive, but it changes positions, which can hurt muscle memory. I'd suggest not doing this.
+### M6.3 — One-tap entry and one entry page (approved, not started)
+- **Source:** Figma journeys 2.1–2.11, 3.1–3.6 and 4.7–4.9 (first drawn as section 11.2, "One-tap entry"), approved by the product owner on 8 November 2026. It replaces the earlier M6.3 proposals (sections 11 and 11.1, kept as superseded drafts). The aim: logging is as quick as the notes app it replaces (open, tap, close).
+- **One tap creates the entry:**
+  - "Add an entry" saves straight away and opens the new entry's page. Today's entry records the current time. A past day selected in the week strip gets a date-only entry.
+  - A rapid double tap creates one entry.
+  - The page shows "Added to today" with Undo; Undo deletes the new entry and returns to the journal.
+- **One entry page** replaces Entry details and Edit entry (and the old add-entry steps). The journal, a selected day and History all open it.
+  - **Layout:** title ("Today's entry", "Wednesday's entry"), When (Change), the Context and Stool form cards when their settings are on, Note with counter, and "Delete this entry" for an entry that existed before.
+  - **Saved/Save button:** it reads "Saved" (disabled, tick icon) until the date/time or note changes, then "Save" with "Unsaved changes" above it. Save persists and returns to the journal.
+  - **Leaving:** close (×), back gesture or system back with unsaved changes asks "Discard changes?".
+- **Details sheet:**
+  - The Context and Stool form cards open one sheet with a page per enabled detail (Context first). It opens on the page of the card that was tapped.
+  - A two-segment bar shows the position. Swipe moves between pages. The button reads Next, then Done on the last page; with one page, only Done.
+  - Clear on each page.
+  - Choices save as soon as they are picked, so closing the sheet any way keeps them.
+  - The cards then summarise the choices ("Easy · After a meal, Coffee", "Type 4 · Smooth and soft").
+- **Wording:**
+  - "A little context" becomes "Context" (Settings switch, card and sheet page).
+  - The tags question becomes "Anything going on?" with "Choose all that apply".
+  - "How did it feel?" becomes a three-way segmented control.
+  - The tags are in two rows: food and drink, then body and mind.
+- **Rules changed:** CLAUDE.md and PRODUCT.md were updated on 8 November (one-tap creation, the entry page, the details sheet, the "Context" name).
+- **Decided on 8 November:**
+  - **Lock while editing:** unsaved date/time or note changes are discarded when the app locks. The entry itself is already saved.
+  - **Undo lifetime:** Undo stays on the page until the user leaves it.
+  - **Undo after editing:** Undo asks "Undo this entry?" and then deletes the entry (Figma 2.11).
+  - **Failed one-tap save:** shown on the journal (2.10), with nothing saved.
+- **Accept when:**
+  - Unit and widget tests cover: one-tap creation (today timed, past day untimed), the double-tap guard, Undo, the Saved/Save state, the discard prompt, sheet paging (Next, Done, swipe, one-page case), that choices persist when the sheet is dismissed, Clear, and that hidden settings hide their cards.
+  - Screen-reader labels cover the button state and the sheet position ("Page 1 of 2").
+  - The 200% text check passes on the S20.
+  - DESIGN.md and the design catalogue's build status are updated.
 
 ### M7 — Weekly trends
 - **Scope (5.1–5.7):** 4/12/26-week ranges with previous/next navigation, summary tiles, weekly bar chart (Flutter widgets or CustomPaint), stool form and symptom sections behind their settings, not-enough-data state, and no health advice.

@@ -1,14 +1,33 @@
 # morrow: design catalogue
 
-Source: Figma file `poopTracker` (k5nqDgD29IrWJ3nuKYdOLS), Page 1. It has 66 frames in sections 0–9, numbered in the order a person meets the screens. The primary state is both optional-detail settings off; "Details on" frames are variants.
+Source: Figma file `poopTracker` (k5nqDgD29IrWJ3nuKYdOLS), Page 1. The page has two columns. **Approved design** (left) holds sections 0–9: every approved screen, built or not, numbered in the order a person meets the screens. **Superseded and rejected** (right) holds a read-me, the screens approved designs replaced (named "Old · …") and rejected drafts. The primary state is both optional-detail settings off; "Details on" frames are variants.
 
-Status shows where each screen is built. **Built** means it's in the app, and the milestone is given in brackets.
+Status shows where each screen is built. **Built** means it's in the app, and the milestone is given in brackets. **To build** means approved but not in the app yet.
 
 ## Change log
 
+### 8 November 2026: one-tap entry approved (M6.3)
+
+First drawn as section 11.2, then merged into journeys 2–4 (see the sections below), with four new frames: 2.6 Couldn't save changes, 2.7 Discard changes?, 4.7 Entry page (details off) and 4.9 Delete this entry?. Sections 11 and 11.1 were rejected and moved to the right-hand column. Frame numbers below are the original 11.2 numbers.
+
+| Frame | What it shows |
+|---|---|
+| 11.2.1 Journal | Tap "Add an entry". |
+| 11.2.2 Entry added | Saved instantly with the current time; "Added to today" with Undo; the button reads "Saved", greyed out. |
+| 11.2.3 Change the time | The existing date and time sheet over the entry page. |
+| 11.2.4 Changed | A changed time and a note: the button reads "Save", with "Unsaved changes". |
+| 11.2.5 Journal after Save | The updated entry at the top of the week. |
+| 11.2.6 Details on | Two cards, Context then Stool form. |
+| 11.2.7 Context page | The details sheet on page 1 of 2: segmented ease, tags in two rows, Clear, Next. |
+| 11.2.8 Stool form page | Page 2 of 2: the seven types, Clear, Done. |
+| 11.2.9 Details added | The cards summarise the choices; the button still reads "Saved". |
+| 11.2.10 Older entry | The same page opened from the journal: no banner, Delete this entry, "Saved". |
+
+"A little context" is renamed "Context" in these frames and in the read-me. The current-design frames (3.x, 4.7–4.9, 8.2) keep the old screens and name until M6.3 ships.
+
 ### 8 November 2026: critique pass (M6.2)
 
-Mocked in a new section, **10 · Critique pass**, after an `/impeccable critique` of the journal screens, approved by the product owner and built in M6.2. The original frames in sections 2 and 4 are unchanged; where they differ, section 10 wins.
+Mocked in a new section, **10 · Critique pass**, after an `/impeccable critique` of the journal screens, approved by the product owner and built in M6.2. Section 10 has since been merged: 10.2 is now 2.9 and 10.3 is now 4.2, and 10.1 and 10.4 were superseded by the one-tap entry designs.
 
 | Frame | Change |
 |---|---|
@@ -63,20 +82,35 @@ The following decisions were made with the product owner after the scan:
 - **1.3 App lock is on:** confirmation, then Continue. *M8.*
 - **1.4 Journal · Empty:** *Built (M5).*
 
-### 2 · Log an entry (details off), all built (M5)
-- **2.1 Journal:** week header, strip, stats, Add an entry, this week's list, See your patterns.
-- **2.2 Add entry:** When row and note with counter.
-- **2.3 Choose date and time:** Today, Yesterday or Other date, then hour, minute and am/pm wheels. *Changes in M6.1 (optional time).*
-- **2.4 Saving entry, 2.5 Couldn't save entry, 2.6 Discard this entry?, 2.7 Entry saved.**
+### 2 · Log an entry (details off): one-tap entry, to build (M6.3)
+- **2.1 Journal:** tap "Add an entry" (critique-pass style, built in M6.2).
+- **2.2 Entry added:** saved straight away with the current time; "Added to today" with Undo; close (×); the button reads "Saved", greyed out with a tick.
+- **2.3 Change date and time:** the date and time sheet over the entry page.
+- **2.4 Choose a date · No time:** the same sheet with "Record a time" off (built, M6.1).
+- **2.5 Changed · Save active:** a changed time and a note; "Unsaved changes" above "Save". The Undo banner stays until you leave the page.
+- **2.6 Couldn't save changes:** error banner; the changes stay; "Try again".
+- **2.7 Discard changes?:** leaving with unsaved changes. "Your entry is already saved. Only the changes you just made to it will be lost."
+- **2.8 Journal · After saving:** the updated entry at the top of the week.
+- **2.9 Journal · Large text (130%):** the stats stack (built, M6.2).
+- **2.10 Couldn't add an entry:** a failed one-tap save; an error banner under "Add an entry" reads "Nothing was saved. Try again."
+- **2.11 Undo after editing:** Undo stays on the page until you leave. After an edit it asks "Undo this entry?" ("It will be removed, along with the changes you just made.").
 
-### 3 · Log an entry (details on), built (M6)
-- **3.1 Add entry · Details on:** Optional details card (Stool form, A little context).
-- **3.2 Stool form:** seven Bristol types, Skip and Continue.
-- **3.3 A little context:** How did it feel? (Easy, Some straining, Difficult); Anything to note? (After a meal, Coffee, Stress, Low fluids, Medication, On my period, Feeling sick); Your notes; Save entry.
-- **3.4 Journal · Details on:** type tile, then "form · ease" on each card.
+### 3 · Log an entry (details on): to build (M6.3)
+- **3.1 Entry added · Details on:** two cards, Context then Stool form.
+- **3.2 Details sheet · Context:** page 1 of 2. "How did it feel?" as a segmented control; "Anything going on?" tags in two rows; Clear; Next. The subtitle reads "Saved as you choose".
+- **3.3 Details sheet · Stool form:** page 2 of 2. The seven types, Clear, Done. Swipe moves between pages.
+- **3.4 Details added:** the cards summarise the choices; the button still reads "Saved".
+- **3.5 Journal · Details on:** type tile, then "form · ease" on each card (built, M6).
+- **3.6 Details sheet · One setting on:** a single page with no step bar; the button reads Done.
 
-### 4 · Browse, edit and delete, built (M5, M6)
-- **4.1 Day selected, 4.2 History, 4.3 History · Details on** (All types filter), **4.4 Filter entries, 4.5 Search · No results, 4.6 History · Empty, 4.7 Entry detail, 4.8 Entry detail · Details on, 4.9 Edit entry, 4.10 Delete this entry?, 4.11 Entry deleted, 4.12 Journal · Earlier week.**
+### 4 · Browse, change and delete entries (M5, M6, M6.2, M6.3)
+- **4.1 Journal · Day selected:** *Built (M5).*
+- **4.2 History:** an untimed entry is titled "Entry". *Built (M6.2).*
+- **4.3 History · Details on** (All types filter), **4.4 Filter entries, 4.5 Search · No results, 4.6 History · Empty:** *Built (M5, M6).*
+- **4.7 Entry page:** an older entry opened from the journal or History. It's the same page as 2.2, without the banner, plus "Delete this entry". *To build (M6.3); replaces Entry details and Edit entry.*
+- **4.8 Entry page · Details on:** with the Context and Stool form cards. *To build (M6.3).*
+- **4.9 Delete this entry?:** confirmation over the entry page. *To build (M6.3); the dialog is built (M5).*
+- **4.10 Entry deleted, 4.11 Journal · Earlier week:** *Built (M5).*
 
 ### 5 · Weekly trends (M7)
 - **5.1–5.3:** 4, 12 and 26 weeks, with total, per week, weeks logged and the entries-each-week chart.
@@ -90,18 +124,22 @@ The following decisions were made with the product owner after the scan:
 - **7.1 Off, 7.2 Confirm to turn on, 7.3 On, 7.4 Locked, 7.5 Couldn't unlock, 7.6 Confirm to turn off.**
 
 ### 8 · Settings, privacy and deleting data
-- **8.1 Settings, 8.2 Settings · Details on:** the Journal switches are *built (M6)*. The Reminders, Privacy and Data rows come in M8–M10.
+- **8.1 Settings, 8.2 Settings · Details on:** the Journal switches are *built (M6)*. Figma now says "Context" (was "A little context") with new descriptions; the app follows in M6.3. The Reminders, Privacy and Data rows come in M8–M10.
 - **8.3 Data & privacy, 8.4 Delete all data, 8.5 Confirm to delete, 8.6 Deleting data, 8.7 All data deleted:** *M10.*
 - **8.8 Journal unavailable, 8.9 Erase and start fresh?:** *Built (M4).*
 
 ### 9 · Back up and restore (M11)
 - **9.1 Export a backup, 9.2 Creating backup, 9.3 Native save picker** (documentation only), **9.4 Backup saved, 9.5 Restore from a backup, 9.6 Native file picker** (documentation only), **9.7 Enter passphrase, 9.8 Restoring entries, 9.9 Restore complete, 9.10 Couldn't restore.**
 
-### 10 · Critique pass, built (M6.2)
-10.1 Journal, 10.2 Journal at 130% text, 10.3 History, 10.4 Entry detail, and 10.0, a note on what changed.
+## Superseded and rejected column
+
+- **Superseded and rejected · read me:** how the column works.
+- **Superseded · screens replaced by approved designs:**
+  - **Replaced by one-tap entry and the entry page (M6.3):** old 2.2–2.7, 3.1–3.3, 4.7–4.10, and the 11.2 note.
+  - **Replaced by the critique pass (M6.2):** old 2.1 and 4.2, the section 10 frames (10.1, 10.4) and the 10.0 note. 10.2 and 10.3 moved into journeys 2 and 4.
+- **Rejected · Context on the editor (was 11.1)** and **Rejected · Context as a full sheet (was 11).**
 
 ## Known gaps between Figma and the app
 
-- Section 10's rules (no "No note" line, "Entry" for untimed entries in day-grouped lists, the 20 px stat values, the plain date and time on entry detail with Sand only around the stool form) aren't yet copied into the other frames that show the same components, for example 1.4, 3.4, 4.1, 4.3, 4.8 and 4.12.
+- Some older journal and History frames still use stat values larger than the M6.2 20 px. The "No note" lines and "No time" titles in day lists were fixed on 8 November.
 - The app has screens Figma doesn't draw: the blocked states other than the key problem (storage unavailable, encryption unavailable, setup failed), the locked placeholder, and the debug-only developer tools.
-- Entry detail (4.8) uses a longer type description ("Soft pieces with clear-cut edges") than the stool step (3.2, "Clear-cut edges"). The app uses the step's wording in both places.
