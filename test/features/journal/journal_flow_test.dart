@@ -1,16 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:poop_tracker/app/providers.dart';
+import 'package:poop_tracker/app/router.dart';
 import 'package:poop_tracker/app/scope.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/features/journal/data/entry_repository.dart';
 import 'package:poop_tracker/features/journal/domain/entry.dart';
-import 'package:poop_tracker/features/journal/presentation/editor/entry_editor_screen.dart';
 import 'package:poop_tracker/ui/theme/morrow_theme.dart';
 import 'package:poop_tracker/ui/theme/morrow_typography.dart';
 
@@ -18,21 +15,36 @@ import '../../support/app_harness.dart';
 import '../../support/fake_clock.dart';
 import '../../support/harness.dart';
 
-/// Repository whose next N creates fail, as if the disk were full.
+/// Repository whose next creates or updates fail, as if the disk were full.
 class FlakyRepository extends EntryRepository {
-  FlakyRepository(super.db, super.clock, {this.failures = 1});
+  FlakyRepository(
+    super.db,
+    super.clock, {
+    this.failCreates = 0,
+    this.failUpdates = 0,
+  });
 
-  int failures;
-  int attempts = 0;
+  int failCreates;
+  int failUpdates;
+  int updates = 0;
 
   @override
   Future<Entry> create(EntryDraft draft) async {
-    attempts++;
-    if (failures > 0) {
-      failures--;
+    if (failCreates > 0) {
+      failCreates--;
       throw StateError('simulated write failure');
     }
     return super.create(draft);
+  }
+
+  @override
+  Future<Entry> update(int id, EntryDraft draft) async {
+    updates++;
+    if (failUpdates > 0) {
+      failUpdates--;
+      throw StateError('simulated write failure');
+    }
+    return super.update(id, draft);
   }
 }
 
@@ -249,25 +261,26 @@ void main() {
       expect(find.text('This week’s journal'), findsOneWidget);
     });
 
-    appTest('a selected past day is the date of a new entry', (tester) async {
+    appTest('a selected past day: one tap adds a date-only entry', (
+      tester,
+    ) async {
       await pumpReady(tester);
       await tester.tap(
         find.bySemanticsLabel('Wednesday 4 November, no entries'),
       );
       await tester.pumpAndSettle();
       await tapText(tester, 'Add an entry');
-      // A past day starts without a time: the current time would be a guess.
-      expect(find.text('Wednesday · No time'), findsOneWidget);
-      // Opening on a chosen day is not an edit: closing needs no confirmation.
-      await tester.tap(find.byTooltip('Close'));
-      await tester.pumpAndSettle();
-      expect(find.text('Discard this entry?'), findsNothing);
-
-      await tapText(tester, 'Add an entry');
-      await tapText(tester, 'Save entry');
+      // Saved straight away, without a time: the current time would be a
+      // guess for a past day.
       final saved = (await seed.all()).single;
       expect(saved.localDate.day, 4);
       expect(saved.hasTime, isFalse);
+      expect(find.text('Wednesday’s entry'), findsOneWidget);
+      expect(find.text('Added to Wednesday'), findsOneWidget);
+      expect(find.text('Wednesday · No time'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
       expect(find.text('Wednesday’s journal'), findsOneWidget);
       // The day is the heading, so an untimed card is titled "Entry".
       expect(find.text('Entry'), findsOneWidget);
@@ -282,32 +295,68 @@ void main() {
     });
   });
 
-  group('adding an entry', () {
-    appTest('saves with only a date and time (2.2, 2.7)', (tester) async {
+  group('one-tap entry', () {
+    appTest('one tap saves today with the time, then Close (2.1, 2.2)', (
+      tester,
+    ) async {
       await pumpReady(tester);
       await tapText(tester, 'Add an entry');
-      expect(find.text('New entry'), findsOneWidget);
-      expect(find.text('Today, 1:41 pm'), findsOneWidget);
-      expect(find.text('0 / 500'), findsOneWidget);
+      final saved = (await seed.all()).single;
+      expect(saved.hasTime, isTrue);
+      expect(saved.localWallClock.hour, 13);
+      expect(saved.localWallClock.minute, 41);
 
-      await tapText(tester, 'Save entry');
-      expect(find.text('Entry saved'), findsOneWidget);
-      expect(find.text('New entry'), findsNothing);
+      expect(find.text('Today’s entry'), findsOneWidget);
+      expect(find.text('Added to today'), findsOneWidget);
+      expect(find.text('Undo'), findsOneWidget);
       expect(find.text('Today · 1:41 pm'), findsOneWidget);
-      // A card without a note is a single line; no "No note".
+      expect(find.text('0 / 500'), findsOneWidget);
+      // Nothing to save: "Saved", disabled, with a tick.
+      expect(find.text('Saved'), findsOneWidget);
+      expect(
+        tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNull,
+      );
+      expect(find.text('Unsaved changes'), findsNothing);
+      // A just-added entry has Undo instead of Delete.
+      expect(find.text('Delete this entry'), findsNothing);
+
+      // Closing needs no confirmation: the entry is already saved.
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(find.text('Discard changes?'), findsNothing);
+      expect(find.text('Today · 1:41 pm'), findsOneWidget);
       expect(find.text('No note'), findsNothing);
       expect(find.bySemanticsLabel('Today · 1:41 pm'), findsOneWidget);
       expect(await seed.all(), hasLength(1));
     });
 
-    appTest('saves a note and counts its characters', (tester) async {
+    appTest('a double tap on Add an entry creates one entry', (tester) async {
+      await pumpReady(tester);
+      final add = find.text('Add an entry');
+      await tester.tap(add);
+      await tester.tap(add, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(await seed.all(), hasLength(1));
+    });
+
+    appTest('a note wakes Save; Save stores it and returns (2.5, 2.8)', (
+      tester,
+    ) async {
       await pumpReady(tester);
       await tapText(tester, 'Add an entry');
       await tester.enterText(noteField(), 'Felt fine after lunch');
       await tester.pump();
       expect(find.text('21 / 500'), findsOneWidget);
-      await tapText(tester, 'Save entry');
+      expect(find.text('Unsaved changes'), findsOneWidget);
+      expect(find.text('Saved'), findsNothing);
+      // Undo stays until the page is left.
+      expect(find.text('Undo'), findsOneWidget);
+      await tapText(tester, 'Save');
+      expect(find.text('Changes saved'), findsOneWidget);
+      expect(find.text('Today’s entry'), findsNothing);
       expect(find.text('Felt fine after lunch'), findsOneWidget);
+      expect((await seed.all()).single.comment, 'Felt fine after lunch');
     });
 
     appTest('the note cannot go past 500 characters', (tester) async {
@@ -316,21 +365,40 @@ void main() {
       await tester.enterText(noteField(), 'a' * 600);
       await tester.pump();
       expect(find.text('500 / 500'), findsOneWidget);
-      await tapText(tester, 'Save entry');
+      await tapText(tester, 'Save');
       expect((await seed.all()).single.comment, hasLength(500));
     });
 
-    appTest('a double tap on save creates one entry', (tester) async {
+    appTest('Undo before any change removes the entry at once', (tester) async {
       await pumpReady(tester);
       await tapText(tester, 'Add an entry');
-      final save = find.text('Save entry');
-      await tester.tap(save);
-      await tester.tap(save, warnIfMissed: false);
-      await tester.pumpAndSettle();
-      expect(await seed.all(), hasLength(1));
+      await tapText(tester, 'Undo');
+      expect(find.text('Undo this entry?'), findsNothing);
+      expect(find.text('Entry removed'), findsOneWidget);
+      expect(find.text('Nothing here yet'), findsOneWidget);
+      expect(await seed.all(), isEmpty);
     });
 
-    appTest('Yesterday can be chosen in the time sheet (2.3)', (tester) async {
+    appTest('Undo after a change asks first (2.11)', (tester) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tester.enterText(noteField(), 'Draft');
+      await tester.pump();
+      await tapText(tester, 'Undo');
+      expect(find.text('Undo this entry?'), findsOneWidget);
+      await tapText(tester, 'Keep entry');
+      expect(await seed.all(), hasLength(1));
+      expect(find.text('Draft'), findsOneWidget);
+
+      await tapText(tester, 'Undo');
+      await tapText(tester, 'Undo entry');
+      expect(await seed.all(), isEmpty);
+      expect(find.text('Your journal'), findsOneWidget);
+    });
+
+    appTest('Yesterday can be chosen in the time sheet (2.3, 2.4)', (
+      tester,
+    ) async {
       await pumpReady(tester);
       await tapText(tester, 'Add an entry');
       await tapText(tester, 'When');
@@ -339,13 +407,12 @@ void main() {
         find.text('Only the date is required. Add a time if you know it.'),
         findsOneWidget,
       );
-      // Today starts with a time; picking a past day turns it off.
-      expect(find.text('Hour'), findsNothing);
       await tapText(tester, 'Yesterday');
       expect(find.byType(CupertinoPicker), findsNothing);
       await tapText(tester, 'Done');
       expect(find.text('Yesterday · No time'), findsOneWidget);
-      await tapText(tester, 'Save entry');
+      expect(find.text('Unsaved changes'), findsOneWidget);
+      await tapText(tester, 'Save');
       final saved = (await seed.all()).single;
       expect(saved.localDate.day, 5);
       expect(saved.hasTime, isFalse);
@@ -363,33 +430,33 @@ void main() {
       await tapText(tester, 'Record a time');
       expect(find.byType(CupertinoPicker), findsNWidgets(3));
       await tapText(tester, 'Done');
-      expect(find.text('Yesterday, 1:41 pm'), findsOneWidget);
+      expect(find.text('Yesterday · 1:41 pm'), findsOneWidget);
 
       await tapText(tester, 'When');
       await tapText(tester, 'Today');
       await tapText(tester, 'Record a time');
       await tapText(tester, 'Done');
       expect(find.text('Today · No time'), findsOneWidget);
-      await tapText(tester, 'Save entry');
+      await tapText(tester, 'Save');
       final saved = (await seed.all()).single;
       expect(saved.hasTime, isFalse);
       expect(saved.localDate.day, 6);
-      // Untimed entries show just the day.
       expect(find.bySemanticsLabel('Today'), findsOneWidget);
+    });
+
+    appTest('choosing the stored time again leaves nothing to save', (
+      tester,
+    ) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      await tapText(tester, 'Done');
+      expect(find.text('Saved'), findsOneWidget);
     });
   });
 
-  group('discarding', () {
-    appTest('closing with no changes needs no confirmation', (tester) async {
-      await pumpReady(tester);
-      await tapText(tester, 'Add an entry');
-      await tester.tap(find.byTooltip('Close'));
-      await tester.pumpAndSettle();
-      expect(find.text('Discard this entry?'), findsNothing);
-      expect(find.text('Your journal'), findsOneWidget);
-    });
-
-    appTest('a typed note asks first; Keep editing keeps it (2.6)', (
+  group('leaving with unsaved changes', () {
+    appTest('Close asks first; Keep editing keeps the note (2.7)', (
       tester,
     ) async {
       await pumpReady(tester);
@@ -397,15 +464,23 @@ void main() {
       await tester.enterText(noteField(), 'Draft');
       await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
-      expect(find.text('Discard this entry?'), findsOneWidget);
+      expect(find.text('Discard changes?'), findsOneWidget);
+      expect(
+        find.text(
+          'Your entry is already saved. Only the changes you just made to it '
+          'will be lost.',
+        ),
+        findsOneWidget,
+      );
       await tapText(tester, 'Keep editing');
       expect(find.text('Draft'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
-      await tapText(tester, 'Discard');
+      await tapText(tester, 'Discard changes');
       expect(find.text('Your journal'), findsOneWidget);
-      expect(await seed.all(), isEmpty);
+      // The entry stays; only the note was discarded.
+      expect((await seed.all()).single.comment, isNull);
     });
 
     appTest('the system back gesture also asks first', (tester) async {
@@ -413,39 +488,53 @@ void main() {
       await tapText(tester, 'Add an entry');
       await tester.enterText(noteField(), 'Draft');
       await tester.pump(); // a frame passes between typing and going back
-      // The Android back button / back gesture.
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      expect(find.text('Discard this entry?'), findsOneWidget);
-      expect(find.text('New entry'), findsOneWidget);
+      expect(find.text('Discard changes?'), findsOneWidget);
+      expect(find.text('Today’s entry'), findsOneWidget);
       await tapText(tester, 'Keep editing');
       expect(find.text('Draft'), findsOneWidget);
     });
   });
 
-  group('detail, edit and delete', () {
-    appTest('shows an entry (4.7)', (tester) async {
-      await seedAt(6, 13, 35, note: 'Felt fine after lunch');
+  group('the entry page for an existing entry', () {
+    appTest('shows the entry, with Saved and Delete (4.7)', (tester) async {
+      await seedAt(4, 18, 20, note: 'Quiet evening');
       await pumpReady(tester);
-      await tapText(tester, 'Today · 1:35 pm');
-      expect(find.text('Entry details'), findsOneWidget);
-      expect(find.text('Friday, 6 November 2026'), findsOneWidget);
-      expect(find.text('1:35 pm'), findsOneWidget);
-      expect(find.text('Felt fine after lunch'), findsOneWidget);
-      expect(
-        find.text('Saved on this device · Not shared anywhere'),
-        findsNothing,
-      );
+      await tapText(tester, 'Wednesday · 6:20 pm');
+      expect(find.text('Wednesday’s entry'), findsOneWidget);
+      expect(find.text('Wednesday · 6:20 pm'), findsOneWidget);
+      expect(find.text('Quiet evening'), findsOneWidget);
+      expect(find.text('Saved'), findsOneWidget);
+      expect(find.text('Delete this entry'), findsOneWidget);
+      // No Undo, and no separate view or edit screen.
+      expect(find.text('Undo'), findsNothing);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Entry details'), findsNothing);
     });
 
-    appTest('edit changes the note and keeps the entry (4.9)', (tester) async {
+    appTest('an entry older than a week is titled "Entry"', (tester) async {
+      await seed.create(
+        EntryDraft(
+          occurredAtUtc: DateTime.utc(2026, 10, 28, 9),
+          originalUtcOffsetMinutes: 0,
+          comment: 'Last week',
+        ),
+      );
+      await pumpReady(tester);
+      await tester.tap(find.byTooltip('Previous week'));
+      await tester.pumpAndSettle();
+      await tapText(tester, 'Wednesday 28 Oct · 9:00 am');
+      expect(find.text('Entry'), findsOneWidget);
+      expect(find.text('Wednesday 28 Oct · 9:00 am'), findsOneWidget);
+    });
+
+    appTest('changing the note keeps the entry (4.8)', (tester) async {
       final original = await seedAt(6, 13, 35, note: 'Felt fine after lunch');
       await pumpReady(tester);
       await tapText(tester, 'Today · 1:35 pm');
-      await tapText(tester, 'Edit');
-      expect(find.text('Edit entry'), findsOneWidget);
       await tester.enterText(noteField(), 'Felt fine after a late lunch');
-      await tapText(tester, 'Save changes');
+      await tapText(tester, 'Save');
       expect(find.text('Changes saved'), findsOneWidget);
       expect(find.text('Felt fine after a late lunch'), findsOneWidget);
       final all = await seed.all();
@@ -453,20 +542,7 @@ void main() {
       expect(all.single.uid, original.uid);
     });
 
-    appTest('Cancel on edit with changes asks first', (tester) async {
-      await seedAt(6, 13, 35, note: 'Felt fine after lunch');
-      await pumpReady(tester);
-      await tapText(tester, 'Today · 1:35 pm');
-      await tapText(tester, 'Edit');
-      await tester.enterText(noteField(), 'Changed');
-      await tapText(tester, 'Cancel');
-      expect(find.text('Discard your changes?'), findsOneWidget);
-      await tapText(tester, 'Discard changes');
-      expect(find.text('Felt fine after lunch'), findsOneWidget);
-      expect((await seed.all()).single.comment, 'Felt fine after lunch');
-    });
-
-    appTest('delete asks, then removes the entry (4.10, 4.11)', (tester) async {
+    appTest('delete asks, then removes the entry (4.9, 4.10)', (tester) async {
       await seedAt(6, 13, 35, note: 'Felt fine after lunch');
       await pumpReady(tester);
       await tapText(tester, 'Today · 1:35 pm');
@@ -479,20 +555,8 @@ void main() {
       await tapText(tester, 'Delete this entry');
       await tapText(tester, 'Delete entry');
       expect(find.text('Entry deleted'), findsOneWidget);
-      expect(find.text('Entry details'), findsNothing);
+      expect(find.text('Today’s entry'), findsNothing);
       expect(find.text('Nothing here yet'), findsOneWidget);
-      expect(await seed.all(), isEmpty);
-    });
-
-    appTest('delete from the edit screen', (tester) async {
-      await seedAt(6, 13, 35);
-      await pumpReady(tester);
-      await tapText(tester, 'Today · 1:35 pm');
-      await tapText(tester, 'Edit');
-      await tapText(tester, 'Delete this entry');
-      await tapText(tester, 'Delete entry');
-      expect(find.text('Edit entry'), findsNothing);
-      expect(find.text('Entry details'), findsNothing);
       expect(await seed.all(), isEmpty);
     });
   });
@@ -595,16 +659,27 @@ void main() {
       await pumpReady(tester);
       await openHistory(tester);
       await tapText(tester, 'Felt fine after lunch');
-      expect(find.text('Entry details'), findsOneWidget);
-      await tester.tap(find.byTooltip('Back'));
+      expect(find.text('Today’s entry'), findsOneWidget);
+      expect(find.text('Saved'), findsOneWidget);
+      await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
       expect(find.text('Your history'), findsOneWidget);
+    });
+
+    appTest('Add an entry on an empty History adds and opens it', (
+      tester,
+    ) async {
+      await pumpReady(tester);
+      await openHistory(tester);
+      await tapText(tester, 'Add an entry');
+      expect(find.text('Today’s entry'), findsOneWidget);
+      expect(await seed.all(), hasLength(1));
     });
   });
 
   group('large text', () {
     for (final scale in textScales) {
-      appTest('journal, editor and history at ${(scale * 100).toInt()}%', (
+      appTest('journal, entry page and history at ${(scale * 100).toInt()}%', (
         tester,
       ) async {
         await seedAt(6, 13, 35, note: 'Felt fine after lunch');
@@ -612,35 +687,33 @@ void main() {
         await pumpReady(tester, textScale: scale, size: smallPhone);
         expect(tester.takeException(), isNull, reason: 'journal');
         await tapText(tester, 'Add an entry');
-        expect(tester.takeException(), isNull, reason: 'editor');
-        await tester.tap(find.byTooltip('Close'));
+        expect(tester.takeException(), isNull, reason: 'new entry');
+        await reveal(tester, noteField());
+        await tester.enterText(noteField(), 'Synthetic note');
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: 'unsaved changes');
+        await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'discard dialog');
+        await tapText(tester, 'Discard changes');
         await tester.tap(find.text('History').last);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: 'history');
         await tapText(tester, 'Felt fine after lunch');
-        expect(tester.takeException(), isNull, reason: 'detail');
+        expect(tester.takeException(), isNull, reason: 'entry page');
       });
     }
   });
 
-  group('failed save', () {
-    appTest('keeps the draft and can be retried (2.5)', (tester) async {
-      final flaky = FlakyRepository(db, figmaNow);
+  group('failed saves', () {
+    /// The real router inside an unlocked scope, with [repo] in place of the
+    /// journal repository.
+    Future<void> pumpWithRepository(
+      WidgetTester tester,
+      EntryRepository repo,
+    ) async {
       useScreenSize(tester, figmaPhone);
-      final router = GoRouter(
-        initialLocation: '/',
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (_, _) => const Scaffold(body: Text('Home')),
-          ),
-          GoRoute(
-            path: '/entry/new',
-            builder: (_, _) => const NewEntryScreen(),
-          ),
-        ],
-      );
+      final router = buildAppRouter();
       addTearDown(router.dispose);
       await tester.pumpWidget(
         ProviderScope(
@@ -648,7 +721,7 @@ void main() {
           child: UnlockedScope(
             database: db,
             child: ProviderScope(
-              overrides: [entryRepositoryProvider.overrideWithValue(flaky)],
+              overrides: [entryRepositoryProvider.overrideWithValue(repo)],
               child: MaterialApp.router(
                 theme: buildMorrowTheme(),
                 routerConfig: router,
@@ -658,20 +731,44 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      unawaited(router.push('/entry/new'));
-      await tester.pumpAndSettle();
+    }
 
-      await tester.enterText(noteField(), 'Felt fine after lunch');
-      await tapText(tester, 'Save entry');
-      expect(find.text('Couldn’t save your entry'), findsOneWidget);
-      expect(find.text('Felt fine after lunch'), findsOneWidget);
-      expect(find.text('Try again'), findsOneWidget);
-      expect(find.text('Entry saved'), findsNothing);
+    appTest('a failed one-tap add saves nothing and says so (2.10)', (
+      tester,
+    ) async {
+      await pumpWithRepository(
+        tester,
+        FlakyRepository(db, figmaNow, failCreates: 1),
+      );
+      await tapText(tester, 'Add an entry');
+      expect(find.text('Couldn’t add an entry'), findsOneWidget);
+      expect(find.text('Nothing was saved. Try again.'), findsOneWidget);
+      expect(find.text('Today’s entry'), findsNothing);
       expect(await seed.all(), isEmpty);
 
+      await tapText(tester, 'Add an entry');
+      expect(find.text('Today’s entry'), findsOneWidget);
+      expect(await seed.all(), hasLength(1));
+    });
+
+    appTest('a failed Save keeps the changes and can be retried (2.6)', (
+      tester,
+    ) async {
+      final flaky = FlakyRepository(db, figmaNow, failUpdates: 1);
+      await pumpWithRepository(tester, flaky);
+      await tapText(tester, 'Add an entry');
+      await tester.enterText(noteField(), 'Felt fine after lunch');
+      await tapText(tester, 'Save');
+      expect(find.text('Couldn’t save your changes'), findsOneWidget);
+      expect(find.text('Felt fine after lunch'), findsOneWidget);
+      expect(find.text('Not saved yet'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.text('Changes saved'), findsNothing);
+      expect((await seed.all()).single.comment, isNull);
+
       await tapText(tester, 'Try again');
-      expect(flaky.attempts, 2);
-      expect(find.text('Home'), findsOneWidget);
+      expect(flaky.updates, 2);
+      expect(find.text('Your journal'), findsOneWidget);
       expect((await seed.all()).single.comment, 'Felt fine after lunch');
     });
   });

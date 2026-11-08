@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/morrow_colors.dart';
 import '../theme/morrow_tokens.dart';
 
-/// A selectable chip, as used on the "A little context" step.
+/// A selectable chip, as used for the tags on the Context page.
 ///
 /// The selected state is shown by a check mark and bolder text as well as
 /// colour, and is exposed to screen readers by [FilterChip].

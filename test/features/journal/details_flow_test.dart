@@ -12,7 +12,7 @@ import '../../support/harness.dart';
 /// Wording that must not appear in the main flows while both optional-detail
 /// settings are off (the default).
 final RegExp _detailWording = RegExp(
-  r'stool|symptom|bristol|type \d|easy to pass|straining|little context|'
+  r'stool|symptom|bristol|type \d|easy to pass|straining|context|'
   'on my period|feeling sick',
   caseSensitive: false,
 );
@@ -72,6 +72,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Closes the details sheet by tapping the dimmed page above it.
+  Future<void> dismissSheet(WidgetTester tester) async {
+    await tester.tapAt(const Offset(200, 40));
+    await tester.pumpAndSettle();
+  }
+
+  bool selected(WidgetTester tester, Finder f) =>
+      tester.getSemantics(f).flagsCollection.isSelected.toBoolOrNull()!;
+
   void expectNoDetailWording(String where) {
     expect(find.textContaining(_detailWording), findsNothing, reason: where);
     expect(
@@ -87,20 +96,15 @@ void main() {
       await pump(tester);
       expectNoDetailWording('journal');
 
-      await tapText(tester, 'Add an entry');
-      expect(find.text('Optional details'), findsNothing);
-      expectNoDetailWording('new entry');
+      await tapText(tester, 'Today · 1:35 pm');
+      expect(find.text('Felt fine after lunch'), findsOneWidget);
+      expectNoDetailWording('entry page');
       await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
 
-      await tapText(tester, 'Today · 1:35 pm');
-      expect(find.text('Felt fine after lunch'), findsOneWidget);
-      expectNoDetailWording('entry detail');
-      await tapText(tester, 'Edit');
-      expectNoDetailWording('edit entry');
+      await tapText(tester, 'Add an entry');
+      expectNoDetailWording('new entry');
       await tester.tap(find.byTooltip('Close'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('History'));
@@ -113,7 +117,7 @@ void main() {
       await pump(tester);
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
-      for (final title in ['Stool form', 'A little context']) {
+      for (final title in ['Stool form', 'Context']) {
         final row = find.ancestor(
           of: find.text(title),
           matching: find.byType(MergeSemantics),
@@ -124,15 +128,16 @@ void main() {
           reason: title,
         );
       }
+      expect(find.text('A little context'), findsNothing);
     });
   });
 
   group('the four combinations', () {
     const combos = [
-      (stool: false, context: false, steps: <String>[]),
-      (stool: true, context: false, steps: ['Stool form']),
-      (stool: false, context: true, steps: ['A little context']),
-      (stool: true, context: true, steps: ['Stool form', 'A little context']),
+      (stool: false, context: false, pages: <String>[]),
+      (stool: true, context: false, pages: ['Stool form']),
+      (stool: false, context: true, pages: ['Context']),
+      (stool: true, context: true, pages: ['Context', 'Stool form']),
     ];
 
     for (final c in combos) {
@@ -148,158 +153,181 @@ void main() {
           c.context ? findsOneWidget : findsNothing,
         );
 
-        // Editor: one row per enabled step, with an adapting step count.
-        await tapText(tester, 'Add an entry');
-        expect(
-          find.text('Optional details'),
-          c.steps.isEmpty ? findsNothing : findsOneWidget,
-        );
-        for (final row in ['Stool form', 'A little context']) {
-          expect(
-            find.text(row),
-            c.steps.contains(row) ? findsOneWidget : findsNothing,
-          );
-        }
-        if (c.steps.isNotEmpty) {
-          await tapText(tester, c.steps.first);
-          // The progress bar has one segment per enabled step.
-          expect(
-            find.bySemanticsLabel('Step 1 of ${c.steps.length}'),
-            findsOneWidget,
-          );
-          await tester.binding.handlePopRoute();
-          await tester.pumpAndSettle();
-        }
-        await tester.tap(find.byTooltip('Close'));
-        await tester.pumpAndSettle();
-
-        // Entry detail.
+        // Entry page: one card per enabled detail, Context first.
         await tapText(tester, 'Today · 1:35 pm');
+        expect(
+          find.text('Easy · After a meal, Coffee'),
+          c.context ? findsOneWidget : findsNothing,
+        );
         expect(
           find.text('Type 5 · Soft blobs'),
           c.stool ? findsOneWidget : findsNothing,
         );
-        expect(
-          find.text('Ease of passage'),
-          c.context ? findsOneWidget : findsNothing,
-        );
-        expect(find.text('Coffee'), c.context ? findsOneWidget : findsNothing);
+        if (c.stool && c.context) {
+          expect(
+            tester.getTopLeft(find.text('Context')).dy,
+            lessThan(tester.getTopLeft(find.text('Stool form')).dy),
+          );
+        }
         expect(find.textContaining('Optional'), findsNothing);
         expect(find.text('Felt fine after lunch'), findsOneWidget);
+
+        if (c.pages.isNotEmpty) {
+          await tapText(tester, c.pages.first);
+          // A position bar only when there is more than one page.
+          expect(
+            find.bySemanticsLabel('Page 1 of 2'),
+            c.pages.length > 1 ? findsOneWidget : findsNothing,
+          );
+          expect(
+            find.text('Next'),
+            c.pages.length > 1 ? findsOneWidget : findsNothing,
+          );
+          expect(
+            find.text('Done'),
+            c.pages.length > 1 ? findsNothing : findsOneWidget,
+          );
+        }
       });
     }
   });
 
-  group('adding details', () {
-    appTest('both steps, then save (3.1–3.4)', (tester) async {
+  group('the details sheet', () {
+    appTest('Context, Next, Stool form, Done: all saved as chosen', (
+      tester,
+    ) async {
       await configure(stool: true, context: true);
       await pump(tester);
       await tapText(tester, 'Add an entry');
-      expect(find.text('Not set'), findsNWidgets(2));
+      expect(find.text('Not added'), findsNWidgets(2));
 
-      await tapText(tester, 'Stool form');
-      expect(find.bySemanticsLabel('Step 1 of 2'), findsOneWidget);
-      expect(find.text('What was the form?'), findsOneWidget);
-      expect(find.text('Choose the closest match'), findsOneWidget);
-      expect(find.text('Skip and save entry'), findsNothing);
-      await tapText(tester, '4 · Smooth and soft');
-      expect(
-        tester.getSemantics(find.bySemanticsLabel(RegExp('^Type 4, '))),
-        isSemantics(isSelected: true),
-      );
-      await tapText(tester, 'Continue');
-
-      expect(find.bySemanticsLabel('Step 2 of 2'), findsOneWidget);
-      expect(
-        find.textContaining(RegExp('optional', caseSensitive: false)),
-        findsNothing,
-      );
-      expect(find.text('Any symptoms?'), findsNothing);
-      expect(find.text('Exercise'), findsNothing);
+      await tapText(tester, 'Context');
+      expect(find.bySemanticsLabel('Page 1 of 2'), findsOneWidget);
+      expect(find.text('Saved as you choose'), findsOneWidget);
+      expect(find.text('How did it feel?'), findsOneWidget);
+      expect(find.text('Anything going on?'), findsOneWidget);
+      expect(find.text('Anything to note?'), findsNothing);
       expect(find.text('On my period'), findsOneWidget);
-      expect(find.text('Feeling sick'), findsOneWidget);
-      expect(find.text('Type 4 · Smooth and soft'), findsOneWidget);
       await tapText(tester, 'Easy');
       await tapText(tester, 'Coffee');
       await tapText(tester, 'Feeling sick');
-      await tester.enterText(find.byType(TextField), 'Synthetic note');
-      await tester.pump();
-      await tapText(tester, 'Save entry');
+      // Stored straight away, before Next or Done.
+      final afterContext = (await repo.all()).single;
+      expect(afterContext.ease, Ease.easy);
+      expect(afterContext.tags, {Tag.coffee, Tag.feelingSick});
 
-      expect(find.text('Entry saved'), findsOneWidget);
-      expect(find.text('What was the form?'), findsNothing);
-      expect(find.text('New entry'), findsNothing);
+      await tapText(tester, 'Next');
+      expect(find.bySemanticsLabel('Page 2 of 2'), findsOneWidget);
+      expect(find.text('Choose the closest match'), findsOneWidget);
+      await tapText(tester, '4 · Smooth and soft');
+      expect(
+        selected(tester, find.bySemanticsLabel(RegExp('^Type 4, '))),
+        isTrue,
+      );
+      await tapText(tester, 'Done');
+
+      // Back on the entry page: the cards summarise, nothing to save.
+      expect(find.text('Easy · Coffee, Feeling sick'), findsOneWidget);
+      expect(find.text('Type 4 · Smooth and soft'), findsOneWidget);
+      expect(find.text('Saved'), findsOneWidget);
       final saved = (await repo.all()).single;
       expect(saved.stoolType, 4);
       expect(saved.ease, Ease.easy);
       expect(saved.tags, {Tag.coffee, Tag.feelingSick});
-      expect(saved.comment, 'Synthetic note');
 
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
       expect(find.text('TYPE 4'), findsOneWidget);
       expect(find.text('Smooth and soft · Easy to pass'), findsOneWidget);
     });
 
-    appTest('one step only: one progress segment, Done returns to editor', (
-      tester,
-    ) async {
-      await configure(stool: true, context: false);
-      await pump(tester);
-      await tapText(tester, 'Add an entry');
-      await tapText(tester, 'Stool form');
-      expect(find.bySemanticsLabel('Step 1 of 1'), findsOneWidget);
-      expect(find.text('Done'), findsOneWidget);
-      await tapText(tester, '7 · Entirely liquid');
-      await tapText(tester, 'Done');
-      expect(find.text('Type 7 · Entirely liquid'), findsOneWidget);
-      await tapText(tester, 'Save entry');
-      expect((await repo.all()).single.stoolType, 7);
-    });
-
-    appTest('Skip on the context step returns to the editor', (tester) async {
-      await configure(stool: false, context: true);
-      await pump(tester);
-      await tapText(tester, 'Add an entry');
-      await tapText(tester, 'A little context');
-      await tapText(tester, 'Skip');
-      expect(find.text('Optional details'), findsOneWidget);
-      expect(find.text('Not set'), findsOneWidget);
-    });
-
-    appTest('every step can be skipped; saving with only a time works', (
+    appTest('the Stool form card opens on its page; swipe back to Context', (
       tester,
     ) async {
       await configure(stool: true, context: true);
       await pump(tester);
       await tapText(tester, 'Add an entry');
       await tapText(tester, 'Stool form');
-      await tapText(tester, 'Skip');
-      expect(find.text('A little context'), findsWidgets);
-      await tapText(tester, 'Save entry');
-      final saved = (await repo.all()).single;
-      expect(saved.stoolType, isNull);
-      expect(saved.ease, isNull);
-      expect(saved.tags, isEmpty);
+      expect(find.bySemanticsLabel('Page 2 of 2'), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
+      await tester.fling(find.byType(PageView), const Offset(300, 0), 1000);
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('Page 1 of 2'), findsOneWidget);
+      expect(find.text('Next'), findsOneWidget);
+      await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('Page 2 of 2'), findsOneWidget);
     });
 
-    appTest('tapping a chosen chip again clears it', (tester) async {
+    appTest('closing without Done keeps the choices', (tester) async {
+      await configure(stool: true, context: false);
+      await pump(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'Stool form');
+      await tapText(tester, '7 · Entirely liquid');
+      await dismissSheet(tester);
+      expect(find.text('Type 7 · Entirely liquid'), findsOneWidget);
+      expect((await repo.all()).single.stoolType, 7);
+    });
+
+    appTest('Clear empties the page; tapping a choice again clears it', (
+      tester,
+    ) async {
       await configure(stool: false, context: true);
       await pump(tester);
       await tapText(tester, 'Add an entry');
-      await tapText(tester, 'A little context');
-      bool selected(String label) => tester
-          .getSemantics(find.text(label))
-          .flagsCollection
-          .isSelected
-          .toBoolOrNull()!;
+      await tapText(tester, 'Context');
       await tapText(tester, 'Stress');
       await tapText(tester, 'On my period');
-      expect(selected('Stress') && selected('On my period'), isTrue);
+      expect(
+        selected(tester, find.text('Stress')) &&
+            selected(tester, find.text('On my period')),
+        isTrue,
+      );
       await tapText(tester, 'Stress');
-      expect(selected('Stress'), isFalse);
+      expect(selected(tester, find.text('Stress')), isFalse);
+
+      // Ease is a single choice.
       await tapText(tester, 'Easy');
       await tapText(tester, 'Difficult');
-      expect(selected('Easy'), isFalse, reason: 'ease is single choice');
-      expect(selected('Difficult'), isTrue);
+      expect(selected(tester, find.bySemanticsLabel('Easy, 1 of 3')), isFalse);
+      expect(
+        selected(tester, find.bySemanticsLabel('Difficult, 3 of 3')),
+        isTrue,
+      );
+      await tapText(tester, 'Difficult');
+      expect(
+        selected(tester, find.bySemanticsLabel('Difficult, 3 of 3')),
+        isFalse,
+      );
+
+      await tapText(tester, 'Easy');
+      await tapText(tester, 'Clear');
+      final saved = (await repo.all()).single;
+      expect(saved.ease, isNull);
+      expect(saved.tags, isEmpty);
+      await tapText(tester, 'Done');
+      expect(find.text('Not added'), findsOneWidget);
+    });
+
+    appTest('details are never an unsaved change; the note is', (tester) async {
+      await configure(stool: true, context: false);
+      await pump(tester);
+      await tapText(tester, 'Add an entry');
+      await tester.enterText(find.byType(TextField), 'Synthetic note');
+      await tester.pump();
+      await tapText(tester, 'Stool form');
+      await tapText(tester, '3 · Cracked surface');
+      await tapText(tester, 'Done');
+      // The note still needs Save; the type is already stored.
+      expect(find.text('Unsaved changes'), findsOneWidget);
+      final stored = (await repo.all()).single;
+      expect(stored.stoolType, 3);
+      expect(stored.comment, isNull);
+      await tapText(tester, 'Save');
+      final saved = (await repo.all()).single;
+      expect(saved.stoolType, 3);
+      expect(saved.comment, 'Synthetic note');
     });
   });
 
@@ -312,25 +340,22 @@ void main() {
       await pump(tester);
       expect(find.text('TYPE 5'), findsNothing);
 
-      // Edit only the note while the details are hidden.
+      // Change only the note while the details are hidden.
       await tapText(tester, 'Today · 1:35 pm');
-      await tapText(tester, 'Edit');
       await tester.enterText(find.byType(TextField), 'Edited while hidden');
       await tester.pump();
-      await tapText(tester, 'Save changes');
+      await tapText(tester, 'Save');
       final saved = (await repo.byId(original.id))!;
       expect(saved.comment, 'Edited while hidden');
       expect(saved.stoolType, 5);
       expect(saved.ease, Ease.easy);
       expect(saved.tags, {Tag.afterMeal, Tag.coffee});
-      await tester.tap(find.byTooltip('Back'));
-      await tester.pumpAndSettle();
 
       // Turn both on in Settings: the stored details reappear.
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
       await tapText(tester, 'Stool form');
-      await tapText(tester, 'A little context');
+      await tapText(tester, 'Context');
       final row = await db.select(db.appSettings).getSingle();
       expect(row.showStoolForm && row.showContext, isTrue);
       await tester.tap(find.text('Journal').last);
@@ -371,23 +396,23 @@ void main() {
   });
 
   group('large text', () {
-    appTest('steps and detail at 200%', (tester) async {
+    appTest('entry page and both sheet pages at 200%', (tester) async {
       await configure(stool: true, context: true);
       await seedDetailed();
       await pump(tester, textScale: 2);
-      expect(tester.takeException(), isNull, reason: '');
-      await tapText(tester, 'Add an entry');
-      await tapText(tester, 'Stool form');
-      expect(tester.takeException(), isNull, reason: '');
-      await tapText(tester, 'Continue');
-      expect(tester.takeException(), isNull, reason: '');
-      // At 200% the headers have scrolled away; use the system back action.
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'journal');
       await tapText(tester, 'Soft blobs · Easy to pass');
-      expect(tester.takeException(), isNull, reason: '');
+      expect(tester.takeException(), isNull, reason: 'entry page');
+      await tapText(tester, 'Easy · After a meal, Coffee');
+      expect(tester.takeException(), isNull, reason: 'context page');
+      // Labels that would break mid-word stack as rows instead.
+      expect(
+        tester.getTopLeft(find.text('Some straining')).dy,
+        greaterThan(tester.getTopLeft(find.text('Easy')).dy),
+      );
+      await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'stool form page');
     });
   });
 }

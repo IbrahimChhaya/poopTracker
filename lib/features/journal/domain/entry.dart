@@ -16,7 +16,7 @@ enum Ease {
   static Ease? fromCode(String code) => _byCode(values, code, (e) => e.code);
 }
 
-/// Circumstance tags ("Anything to note?"). Stored by [code].
+/// Circumstance tags ("Anything going on?"). Stored by [code].
 enum Tag {
   afterMeal('after_meal'),
   coffee('coffee'),

@@ -12,6 +12,7 @@ import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/states.dart';
 import '../../../ui/widgets/week_strip.dart';
 import '../domain/entry.dart';
+import 'entry/quick_add.dart';
 import 'journal_controller.dart';
 import 'widgets/entry_card.dart';
 
@@ -59,12 +60,13 @@ class _JournalBody extends ConsumerWidget {
     } else {
       heading = 'Week of ${formatDayMonth(view.shownWeekStart)}';
     }
-    // A selected past day becomes the new entry's default date.
+    // A selected past day is the new entry's date (with no time).
     final newEntryDay = selected != null && selected != view.today
         ? selected
         : null;
+    final adding = ref.watch(quickAddProvider);
 
-    void openEntry(Entry e) => context.go(AppPaths.journalEntry, extra: e.id);
+    void openEntry(Entry e) => openEntryPage(context, e.id);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
@@ -82,12 +84,22 @@ class _JournalBody extends ConsumerWidget {
         const SizedBox(height: MorrowSpacing.md),
         _StatCard(view: view),
         const SizedBox(height: MorrowSpacing.md),
+        // One tap saves the entry and opens it (2.1, 2.2).
         MorrowButton(
           label: 'Add an entry',
           icon: Icons.add,
           large: true,
-          onPressed: () => context.push(AppPaths.newEntry, extra: newEntryDay),
+          busy: adding.adding,
+          busyLabel: 'Adding…',
+          onPressed: () => addEntryAndOpen(context, ref, day: newEntryDay),
         ),
+        if (adding.failed) ...[
+          const SizedBox(height: MorrowSpacing.md),
+          const ErrorBanner(
+            title: 'Couldn’t add an entry',
+            message: 'Nothing was saved. Try again.',
+          ),
+        ],
         const SizedBox(height: MorrowSpacing.xl),
         SectionHeading(
           title: heading,

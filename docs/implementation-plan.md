@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is approved and not started.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -292,7 +292,7 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
 - **Tests:** 297 pass, including new stat-card layout tests at 100% and 130%. On the S20: journal at 100/130/200%, History, and timed and untimed detail checked. Not checked on the device: the details-on detail screen (stool form panel), covered by the 200% widget test only.
 - **Not changed:** the entry counts beside "This week's journal" and History's day headings (the mocks were cloned from frames without them, but removing them wasn't part of the critique); the step headers in the details flow keep the page-title size from Figma 3.2/3.3.
 
-### M6.3 — One-tap entry and one entry page (approved, not started)
+### M6.3 — One-tap entry and one entry page (built)
 - **Source:** Figma journeys 2.1–2.11, 3.1–3.6 and 4.7–4.9 (first drawn as section 11.2, "One-tap entry"), approved by the product owner on 8 November 2026. It replaces the earlier M6.3 proposals (sections 11 and 11.1, kept as superseded drafts). The aim: logging is as quick as the notes app it replaces (open, tap, close).
 - **One tap creates the entry:**
   - "Add an entry" saves straight away and opens the new entry's page. Today's entry records the current time. A past day selected in the week strip gets a date-only entry.
@@ -324,6 +324,39 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Screen-reader labels cover the button state and the sheet position ("Page 1 of 2").
   - The 200% text check passes on the S20.
   - DESIGN.md and the design catalogue's build status are updated.
+
+- **Built (8 November):**
+  - **Code:**
+    - `presentation/entry/`: `quick_add.dart` (one-tap add, double-tap guard, failure state), `entry_page.dart` and `entry_page_controller.dart` (one page; date, time and note unsaved until Save; details stored as chosen and written in order; Undo), `details_sheet.dart` (the two-page sheet) and `entry_time_sheet.dart` (moved, unchanged).
+    - One `/entry` route above the tabs. `extra` is `(id, isNew)`, never a path.
+    - `EntryRepository.updateDetails` writes only the details, in one transaction.
+    - New `MorrowSegmented` widget for "How did it feel?". `SettingRow.navigation` gained a text action ("Change").
+    - Removed: the old editor, step screens, Entry details and Edit entry, and their routes.
+  - **Tests:** 306 pass.
+    - The new controller tests cover quick add (today timed, past day untimed, double tap, failure and retry), Save, discarding, future times, details written in order and rolled back on failure, and Undo.
+    - The widget tests cover the one-tap flow, Saved and Save, Undo with and without changes, the discard prompt, the failed add and failed Save, the four setting combinations, sheet paging (Next, Done, swipe, one page), dismissing the sheet keeps the choices, Clear, hidden values kept, and 100% and 200% text.
+  - **Device check (S20, 8 November):**
+    - `integration_test/journal_flow_test.dart` passes. It covers one-tap add, change, Undo and delete, through the real encrypted database in a temporary folder. The encryption self-check and startup device tests also pass.
+    - Checked by hand at 100%:
+      - the one-tap page and "Saved"
+      - a note waking "Save" with the bar above the keyboard
+      - Undo after a change asking first
+      - "Context" in Settings
+      - both detail cards
+      - the sheet's Next, swipe and tap-outside dismiss, with choices kept
+    - Checked at 200%: the entry page, the Context page and the Stool form page.
+  - **Fixed during the device check:**
+    - A toast from the journal covered the next entry page's Save bar. The entry page now clears it on open.
+    - Clear showed when there was nothing to clear. It's now hidden, with its space kept.
+    - The two tag rows were too far apart.
+    - At 200% the segmented labels broke mid-word ("strainin/g"). The segments now stack as rows when a label doesn't fit.
+    - At 200% the "Anything going on?" heading was squeezed by its hint. The hint now wraps below.
+  - **Still to check:**
+    - TalkBack on "Saved", the segments ("Easy, 1 of 3") and "Page 1 of 2"
+    - iOS (M3's device check is still open)
+  - **Differences from Figma:**
+    - The disabled "Saved" button uses the theme's Disabled Surface rather than Sage Tint, like every other disabled button.
+    - Both detail cards say "Not added" (Figma updated to match).
 
 ### M7 — Weekly trends
 - **Scope (5.1–5.7):** 4/12/26-week ranges with previous/next navigation, summary tiles, weekly bar chart (Flutter widgets or CustomPaint), stool form and symptom sections behind their settings, not-enough-data state, and no health advice.

@@ -33,4 +33,7 @@ abstract final class MorrowSizes {
   static const double iconTile = 36;
   static const double iconTileIcon = 20;
   static const double dayCellMinHeight = 72;
+
+  /// Smallest tap target (Material and the accessibility brief).
+  static const double minTouchTarget = 48;
 }

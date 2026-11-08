@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/diagnostics/encryption_self_check.dart';
-import '../core/time/local_date.dart';
-import '../features/journal/presentation/editor/entry_editor_screen.dart';
-import '../features/journal/presentation/entry_detail_screen.dart';
+import '../features/journal/presentation/entry/entry_page.dart';
+import '../features/journal/presentation/entry/quick_add.dart';
 import '../features/journal/presentation/history_screen.dart';
 import '../features/journal/presentation/journal_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -23,18 +22,13 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
   return GoRouter(
     initialLocation: initialLocation,
     routes: [
-      // Full-screen editor above the tab bar (no bottom navigation).
+      // The entry page, full screen above the tab bar (no bottom
+      // navigation). Opened from the journal, a selected day and History.
       GoRoute(
-        path: AppPaths.newEntry,
-        builder: (_, state) => NewEntryScreen(
-          initialDate: state.extra is LocalDate
-              ? state.extra! as LocalDate
-              : null,
+        path: AppPaths.entry,
+        builder: (_, state) => EntryPage(
+          route: state.extra is EntryRoute ? state.extra! as EntryRoute : null,
         ),
-      ),
-      GoRoute(
-        path: AppPaths.editEntry,
-        builder: (_, state) => EditEntryScreen(entryId: _entryId(state)),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(shell: shell),
@@ -44,13 +38,6 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
               GoRoute(
                 path: AppPaths.journal,
                 builder: (_, _) => const JournalScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'entry',
-                    builder: (_, state) =>
-                        EntryDetailScreen(entryId: _entryId(state)),
-                  ),
-                ],
               ),
             ],
           ),
@@ -59,13 +46,6 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
               GoRoute(
                 path: AppPaths.history,
                 builder: (_, _) => const HistoryScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'entry',
-                    builder: (_, state) =>
-                        EntryDetailScreen(entryId: _entryId(state)),
-                  ),
-                ],
               ),
             ],
           ),
@@ -102,12 +82,6 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
     ],
   );
 }
-
-/// The entry id passed as in-memory route data. Null if missing (for
-/// example after the app was restored by the OS), in which case the screen
-/// closes itself.
-int? _entryId(GoRouterState state) =>
-    state.extra is int ? state.extra! as int : null;
 
 /// The bottom-navigation shell around the four tabs.
 class AppShell extends StatelessWidget {

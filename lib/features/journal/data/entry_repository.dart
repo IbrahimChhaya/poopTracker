@@ -91,6 +91,44 @@ class EntryRepository {
     return (await byId(id))!;
   }
 
+  /// Replaces only the optional details (stool form, ease and tags), leaving
+  /// the time and note as stored. The entry page saves details the moment
+  /// they are chosen, separately from unsaved time or note changes.
+  Future<Entry> updateDetails(
+    int id, {
+    required int? stoolType,
+    required Ease? ease,
+    required Set<Tag> tags,
+  }) async {
+    if (stoolType != null && (stoolType < 1 || stoolType > 7)) {
+      throw EntryValidationException(const [
+        EntryValidationError.stoolTypeOutOfRange,
+      ]);
+    }
+    final now = _clock.nowUtc();
+    await _db.transaction(() async {
+      final changed =
+          await (_db.update(_db.entries)..where((e) => e.id.equals(id))).write(
+            EntriesCompanion(
+              stoolType: Value(stoolType),
+              ease: Value(ease?.code),
+              updatedAtUtcMs: Value(now.millisecondsSinceEpoch),
+            ),
+          );
+      if (changed == 0) throw const EntryNotFoundException();
+      await (_db.delete(
+        _db.entryTags,
+      )..where((t) => t.entryId.equals(id))).go();
+      await _db.batch((b) {
+        b.insertAll(_db.entryTags, [
+          for (final t in tags)
+            EntryTagsCompanion.insert(entryId: id, code: t.code),
+        ]);
+      });
+    });
+    return (await byId(id))!;
+  }
+
   /// Deletes the entry with its tags.
   Future<void> delete(int id) async {
     final removed = await (_db.delete(

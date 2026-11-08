@@ -9,7 +9,7 @@ import 'package:poop_tracker/app/providers.dart';
 
 import '../test/support/fake_key_store.dart';
 
-/// Add, edit and delete an entry on a real device, through the real app and
+/// Add (one tap), change, undo and delete entries on a real device, through the real app and
 /// the real encrypted database.
 ///
 /// The database lives in a temporary folder and the key in an in-memory key
@@ -21,7 +21,7 @@ import '../test/support/fake_key_store.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('add, edit and delete an entry', (tester) async {
+  testWidgets('one-tap add, change, undo and delete', (tester) async {
     // Type through Flutter's test keyboard. With the phone's real keyboard
     // also attached, it can send back its own (stale) text when focus moves
     // and overwrite what the test entered.
@@ -52,10 +52,11 @@ void main() {
       }
       final seen = [
         for (final t in [
-          'Couldn’t save your entry',
-          'Edit entry',
-          'Entry details',
-          'Save changes',
+          'Couldn’t add an entry',
+          'Couldn’t save your changes',
+          'Today’s entry',
+          'Saved',
+          'Save',
           'Saving…',
           'Synthetic test note',
         ])
@@ -77,32 +78,44 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // Add.
+    // One tap adds the entry and opens it, already saved.
     await tap('Add an entry');
-    await tester.enterText(find.byType(TextField), 'Synthetic test note');
-    await tester.pump();
-    await tap('Save entry');
-    await pumpUntil(find.text('Synthetic test note'));
-    expect(find.text('1 entry'), findsWidgets);
+    await pumpUntil(find.text('Today’s entry'));
+    expect(find.text('Added to today'), findsOneWidget);
+    expect(find.text('Saved'), findsOneWidget);
 
-    // Edit.
-    await tap('Synthetic test note');
-    expect(find.text('Entry details'), findsOneWidget);
-    await tap('Edit');
-    await tester.enterText(find.byType(TextField), 'Synthetic note, edited');
+    // A note needs Save.
+    await tester.enterText(find.byType(TextField), 'Synthetic test note');
     await tester.pump();
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller!.text,
-      'Synthetic note, edited',
+      'Synthetic test note',
     );
-    await tap('Save changes');
+    await tap('Save');
+    await pumpUntil(find.text('Synthetic test note'));
+    expect(find.text('1 entry'), findsWidgets);
+
+    // Change it on the same page.
+    await tap('Synthetic test note');
+    await pumpUntil(find.text('Delete this entry'));
+    await tester.enterText(find.byType(TextField), 'Synthetic note, edited');
+    await tester.pump();
+    await tap('Save');
     await pumpUntil(find.text('Changes saved'));
     await pumpUntil(find.text('Synthetic note, edited'));
 
-    // Delete.
+    // Undo a second, just-added entry.
+    await tap('Add an entry');
+    await pumpUntil(find.text('Undo'));
+    await tap('Undo');
+    await pumpUntil(find.text('Today’s entry'), gone: true);
+    expect(find.text('1 entry'), findsWidgets);
+
+    // Delete the first.
+    await tap('Synthetic note, edited');
     await tap('Delete this entry');
     await tap('Delete entry');
-    await pumpUntil(find.text('Entry details'), gone: true);
+    await pumpUntil(find.text('Today’s entry'), gone: true);
     await pumpUntil(find.text('Nothing here yet'));
 
     // Leave the app so the database closes before the folder is deleted.

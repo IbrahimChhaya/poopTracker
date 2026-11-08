@@ -1,9 +1,9 @@
 import '../domain/entry.dart';
 
-/// Wording for the optional details. Used only in the entry flow and entry
-/// screens, and only when the matching setting is on.
+/// Wording for the optional details. Used only on the entry page, its
+/// details sheet and entry cards, and only when the matching setting is on.
 
-/// Bristol stool form types: short name and description (screen 3.2).
+/// Bristol stool form types: short name and description (Figma 3.3).
 const Map<int, ({String name, String description})> stoolForms = {
   1: (name: 'Separate hard lumps', description: 'Hard to pass'),
   2: (name: 'Lumpy, sausage-shaped', description: 'Firm and joined together'),

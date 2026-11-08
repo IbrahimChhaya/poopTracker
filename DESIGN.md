@@ -259,7 +259,7 @@ The rejected references are clinical white-and-blue health-app styling, gamified
 A warm, paper-and-ink palette: cream neutrals, one deep sage accent, and a small warm family that stays at the edges.
 
 ### Primary
-- **Deep Sage** (#3d6552): the only accent. Used for primary and secondary buttons, the selected day in the week strip, the today outline, selected chips and their check marks, the navigation indicator's icon and label, links ("Edit", "Show earlier entries", "Skip"), stat values and the morrow wordmark. It's 6.0:1 on Cream Paper and 6.5:1 behind Card Paper text.
+- **Deep Sage** (#3d6552): the only accent. Used for primary and secondary buttons, the selected day in the week strip, the today outline, selected chips and their check marks, the navigation indicator's icon and label, links ("Change", "Undo", "Clear", "Show earlier entries"), stat values and the morrow wordmark. It's 6.0:1 on Cream Paper and 6.5:1 behind Card Paper text.
 - **Sage Tint** (#e7ede2): the quiet green surface. Used for the stat card, icon tiles, the selected chip fill, the navigation indicator pill, the date-range chip and the picker highlight. Deep Sage text on it is 5.5:1.
 - **Sage Tint Line** (#ccd5c7): the divider inside Sage Tint surfaces, such as between the two stat-card figures.
 - **On-Sage Muted** (#dce6dc): secondary text on a Deep Sage surface (the weekday letter on the selected day).
@@ -297,18 +297,18 @@ A warm, paper-and-ink palette: cream neutrals, one deep sage accent, and a small
 
 ### Hierarchy
 - **Page title** (600, 30 px, 1.2, −1 px tracking): the titles of the four tabs: "Your journal", "Your history", "Trends" and "Settings". Screens you navigate into use the headline size instead.
-- **Detail time** (600, 27 px, 1.2, −0.8 px): the time on entry detail, which leads the page (the date follows in Muted Text body).
+- **Headline medium** (600, 27 px, 1.2, −0.8 px): kept in the theme; unused since the entry page (M6.3) replaced entry detail.
 - **Stat value** (600, 20 px, −0.4 px, Deep Sage): the stat-card figures ("5 entries", "1:35 pm"). Each figure stays on one line with its unit.
 - **Wordmark** (600, 23 px, −1 px, Deep Sage): "morrow", always lower case, next to the sprout mark.
-- **Headline** (600, 20 px, 1.25): titles of screens you navigate into ("New entry", "Edit entry", "Entry details"), step titles, and "What was the form?".
-- **Title large** (600, 18 px, 1.33): dialog and sheet titles.
+- **Headline** (600, 20 px, 1.25): titles of screens you navigate into, such as the entry page ("Today’s entry", "Wednesday’s entry", or "Entry" for anything older than a week).
+- **Title large** (600, 18 px, 1.33): dialog and sheet titles, including the details sheet pages ("Context", "Stool form").
 - **Title** (600, 16 px, 1.2, −0.3 px): section headings ("This week's journal", "How did it feel?") and the week-strip date numbers.
 - **Title small** (600, 15 px, 1.2): entry card titles ("Today · 1:35 pm").
 - **Body large** (400, 15 px, 1.45): inputs, option labels, setting row titles (in 500) and blocked-screen copy.
 - **Body** (400, 14 px, 1.5): running copy and dialog messages.
 - **Body small** (400, 12 px, 1.42, Muted Text): card summaries, row subtitles and chip labels (chips in Ink, or Deep Sage at 600 when selected).
 - **Label large** (600, 16 px): button labels.
-- **Label** (500, 12 px, Muted Text): group labels above cards ("Journal", "Optional details") and "Note (optional)".
+- **Label** (500, 12 px, Muted Text): group labels above cards ("Journal") and "Note".
 - **Label small** (400, 11 px, Muted Text): captions, stat labels, weekday initials, navigation labels and the character counter.
 - **Eyebrow** (600, 11 px, 1.5 px tracking, upper case, Deep Sage): reserved, and now rarely used after the 8 November design pass.
 
@@ -321,9 +321,9 @@ A warm, paper-and-ink palette: cream neutrals, one deep sage accent, and a small
 
 ## Layout
 
-There's a single column on a phone. Content sits inside 24 px side margins (`page`), with 12 px above the first item. Spacing is on a 4 px grid: 8 px inside groups, 12 px between list cards, and 24 px between sections. Lists are long scrolling columns. Fixed footers (editor actions) sit on Cream Paper above a 1 px Pencil Line and stay above the keyboard.
+There's a single column on a phone. Content sits inside 24 px side margins (`page`), with 12 px above the first item. Spacing is on a 4 px grid: 8 px inside groups, 12 px between list cards, and 24 px between sections. Lists are long scrolling columns. Fixed footers (the entry page’s Saved/Save bar) sit on Cream Paper above a 1 px Pencil Line and stay above the keyboard.
 
-Each screen has one primary action, full width, at the top of the content (journal) or in the footer (editor, steps). Grouped settings live in a single outlined card, with 1 px dividers between rows.
+Each screen has one primary action, full width, at the top of the content (journal) or in the footer (the entry page, the details sheet). Grouped settings live in a single outlined card, with 1 px dividers between rows.
 
 ### Named Rules
 **The Steady Margin Rule.** 24 px side margins on every screen, including sheets and dialogs (whose content sits 20–24 px inside the card). Nothing touches the screen edge except the navigation bar and full-bleed sheets.
@@ -344,7 +344,7 @@ The shapes are soft and friendly, with nothing sharp. Corner radii follow the si
 - **Buttons, day cells, banners and the toast:** 14 px.
 - **Grouped cards, inputs and the large "Add an entry" button:** 16 px.
 - **Entry and empty-state cards:** 18 px.
-- **The stat card, dialogs and the entry-detail stool form panel:** 20 px.
+- **The stat card and dialogs:** 20 px.
 - **Sheets:** 28 px on the top corners.
 - **Chips, badges, the navigation indicator and switches:** fully round.
 
@@ -360,24 +360,29 @@ The components should feel tidy and tactile, like well-made stationery: plain sh
 ### Buttons
 - **Shape:** gently rounded (14 px). The large journal action is 16 px.
 - **Primary:** Deep Sage fill, Card Paper label in label-large, 14 × 20 px padding, at least 52 px tall (54 px for the large variant), full width. The label can sit beside an icon ("+ Add an entry").
-- **Secondary:** transparent, with a 1 px Deep Sage outline and Deep Sage label. Used for "Clear filters", "Cancel" and "Keep entry".
+- **Secondary:** transparent, with a 1 px Deep Sage outline and Deep Sage label. Used for "Clear filters" and "Keep entry".
 - **Danger outline:** transparent, with a 1 px Rust outline and Rust label. Used for a destructive choice where the safe choice comes first ("Discard").
 - **Danger:** Rust fill with Card Paper label, only for a confirmed destructive action ("Delete entry", "Erase everything").
-- **Busy / disabled:** Disabled Surface fill with Disabled Text label. A busy button shows a small spinner and "Saving…", and can't be tapped again.
+- **Busy / disabled:** Disabled Surface fill with Disabled Text label. A busy button shows a small spinner and "Saving…" (or "Adding…"), and can't be tapped again. The entry page's "Saved" button is this disabled style with a tick: there is nothing to save.
 - **Pressed:** a soft ink ripple (Card Paper at 12% on fills, Deep Sage at 8% on outlines). No lift and no shadow.
-- **Text links:** Deep Sage label, SemiBold 14 px ("Edit", "Skip", "Show earlier entries"). Rust is used for "Delete this entry".
+- **Text links:** Deep Sage label, SemiBold 14 px ("Change", "Undo", "Clear", "Show earlier entries"). Rust is used for "Delete this entry".
 
 ### Chips
 - **Style:** fully round. Unselected chips are Card Paper with a 1 px Pencil Line and an Ink label in body-small.
 - **Selected:** Sage Tint fill, a 1 px Deep Sage outline, a Deep Sage check mark, and a Deep Sage label in SemiBold. Selection shows in three ways: fill, check mark and weight.
-- **Behaviour:** tapping a chosen chip again clears it. Single-choice groups (ease) and multi-choice groups (tags) look the same.
+- **Behaviour:** tapping a chosen chip again clears it. Chips are for multi-choice groups (the Context tags, in two rows: food and drink, then body and mind).
+
+### Segmented Control
+- **Style:** one Card Paper bar with a 1 px Pencil Line and 14 px corners, split into equal segments by 1 px lines. At least 48 px tall.
+- **Selected:** a Sage Tint segment with a Deep Sage check mark and a Deep Sage SemiBold label (fill, check and weight, never colour alone).
+- **Behaviour:** single choice ("How did it feel?"). Tapping the chosen segment again clears it. When a label would not fit its segment on one line (large text), the segments stack as full-width rows, so no word is broken. Screen readers hear "Easy, 1 of 3, selected".
 
 ### Cards / Containers
 - **Corner style:** 16 px for grouped cards, 18 px for entry cards and 20 px for the stat card.
-- **Background:** Card Paper. The stat card uses Sage Tint; the entry-detail stool form panel and error banner use Sand. The entry-detail date and time sit on the page with no card.
+- **Background:** Card Paper. The stat card and the "Added to today" banner use Sage Tint; the error banner uses Sand.
 - **Shadow strategy:** none (see Elevation & Depth).
 - **Border:** 1 px Pencil Line on Card Paper surfaces. None on tinted surfaces.
-- **Internal padding:** 16 px for entry cards; 14 × 16 px for setting rows (icon tile, then a 12 px gap, then text, then a trailing chevron or switch); 14 × 18 px for the stat card.
+- **Internal padding:** 16 px for entry cards; 14 × 16 px for setting rows (icon tile, then a 12 px gap, then text, then a trailing chevron, switch or text action such as "Change"); 14 × 18 px for the stat card.
 - **Entry card content:** a title, then the note (or "form · ease" when those details are on) in body-small. With neither, the card is a single line; it never says "No note". In lists grouped by day, the title is the time, or "Entry" when no time was recorded.
 
 ### Inputs / Fields
@@ -402,6 +407,15 @@ The components should feel tidy and tactile, like well-made stationery: plain sh
 ### Stat Card (signature)
 A Sage Tint panel (20 px corners, 14 × 18 px padding) holding two figures: the entry count for the week on screen, and the most recent entry. Each figure is in stat-value Deep Sage over a label-small caption, separated by a 1 px Sage Tint Line. They sit side by side at normal text sizes and stack (with a horizontal line between) once text is enlarged past about 115%, so a figure never wraps away from its unit.
 
+### Entry Page (signature)
+One page creates, shows and changes an entry; there is no separate view or edit screen.
+- **Order:** close (×) and title; the "Added to today" banner with Undo (only straight after "Add an entry", until the page is left); the When card with "Change"; the Context and Stool form cards when their settings are on (Context first); the note; "Delete this entry" for an entry that existed before.
+- **Footer:** "Saved" (disabled, with a tick) until the date, time or note changes; then "Save", with "Unsaved changes" in label-small above it. After a failed save: "Not saved yet" and "Try again".
+- **Details save as chosen**, so they never wake the Save button. Leaving with unsaved changes asks "Discard changes?".
+
+### Details Sheet
+A tall sheet with a page per enabled detail (Context, then Stool form), opened on the page of the card that was tapped. A two-segment bar (4 px, Deep Sage for done and current, Pencil Line for the rest) shows the position when there are two pages. Each page has a title-large title, "Clear" (shown only when something is chosen) and a short subtitle. The full-width button reads "Next", then "Done" on the last page; pages can also be swiped.
+
 ### Sheets, Dialogs and Toasts
 - **Sheet:** Card Paper with 28 px top corners, a 40 × 4 px Pencil Line handle and a title-large heading. Content sits 24 px in from the sides and 36 px above the bottom.
 - **Dialog:** Card Paper with 20 px corners and 20 px padding, a title-large title and body message, and full-width stacked buttons. The safe choice comes first for discards; the destructive filled button comes first for deletes.
@@ -410,7 +424,7 @@ A Sage Tint panel (20 px corners, 14 × 18 px padding) holding two figures: the 
 ### Stool Form Tile and Drawings
 - **Drawings:** simple flat shapes painted in Clay for each Bristol type. They're decorative and hidden from screen readers.
 - **Tile:** 58 px wide on Sand, with "TYPE n" in Clay Text (11 px, 600).
-- **Where they appear:** only inside the entry flow, journal and History cards, and entry detail, and only when the Stool form setting is on.
+- **Where they appear:** only on the entry page's details sheet and on journal and History cards, and only when the Stool form setting is on.
 
 ## Do's and Don'ts
 

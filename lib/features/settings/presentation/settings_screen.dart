@@ -33,17 +33,17 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.notes,
               title: 'Stool form',
               subtitle:
-                  'Show the optional stool form step, and stool form in your '
-                  'journal and trends.',
+                  'Add stool form to entries, and show it in your journal '
+                  'and trends.',
               value: display.showStoolForm,
               onChanged: repo.setShowStoolForm,
             ),
             SettingRow.toggle(
               icon: Icons.monitor_heart_outlined,
-              title: 'A little context',
+              title: 'Context',
               subtitle:
-                  'Show the optional step for ease and tags, and those '
-                  'details in your journal.',
+                  'Add how it felt and what was going on to entries, and '
+                  'show them in your journal.',
               value: display.showContext,
               onChanged: repo.setShowContext,
             ),

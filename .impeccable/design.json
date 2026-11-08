@@ -284,7 +284,7 @@
       },
       "detail-time": {
         "displayName": "Detail Time",
-        "purpose": "The time that leads entry detail."
+        "purpose": "Kept in the theme; unused since the entry page replaced entry detail (M6.3)."
       },
       "stat-value": {
         "displayName": "Stat Value",
@@ -296,7 +296,7 @@
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Titles of pushed screens (New entry, Edit entry, Entry details), step titles and step questions."
+        "purpose": "Titles of pushed screens: the entry page (Today’s entry, Wednesday’s entry, Entry)."
       },
       "title-large": {
         "displayName": "Title Large",

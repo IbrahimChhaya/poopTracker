@@ -7,12 +7,14 @@ import 'icon_tile.dart';
 /// A row inside a [CardGroup]: icon tile, title, optional subtitle, and a
 /// chevron (navigation) or a switch.
 class SettingRow extends StatelessWidget {
-  /// A row that opens another screen.
+  /// A row that opens another screen or a sheet. With [actionLabel] (for
+  /// example "Change") the chevron is replaced by that text.
   const SettingRow.navigation({
     required this.icon,
     required this.title,
     required VoidCallback this.onTap,
     this.subtitle,
+    this.actionLabel,
     this.destructive = false,
     super.key,
   }) : value = false,
@@ -28,6 +30,7 @@ class SettingRow extends StatelessWidget {
     this.subtitle,
     super.key,
   }) : onTap = null,
+       actionLabel = null,
        destructive = false,
        _isToggle = true;
 
@@ -37,6 +40,9 @@ class SettingRow extends StatelessWidget {
   final VoidCallback? onTap;
   final bool value;
   final ValueChanged<bool>? onChanged;
+
+  /// Text shown instead of the chevron on a navigation row.
+  final String? actionLabel;
 
   /// Danger styling, for example "Delete all data".
   final bool destructive;
@@ -49,8 +55,17 @@ class SettingRow extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final sub = subtitle;
 
+    final action = actionLabel;
     final Widget trailing = _isToggle
         ? Switch(value: value, onChanged: onChanged)
+        : action != null
+        ? Text(
+            action,
+            style: text.labelLarge!.copyWith(
+              color: colors.primary,
+              fontSize: 14,
+            ),
+          )
         : Icon(Icons.chevron_right, size: 20, color: colors.mutedIcon);
 
     final row = Padding(

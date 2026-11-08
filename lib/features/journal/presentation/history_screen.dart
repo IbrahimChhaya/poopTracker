@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../app/paths.dart';
 import '../../../app/scope.dart';
 import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
@@ -11,6 +9,7 @@ import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/overlays.dart';
 import '../../../ui/widgets/states.dart';
 import 'detail_labels.dart';
+import 'entry/quick_add.dart';
 import 'history_controller.dart';
 import 'widgets/entry_card.dart';
 
@@ -171,7 +170,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       ],
       const SizedBox(height: MorrowSpacing.lg),
       if (v.journalIsEmpty)
-        _EmptyJournal(onAdd: () => context.push(AppPaths.newEntry))
+        _EmptyJournal(
+          onAdd: () => addEntryAndOpen(context, ref, toastOnFailure: true),
+        )
       else if (v.matchCount == 0 && v.searching)
         _NoMatches(onClear: _clearSearch)
       else if (v.matchCount == 0)
@@ -190,7 +191,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             EntryCard(
               entry: e,
               title: formatTimeOrEntry(e.localTime),
-              onTap: () => context.go(AppPaths.historyEntry, extra: e.id),
+              onTap: () => openEntryPage(context, e.id),
             ),
             const SizedBox(height: 10),
           ],

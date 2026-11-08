@@ -82,7 +82,7 @@ The following decisions were made with the product owner after the scan:
 - **1.3 App lock is on:** confirmation, then Continue. *M8.*
 - **1.4 Journal · Empty:** *Built (M5).*
 
-### 2 · Log an entry (details off): one-tap entry, to build (M6.3)
+### 2 · Log an entry (details off): one-tap entry, built (M6.3)
 - **2.1 Journal:** tap "Add an entry" (critique-pass style, built in M6.2).
 - **2.2 Entry added:** saved straight away with the current time; "Added to today" with Undo; close (×); the button reads "Saved", greyed out with a tick.
 - **2.3 Change date and time:** the date and time sheet over the entry page.
@@ -95,7 +95,7 @@ The following decisions were made with the product owner after the scan:
 - **2.10 Couldn't add an entry:** a failed one-tap save; an error banner under "Add an entry" reads "Nothing was saved. Try again."
 - **2.11 Undo after editing:** Undo stays on the page until you leave. After an edit it asks "Undo this entry?" ("It will be removed, along with the changes you just made.").
 
-### 3 · Log an entry (details on): to build (M6.3)
+### 3 · Log an entry (details on): built (M6.3)
 - **3.1 Entry added · Details on:** two cards, Context then Stool form.
 - **3.2 Details sheet · Context:** page 1 of 2. "How did it feel?" as a segmented control; "Anything going on?" tags in two rows; Clear; Next. The subtitle reads "Saved as you choose".
 - **3.3 Details sheet · Stool form:** page 2 of 2. The seven types, Clear, Done. Swipe moves between pages.
@@ -107,9 +107,9 @@ The following decisions were made with the product owner after the scan:
 - **4.1 Journal · Day selected:** *Built (M5).*
 - **4.2 History:** an untimed entry is titled "Entry". *Built (M6.2).*
 - **4.3 History · Details on** (All types filter), **4.4 Filter entries, 4.5 Search · No results, 4.6 History · Empty:** *Built (M5, M6).*
-- **4.7 Entry page:** an older entry opened from the journal or History. It's the same page as 2.2, without the banner, plus "Delete this entry". *To build (M6.3); replaces Entry details and Edit entry.*
-- **4.8 Entry page · Details on:** with the Context and Stool form cards. *To build (M6.3).*
-- **4.9 Delete this entry?:** confirmation over the entry page. *To build (M6.3); the dialog is built (M5).*
+- **4.7 Entry page:** an older entry opened from the journal or History. It's the same page as 2.2, without the banner, plus "Delete this entry". *Built (M6.3); replaces Entry details and Edit entry.*
+- **4.8 Entry page · Details on:** with the Context and Stool form cards. *Built (M6.3).*
+- **4.9 Delete this entry?:** confirmation over the entry page. *Built (M6.3).*
 - **4.10 Entry deleted, 4.11 Journal · Earlier week:** *Built (M5).*
 
 ### 5 · Weekly trends (M7)
@@ -124,7 +124,7 @@ The following decisions were made with the product owner after the scan:
 - **7.1 Off, 7.2 Confirm to turn on, 7.3 On, 7.4 Locked, 7.5 Couldn't unlock, 7.6 Confirm to turn off.**
 
 ### 8 · Settings, privacy and deleting data
-- **8.1 Settings, 8.2 Settings · Details on:** the Journal switches are *built (M6)*. Figma now says "Context" (was "A little context") with new descriptions; the app follows in M6.3. The Reminders, Privacy and Data rows come in M8–M10.
+- **8.1 Settings, 8.2 Settings · Details on:** the Journal switches are *built (M6)*. Figma now says "Context" (was "A little context") with new descriptions; built in M6.3. The Reminders, Privacy and Data rows come in M8–M10.
 - **8.3 Data & privacy, 8.4 Delete all data, 8.5 Confirm to delete, 8.6 Deleting data, 8.7 All data deleted:** *M10.*
 - **8.8 Journal unavailable, 8.9 Erase and start fresh?:** *Built (M4).*
 
