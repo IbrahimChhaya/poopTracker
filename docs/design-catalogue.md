@@ -131,13 +131,13 @@ The following decisions were made with the product owner after the scan:
 ### 9 · Back up and restore (M11)
 - **9.1 Export a backup, 9.2 Creating backup, 9.3 Native save picker** (documentation only), **9.4 Backup saved, 9.5 Restore from a backup, 9.6 Native file picker** (documentation only), **9.7 Enter passphrase, 9.8 Restoring entries, 9.9 Restore complete, 9.10 Couldn't restore.**
 
-### 10 · Diagnostics (proposed, M7.5)
+### 10 · Diagnostics, built (M7.5)
 - **10.1 Settings · Diagnostics:** a new Support group with the Diagnostics row.
 - **10.2 Diagnostics:** what is recorded and never recorded, the "Keep a diagnostic log" switch, recent events, "Save a copy" and "Share by email".
 - **10.3 Share the log?:** a confirmation before anything leaves the phone.
 - **10.4 Native share sheet:** documentation only; the email app sends the file.
 - **10.5 Log saved, 10.6 Diagnostics · Log off.**
-- **10.0:** a note on what the feature adds and what to confirm. *Proposed; not approved yet.*
+- **10.0:** a note on what the feature adds. *Built in M7.5; successful journal actions are not logged, so the example rows "Entry added" and "Entry page opened" don't occur.*
 
 ## Superseded and rejected column
 

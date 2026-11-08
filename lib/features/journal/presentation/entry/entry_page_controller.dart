@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/providers.dart';
 import '../../../../app/scope.dart';
 import '../../../../core/clock.dart';
+import '../../../../core/diagnostics/diagnostic_log.dart';
 import '../../../../core/time/local_date.dart';
 import '../../data/entry_repository.dart';
 import '../../domain/entry.dart';
@@ -251,6 +252,7 @@ class EntryPageController extends Notifier<EntryPageState> {
       if (ref.mounted) state = state.copyWith(saving: false, errors: e.errors);
       return SaveOutcome.invalid;
     } on Object {
+      _log(DiagnosticEvent.entrySaveFailed);
       if (ref.mounted) state = state.copyWith(saving: false, saveFailed: true);
       return SaveOutcome.failed;
     }
@@ -318,6 +320,7 @@ class EntryPageController extends Notifier<EntryPageState> {
         if (ref.mounted) state = state.copyWith(saved: stored);
         return true;
       } on Object {
+        _log(DiagnosticEvent.entryDetailFailed);
         if (ref.mounted) {
           state = state.copyWith(
             details: EntryDetails.of(state.saved),
@@ -339,10 +342,13 @@ class EntryPageController extends Notifier<EntryPageState> {
     } on EntryNotFoundException {
       // Already gone.
     } on Object {
+      _log(DiagnosticEvent.entryUndoFailed);
       return false;
     }
     return true;
   }
+
+  void _log(DiagnosticEvent e) => ref.read(diagnosticLogProvider).record(e);
 }
 
 /// One controller per entry page. Scoped to the unlocked session and

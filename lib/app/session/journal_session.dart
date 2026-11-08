@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/bootstrap.dart';
+import '../../core/diagnostics/diagnostic_log.dart';
 import '../providers.dart';
 
 /// Opens the journal for the current unlocked session.
@@ -14,9 +15,21 @@ import '../providers.dart';
 class JournalSessionController extends AsyncNotifier<StartupResult> {
   @override
   Future<StartupResult> build() async {
-    final result = await ref.read(databaseBootstrapProvider).start();
-    if (result is StartupReady) {
-      ref.onDispose(() => unawaited(result.database.close()));
+    final log = ref.read(diagnosticLogProvider);
+    final StartupResult result;
+    try {
+      result = await ref.read(databaseBootstrapProvider).start();
+    } on Object {
+      log.record(DiagnosticEvent.startupFailed);
+      rethrow;
+    }
+    log.record(switch (result) {
+      StartupReady(createdNew: true) => DiagnosticEvent.journalCreated,
+      StartupReady() => DiagnosticEvent.journalOpened,
+      StartupBlocked(:final reason) => _blockedEvent(reason),
+    });
+    if (result case StartupReady(:final database)) {
+      ref.onDispose(() => unawaited(database.close()));
     }
     return result;
   }
@@ -33,11 +46,29 @@ class JournalSessionController extends AsyncNotifier<StartupResult> {
       await ref.read(journalResetProvider).eraseAll();
     } on Object {
       state = const AsyncData(StartupBlocked(StartupBlockReason.eraseFailed));
+      ref
+          .read(diagnosticLogProvider)
+          .record(DiagnosticEvent.journalBlockedErase);
       return;
     }
+    ref.read(diagnosticLogProvider).record(DiagnosticEvent.journalErased);
     ref.invalidateSelf();
   }
 }
+
+DiagnosticEvent _blockedEvent(StartupBlockReason reason) => switch (reason) {
+  StartupBlockReason.storageUnavailable =>
+    DiagnosticEvent.journalBlockedStorage,
+  StartupBlockReason.keyMissing => DiagnosticEvent.journalBlockedKeyMissing,
+  StartupBlockReason.keyRejected => DiagnosticEvent.journalBlockedKeyRejected,
+  StartupBlockReason.notEncrypted => DiagnosticEvent.journalBlockedNotEncrypted,
+  StartupBlockReason.encryptionUnavailable =>
+    DiagnosticEvent.journalBlockedNoEncryption,
+  StartupBlockReason.databaseUnreadable =>
+    DiagnosticEvent.journalBlockedUnreadable,
+  StartupBlockReason.setupFailed => DiagnosticEvent.journalBlockedSetup,
+  StartupBlockReason.eraseFailed => DiagnosticEvent.journalBlockedErase,
+};
 
 final journalSessionProvider =
     AsyncNotifierProvider.autoDispose<JournalSessionController, StartupResult>(

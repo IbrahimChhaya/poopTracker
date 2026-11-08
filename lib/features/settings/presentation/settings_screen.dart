@@ -16,6 +16,7 @@ class SettingsScreen extends ConsumerWidget {
 
   static const String uiKitPath = '/settings/ui-kit';
   static const String selfCheckPath = '/settings/self-check';
+  static const String diagnosticsPath = '/settings/diagnostics';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,6 +47,18 @@ class SettingsScreen extends ConsumerWidget {
                   'show them in your journal.',
               value: display.showContext,
               onChanged: repo.setShowContext,
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
+        CardGroup(
+          label: 'Support',
+          children: [
+            SettingRow.navigation(
+              icon: Icons.shield_outlined,
+              title: 'Diagnostics',
+              subtitle: 'App events only, never your entries',
+              onTap: () => context.go(diagnosticsPath),
             ),
           ],
         ),

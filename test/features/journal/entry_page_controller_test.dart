@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:poop_tracker/app/providers.dart';
 import 'package:poop_tracker/app/scope.dart';
 import 'package:poop_tracker/core/database/app_database.dart';
+import 'package:poop_tracker/core/diagnostics/diagnostic_log.dart';
 import 'package:poop_tracker/core/time/local_date.dart';
 import 'package:poop_tracker/features/journal/data/entry_repository.dart';
 import 'package:poop_tracker/features/journal/domain/entry.dart';
@@ -13,6 +14,7 @@ import 'package:poop_tracker/features/journal/presentation/entry/entry_page_cont
 import 'package:poop_tracker/features/journal/presentation/entry/quick_add.dart';
 
 import '../../support/fake_clock.dart';
+import '../../support/fake_diagnostics.dart';
 
 /// Repository whose writes can be made to fail or to wait.
 class ControlledRepository extends EntryRepository {
@@ -60,13 +62,16 @@ void main() {
   late FixedClock clock;
   late ControlledRepository repo;
   late ProviderContainer c;
+  late MemoryDiagnosticLog log;
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     clock = FixedClock(DateTime.utc(2026, 11, 6, 13, 41));
     repo = ControlledRepository(db, clock);
+    log = MemoryDiagnosticLog(clock: clock);
     c = ProviderContainer(
       overrides: [
+        diagnosticLogProvider.overrideWithValue(log),
         appDatabaseProvider.overrideWithValue(db),
         clockProvider.overrideWithValue(clock),
         entryRepositoryProvider.overrideWithValue(repo),
@@ -119,6 +124,8 @@ void main() {
       expect(repo.creates, 1);
       expect(await repo.all(), hasLength(1));
       expect(c.read(quickAddProvider).adding, isFalse);
+      // Successful journal actions are never logged.
+      expect(log.events, isEmpty);
     });
 
     test(
@@ -128,6 +135,7 @@ void main() {
         expect(await quickAdd().add(), isNull);
         expect(c.read(quickAddProvider).failed, isTrue);
         expect(await repo.all(), isEmpty);
+        expect(log.events, [DiagnosticEvent.entryAddFailed]);
         repo.failCreate = false;
         expect(await quickAdd().add(), isNotNull);
         expect(c.read(quickAddProvider).failed, isFalse);
@@ -237,6 +245,11 @@ void main() {
       final p = page()..setComment('Edited note');
       expect(await p.save(), SaveOutcome.failed);
       expect(state().saveFailed, isTrue);
+      // Only the event code is logged: never the note or the error.
+      expect(log.events, [DiagnosticEvent.entrySaveFailed]);
+      final text = await log.exportText();
+      expect(text, isNot(contains('Edited note')));
+      expect(text, isNot(contains('simulated')));
       expect(state().comment, 'Edited note');
       repo.failUpdate = false;
       expect(await p.save(), SaveOutcome.saved);
@@ -298,6 +311,7 @@ void main() {
         expect(await page().toggleStoolType(6), isFalse);
         expect(state().details.stoolType, 4);
         expect(state().detailsFailed, isTrue);
+        expect(log.events, [DiagnosticEvent.entryDetailFailed]);
         expect((await repo.byId(entry.id))!.stoolType, 4);
       });
 

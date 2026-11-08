@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is proposed, with designs in Figma.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -380,7 +380,7 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
     - "Optional · Bristol scale" is kept on the stool card (decision 8).
   - **Still to check:** TalkBack reading the bars and tabs; 200% on the device (covered by widget tests only).
 
-### M7.5 — On-device diagnostics log (proposed, designs in Figma 10.1–10.6)
+### M7.5 — On-device diagnostics log (built, designs in Figma 10.1–10.6)
 - **Why:** app lock, reminders, key storage and saves fail in ways that are hard to see on a phone. A local log of what the app did lets the user send evidence without the app ever collecting anything itself.
 - **What is logged:**
   - Fixed event codes from an allowlist (for example `app.open`, `journal.unlocked`, `entry.saved`, `entry.save_failed.storage`, `reminder.scheduled`, `key.read_failed`), each with the local time.
@@ -405,6 +405,34 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Unit tests prove only allowlisted codes can be written, rotation works, and turning the log off or deleting all data erases it.
   - A test scans log output from failure paths for entry content (none).
   - On the S20: saving through the save sheet, and sharing to an email app with the file attached.
+
+- **Decided on 8 November:** `share_plus` 13.3.1 and `file_picker` 13.3.2, the log on by default, and 30 days or up to 500 events.
+- **Built (8 November):**
+  - **Code:**
+    - `core/diagnostics/diagnostic_log.dart`: the `DiagnosticEvent` allowlist, and `FileDiagnosticLog`, which stores `time code` lines in `Application Support/diagnostics/events.log`. Writes are queued and never throw. The log prunes to 30 days and 500 events. An `off` marker file records that it was turned off, and turning it off deletes the log.
+    - `core/platform/file_export.dart`: the save sheet (file_picker) and share sheet (share_plus) behind a `FileExport` interface. The temporary copy made for sharing is deleted when the sheet closes.
+    - `settings/presentation/diagnostics_screen.dart`: screens 10.2 to 10.6, plus Settings > Support > Diagnostics.
+    - Events are recorded at startup (opened, created, each blocked reason, failed), on erase, and when adding, saving, saving a detail, deleting or undoing an entry fails.
+  - **Not logged by design:** successful journal actions (adding, changing or deleting an entry). Their times would reveal when entries were made. The Figma example rows "Entry added" and "Entry page opened" therefore don't occur.
+  - **Native:** neither plugin adds an Android permission. file_picker declares its file intents. share_plus adds a private FileProvider and copies shared files into its own cache folder. That copy is acceptable here because the log holds no personal content, but M11 backups must clear it. file_picker needs iOS 14; the app targets iOS 15.
+  - **Layout:** at large text sizes the two buttons scroll with the page instead of being pinned.
+  - **Tests:** 331 pass. They cover:
+    - the log file: format, order, the 500-event cap, the 30-day cut-off, turning it off and on, ignoring unknown lines, and never throwing
+    - the export format
+    - failure events recorded with no note or error text
+    - no events for successful actions
+    - the screen: events, save leading to "Log saved", a cancelled save, share asking first, a dismissed share, turning the log off, and 100% and 200% text
+  - **Device check (S20, 8 November):**
+    - The page records "App started" and "Journal opened".
+    - "Save a copy" opens the phone's save sheet with `morrow-diagnostics-2026-11-08.txt` filled in; cancelling returns quietly.
+    - "Share by email" asks first, then opens the share sheet with the file attached; it was closed without sending.
+    - Our temporary copy is deleted afterwards. share_plus keeps its own copy in `cache/share_plus`; it's left so an email app can still read the attachment, and it is replaced on the next share.
+    - The journal, trends and startup device tests pass.
+    - Fixed during the check: at 200%, the event names broke mid-word, so the time now sits above the event at large text sizes.
+    - Not done: a completed save or send, which would put a file in your folders or an email draft.
+  - **Still to do:**
+    - **M10:** add `diagnostics/` to the backup exclusions and clear it in "Delete all data".
+    - **M11:** clear share_plus's cache copy.
 
 ### M8 — App lock
 - **Scope (1.2, 1.3, 7.1–7.6):**

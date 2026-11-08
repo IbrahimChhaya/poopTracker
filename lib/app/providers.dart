@@ -6,6 +6,8 @@ import '../core/clock.dart';
 import '../core/database/bootstrap.dart';
 import '../core/database/database_location.dart';
 import '../core/database/journal_reset.dart';
+import '../core/diagnostics/diagnostic_log.dart';
+import '../core/platform/file_export.dart';
 import '../core/security/key_store.dart';
 
 // Root (always available) providers. None of these hold journal data; the
@@ -13,6 +15,17 @@ import '../core/security/key_store.dart';
 // scope.dart). Tests override these with fakes.
 
 final clockProvider = Provider<Clock>((ref) => const SystemClock());
+
+/// The on-device diagnostic log (event codes only, never journal data), so
+/// it is available before the journal opens.
+final diagnosticLogProvider = Provider<DiagnosticLog>(
+  (ref) => FileDiagnosticLog(clock: ref.watch(clockProvider)),
+);
+
+/// The phone's save and share sheets.
+final fileExportProvider = Provider<FileExport>(
+  (ref) => const PlatformFileExport(),
+);
 
 final keyStoreProvider = Provider<KeyStore>((ref) => SecureStorageKeyStore());
 

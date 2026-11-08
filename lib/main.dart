@@ -4,10 +4,16 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
+import 'app/providers.dart';
+import 'core/diagnostics/diagnostic_log.dart';
 
 void main() {
   LicenseRegistry.addLicense(_interLicence);
-  runApp(const ProviderScope(child: MorrowApp()));
+  final container = ProviderContainer()
+    ..read(diagnosticLogProvider).record(DiagnosticEvent.appStarted);
+  runApp(
+    UncontrolledProviderScope(container: container, child: const MorrowApp()),
+  );
 }
 
 Stream<LicenseEntry> _interLicence() async* {

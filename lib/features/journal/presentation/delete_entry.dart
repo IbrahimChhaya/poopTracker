@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/providers.dart';
 import '../../../app/scope.dart';
+import '../../../core/diagnostics/diagnostic_log.dart';
 import '../../../ui/widgets/overlays.dart';
 import '../data/entry_repository.dart';
 
@@ -31,6 +33,7 @@ Future<bool> confirmAndDeleteEntry(
   } on EntryNotFoundException {
     // Already gone; nothing to undo.
   } on Object {
+    ref.read(diagnosticLogProvider).record(DiagnosticEvent.entryDeleteFailed);
     if (context.mounted) {
       showMorrowToast(context, 'Couldn’t delete this entry. Nothing changed.');
     }

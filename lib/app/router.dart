@@ -7,6 +7,7 @@ import '../features/journal/presentation/entry/entry_page.dart';
 import '../features/journal/presentation/entry/quick_add.dart';
 import '../features/journal/presentation/history_screen.dart';
 import '../features/journal/presentation/journal_screen.dart';
+import '../features/settings/presentation/diagnostics_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/trends/presentation/trends_screen.dart';
 import '../ui/gallery/ui_kit_gallery.dart';
@@ -63,6 +64,10 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
                 path: AppPaths.settings,
                 builder: (_, _) => const SettingsScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'diagnostics',
+                    builder: (_, _) => const DiagnosticsScreen(),
+                  ),
                   if (kDebugMode)
                     GoRoute(
                       path: 'ui-kit',

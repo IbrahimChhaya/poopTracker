@@ -6,6 +6,7 @@ import '../../../../app/paths.dart';
 import '../../../../app/providers.dart';
 import '../../../../app/scope.dart';
 import '../../../../core/clock.dart';
+import '../../../../core/diagnostics/diagnostic_log.dart';
 import '../../../../core/time/local_date.dart';
 import '../../../../ui/widgets/overlays.dart';
 import '../../domain/entry.dart';
@@ -52,6 +53,7 @@ class QuickAddController extends Notifier<QuickAddState> {
       if (ref.mounted) state = (adding: false, failed: false);
       return entry;
     } on Object {
+      ref.read(diagnosticLogProvider).record(DiagnosticEvent.entryAddFailed);
       if (ref.mounted) state = (adding: false, failed: true);
       return null;
     }

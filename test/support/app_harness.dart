@@ -12,8 +12,11 @@ import 'package:poop_tracker/core/clock.dart';
 import 'package:poop_tracker/core/database/app_database.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/core/database/journal_reset.dart';
+import 'package:poop_tracker/core/diagnostics/diagnostic_log.dart';
+import 'package:poop_tracker/core/platform/file_export.dart';
 
 import 'fake_clock.dart';
+import 'fake_diagnostics.dart';
 import 'fake_key_store.dart';
 import 'harness.dart';
 
@@ -83,11 +86,12 @@ void appTest(String description, WidgetTesterCallback body) {
 
 /// The pumped app and its fakes.
 class AppUnderTest {
-  AppUnderTest(this.container, this.bootstrap, this.reset);
+  AppUnderTest(this.container, this.bootstrap, this.reset, this.log);
 
   final ProviderContainer container;
   final ScriptedBootstrap bootstrap;
   final FakeReset reset;
+  final DiagnosticLog log;
 
   TestLock get lock =>
       container.read(lockControllerProvider.notifier) as TestLock;
@@ -100,8 +104,11 @@ Future<AppUnderTest> pumpMorrowApp(
   Clock? clock,
   double textScale = 1,
   Size size = figmaPhone,
+  DiagnosticLog? log,
+  FileExport? fileExport,
 }) async {
   final bootstrap = ScriptedBootstrap(results);
+  final diagnostics = log ?? MemoryDiagnosticLog();
   final reset = FakeReset();
   useScreenSize(tester, size);
   final container = ProviderContainer(
@@ -110,6 +117,8 @@ Future<AppUnderTest> pumpMorrowApp(
       journalResetProvider.overrideWithValue(reset),
       lockControllerProvider.overrideWith(TestLock.new),
       clockProvider.overrideWithValue(clock ?? figmaNow),
+      diagnosticLogProvider.overrideWithValue(diagnostics),
+      fileExportProvider.overrideWithValue(fileExport ?? FakeFileExport()),
     ],
   );
   addTearDown(container.dispose);
@@ -126,5 +135,5 @@ Future<AppUnderTest> pumpMorrowApp(
     ),
   );
   await tester.pumpAndSettle();
-  return AppUnderTest(container, bootstrap, reset);
+  return AppUnderTest(container, bootstrap, reset, diagnostics);
 }
