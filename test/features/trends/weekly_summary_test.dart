@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:poop_tracker/core/clock.dart';
 import 'package:poop_tracker/core/time/local_date.dart';
-import 'package:poop_tracker/features/journal/domain/entry.dart';
 import 'package:poop_tracker/features/journal/domain/grouping.dart';
 import 'package:poop_tracker/features/trends/domain/weekly_summary.dart';
 import 'package:poop_tracker/ui/format/labels.dart';
@@ -18,10 +17,6 @@ typedef _Expected = ({
   String average,
   int weeksLogged,
   List<int> stool,
-  int bloating,
-  int cramping,
-  int withSymptoms,
-  int withoutSymptoms,
 });
 
 const List<_Expected> _figma = [
@@ -32,10 +27,6 @@ const List<_Expected> _figma = [
     average: '4.5',
     weeksLogged: 4,
     stool: [0, 0, 3, 10, 3, 2, 0],
-    bloating: 3,
-    cramping: 1,
-    withSymptoms: 4,
-    withoutSymptoms: 14,
   ),
   (
     range: TrendRange.weeks12,
@@ -44,10 +35,6 @@ const List<_Expected> _figma = [
     average: '4.7',
     weeksLogged: 12,
     stool: [1, 2, 9, 28, 9, 6, 1],
-    bloating: 9,
-    cramping: 4,
-    withSymptoms: 13,
-    withoutSymptoms: 43,
   ),
   (
     range: TrendRange.weeks26,
@@ -56,10 +43,6 @@ const List<_Expected> _figma = [
     average: '4.6',
     weeksLogged: 26,
     stool: [2, 4, 19, 59, 19, 14, 3],
-    bloating: 19,
-    cramping: 9,
-    withSymptoms: 28,
-    withoutSymptoms: 92,
   ),
 ];
 
@@ -102,15 +85,6 @@ void main() {
             for (var t = 1; t <= 7; t++) s.stoolForm.countsByType[t],
           ], x.stool);
           expect(s.stoolForm.entriesWithType, x.total);
-        });
-
-        test('symptoms', () {
-          expect(s.symptoms.counts.map((e) => (e.key, e.value)), [
-            (Symptom.bloating, x.bloating),
-            (Symptom.cramping, x.cramping),
-          ]);
-          expect(s.symptoms.entriesWithSymptoms, x.withSymptoms);
-          expect(s.symptoms.entriesWithoutSymptoms, x.withoutSymptoms);
         });
       });
     }
@@ -201,20 +175,6 @@ void main() {
       final s = summariseWeeks(entries, lastWeekDay: today, weeks: 4);
       expect(s.stoolForm.entriesWithType, 1);
       expect(s.stoolForm.countsByType.keys, [1, 2, 3, 4, 5, 6, 7]);
-    });
-
-    test('an entry with two symptoms counts once for each', () {
-      final entries = [
-        entryAt(2026, 11, 2, 9, 0, symptoms: {Symptom.urgency, Symptom.blood}),
-        entryAt(2026, 11, 3, 9, 0, symptoms: {Symptom.urgency}),
-      ];
-      final s = summariseWeeks(entries, lastWeekDay: today, weeks: 4);
-      expect(s.symptoms.counts.map((e) => (e.key, e.value)), [
-        (Symptom.urgency, 2),
-        (Symptom.blood, 1),
-      ]);
-      expect(s.symptoms.entriesWithSymptoms, 2);
-      expect(s.symptoms.entriesWithoutSymptoms, 0);
     });
 
     test('entries are placed by their own local day, not the phone zone', () {

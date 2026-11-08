@@ -31,34 +31,15 @@ String easePhrase(Ease e) => switch (e) {
   Ease.difficult => 'Difficult to pass',
 };
 
-String symptomLabel(Symptom s) => switch (s) {
-  Symptom.none => 'None',
-  Symptom.bloating => 'Bloating',
-  Symptom.cramping => 'Cramping',
-  Symptom.urgency => 'Urgency',
-  Symptom.mucus => 'Mucus',
-  Symptom.blood => 'Blood',
-};
-
 String tagLabel(Tag t) => switch (t) {
   Tag.afterMeal => 'After a meal',
   Tag.coffee => 'Coffee',
   Tag.stress => 'Stress',
   Tag.lowFluids => 'Low fluids',
   Tag.medication => 'Medication',
-  Tag.exercise => 'Exercise',
+  Tag.onPeriod => 'On my period',
+  Tag.feelingSick => 'Feeling sick',
 };
 
-/// Symptoms in a stable order, for display.
-List<Symptom> sortedSymptoms(Set<Symptom> s) =>
-    Symptom.values.where(s.contains).toList();
-
+/// Tags in a stable order, for display.
 List<Tag> sortedTags(Set<Tag> t) => Tag.values.where(t.contains).toList();
-
-/// "Bloating, Cramping", "No symptoms" for an explicit None, or null when
-/// symptoms were not answered.
-String? symptomSummary(Set<Symptom> s) {
-  if (s.isEmpty) return null;
-  if (s.contains(Symptom.none)) return 'No symptoms';
-  return sortedSymptoms(s).map(symptomLabel).join(', ');
-}

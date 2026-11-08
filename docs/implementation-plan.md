@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M3 are done (M3's iOS device check is still open). M4 and M5 are done. M6 is built and awaiting review.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is built and awaiting review; M6.2 is proposed.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -36,8 +36,8 @@ Each has a proposed default. Milestones that depend on it are listed in brackets
 1. **Encrypted backups.** Default: yes. The passphrase is at least 8 characters and can't be recovered. [M11]
 2. **Week start.** Default: Monday to Sunday everywhere (week strip, "this week", trends), not locale-dependent. [M2]
 3. **Draft policy when the app locks.** Default: an unsaved new or edited entry is discarded when the app locks. The editor says so in small print. [M8]
-4. **Symptom severity.** The Entry detail design shows "Bloating · Mild", but the context step has no way to choose a severity. Default: drop severity and store symptoms only. [M6]
-5. **"None" symptom chip.** Default: stored as an explicit "no symptoms" answer, exclusive with the others. It counts as "no symptoms recorded" in trends, the same as not answering. [M6, M7]
+4. **Symptom severity.** *Superseded, 8 November 2026:* symptoms are no longer recorded (see M6.1).
+5. **"None" symptom chip.** *Superseded, 8 November 2026:* symptoms are no longer recorded (see M6.1).
 6. **Future-dated entries.** Default: not allowed beyond the current time. Any past date is allowed. [M2]
 7. **Dark mode.** Decided: after v1. v1 ships light only, with every colour in theme tokens so a dark palette can be added later. [M1]
 8. **"Optional" tags on Entry detail and Trends.** Default: keep them as designed. [M6, M7]
@@ -84,12 +84,13 @@ Times are stored as UTC milliseconds plus the original offset. The local day is 
   - `id` (int primary key)
   - `uid` (text, unique, random v4 from `Random.secure`, used to spot duplicates on restore)
   - `occurred_at_utc`, `original_utc_offset_minutes`
+  - `has_time` (v2, default true). When false, `occurred_at_utc` is midday on the local day and is never shown.
   - `comment` (nullable, at most 500 characters counted as user-perceived characters, trimmed; empty becomes null)
   - `stool_type` (nullable, 1–7)
   - `ease` (nullable: easy / some_straining / difficult)
   - `created_at_utc`, `updated_at_utc`
-- `entry_symptoms` (`entry_id`, `code`): none, bloating, cramping, urgency, mucus, blood. "none" can't be combined with the others.
-- `entry_tags` (`entry_id`, `code`): after_meal, coffee, stress, low_fluids, medication, exercise.
+- `entry_tags` (`entry_id`, `code`): after_meal, coffee, stress, low_fluids, medication, on_period, feeling_sick (v2; `exercise` was removed).
+- Schema v2 (M6.1): adds `has_time`, drops `entry_symptoms`, and changes the tag list. It's an exported step-by-step migration, tested from v1.
 - `app_settings` (single row): `show_stool_form`, `show_context`. Both default to false.
 - `reminder` (single row):
   - `enabled`, `weekday` (ISO 1–7), `hour`, `minute`
@@ -252,6 +253,45 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Turning a setting off hides its details everywhere, keeps stored values, and an edit made while they're hidden keeps them (tested). Deleting stored details is a separate action, not built yet.
   - The default-build check: with both settings off, no stool or symptom wording appears in the journal, editor, entry detail or History, including in screen-reader labels (tested).
   - Device check, S20: Settings switches, the editor hub and both steps were screenshotted and look right.
+
+### M6.1 — Optional time and the 8 November design pass
+- **Scope:**
+  - Catalogue every Figma frame and record the changes (see [design-catalogue.md](design-catalogue.md)).
+  - Apply the design changes.
+  - Make the time of day optional.
+  - Remove symptoms.
+  - Change the tag list.
+- **Built (8 November 2026):**
+  - **Optional time.** `has_time` flag. Date-only entries are stored at local midday and never shown. Today defaults to now; a past day (Yesterday, Other date, or a day selected on the journal) defaults to no time.
+    - The time sheet has a "Record a time" switch, and the whole row toggles it. Until the user flips it, picking today turns it on and picking a past day turns it off.
+    - Untimed entries show "Yesterday" on journal cards, "No time" in History and day lists, "Yesterday · No time" in the editor, and "No time recorded" on entry detail.
+    - Within a day they sort after timed entries.
+    - A date-only entry for today is never "in the future"; tomorrow is.
+  - **Symptoms removed** everywhere: the context step, cards, entry detail, the trends model, the schema and Figma.
+  - **Tags:** "Exercise" removed; "On my period" and "Feeling sick" added.
+  - **Design pass applied:**
+    - Stool step: no eyebrow or back arrow; "Choose the closest match"; Continue (or Done) only.
+    - Context step: back arrow and Skip; no "optional" line and no footer.
+    - History: no eyebrow, subtitle or count line ("0 entries" still shows when nothing matches).
+    - Entry detail: no "Optional" labels and no "Saved on this device" line.
+    - Journal: shorter empty message.
+    - Settings: the "A little context" description is updated.
+    - The step count is now carried by the progress bar's screen-reader label ("Step 1 of 2").
+  - **Migration:** drift `stepByStep` from the exported v1 and v2 schemas. The test covers a schema match plus data: an entry kept, `has_time` true, symptoms gone, `exercise` removed and `coffee` kept, new codes accepted. On the S20 the real v1 dev journal migrated, and the startup and add/edit/delete integration tests pass.
+  - **Figma:** symptoms and Exercise removed from 3.3, 3.4, 4.3, 4.8 and 5.4–5.6. The 2.3 sheet has a "Record a time" row. New frame 2.8 shows a past day with no time. Yesterday's sample entry is untimed in the journal and History frames. The Read me is updated.
+  - **Device test runs:** run integration tests with `flutter test integration_test/<file> -d <device> --no-uninstall`. Without the flag, flutter_tools uninstalls the app after the run, which deletes the dev journal and its Keystore key. This happened once after the M6.1 runs; the migration was not at fault.
+- **CLAUDE.md updated:** the date is the only required part; the time defaults; no symptoms; skippable steps without "Optional" labels; trends show stool form summaries only.
+
+### M6.2 — "A little context" refinements (proposed, not started)
+Suggestions, each to confirm before building:
+1. **Rename "Anything to note?".** Options: "What was going on?", "Around this time" or "Anything going on?". My pick is "What was going on?": it's plain, describes circumstances rather than a diagnosis, and reads well above chips like "Coffee" or "On my period". The step could also become "Context" in Settings, with "A little context" kept as the screen title.
+2. **"How did it feel?" as a three-way segmented control** instead of chips. It's a single choice, and a segmented control shows that, takes less space and is easier to use with a screen reader ("1 of 3, selected").
+3. **Show the chosen chips on the editor's context row** as small chips (not only text), so the hub shows what was picked at a glance.
+4. **Group the tags into two short rows**: food and drink (After a meal, Coffee, Low fluids), and body and mind (Stress, Medication, On my period, Feeling sick). With seven chips that keeps scanning easy; no headings are needed.
+5. **Make the step a sheet over the editor** rather than a full screen. It's short now that symptoms are gone, and a sheet keeps the entry in view.
+6. **Notes on the context step.** Either drop the second notes field (the editor already has one) or keep it as the only notes field when context is on. Two places to edit the same note is confusing.
+7. **A "Clear" link on the context step** that resets ease and tags in one tap, alongside tapping each chip again.
+8. **Order the chips by how often the user picks them.** Purely local and descriptive, but it changes positions, which can hurt muscle memory. I'd suggest not doing this.
 
 ### M7 — Weekly trends
 - **Scope (5.1–5.7):** 4/12/26-week ranges with previous/next navigation, summary tiles, weekly bar chart (Flutter widgets or CustomPaint), stool form and symptom sections behind their settings, not-enough-data state, and no health advice.

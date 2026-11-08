@@ -7,8 +7,8 @@ import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/ui/widgets/morrow_navigation_bar.dart';
 
 /// Real startup on a device: platform secure storage, the encrypted journal
-/// in app-private storage, the gate and the shell. The journal it creates
-/// holds no entries.
+/// in app-private storage, the gate and the shell. On a device that already
+/// has a journal from an older build, this also runs its schema migration.
 ///
 /// `flutter test integration_test/startup_test.dart -d DEVICE`
 void main() {
@@ -37,6 +37,6 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: MorrowApp()));
     await tester.pumpAndSettle();
     expect(find.byType(MorrowNavigationBar), findsOneWidget);
-    expect(find.text('Nothing here yet'), findsOneWidget);
+    expect(find.text('Your journal'), findsOneWidget);
   });
 }

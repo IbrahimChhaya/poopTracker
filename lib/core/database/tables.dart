@@ -17,6 +17,10 @@ class Entries extends Table {
   IntColumn get occurredAtUtcMs => integer()();
   IntColumn get originalUtcOffsetMinutes => integer()();
 
+  /// False when no time of day was recorded (schema v2). The stored instant
+  /// is then midday on the entry's local day and is never shown.
+  BoolColumn get hasTime => boolean().withDefault(const Constant(true))();
+
   /// Plain text, at most 500 characters (validated in Dart; see Entry).
   TextColumn get comment => text().nullable()();
   IntColumn get stoolType => integer().nullable()();
@@ -34,24 +38,6 @@ class Entries extends Table {
   ];
 }
 
-/// Symptoms chosen for an entry, by code. "none" excludes the others; that
-/// rule is enforced in Dart before writing.
-@DataClassName('EntrySymptomRow')
-class EntrySymptoms extends Table {
-  IntColumn get entryId =>
-      integer().references(Entries, #id, onDelete: KeyAction.cascade)();
-  TextColumn get code => text()();
-
-  @override
-  Set<Column<Object>> get primaryKey => {entryId, code};
-
-  @override
-  List<String> get customConstraints => const [
-    "CHECK (code IN ('none', 'bloating', 'cramping', 'urgency', 'mucus', "
-        "'blood'))",
-  ];
-}
-
 /// Circumstance tags chosen for an entry, by code.
 @DataClassName('EntryTagRow')
 class EntryTags extends Table {
@@ -65,7 +51,7 @@ class EntryTags extends Table {
   @override
   List<String> get customConstraints => const [
     "CHECK (code IN ('after_meal', 'coffee', 'stress', 'low_fluids', "
-        "'medication', 'exercise'))",
+        "'medication', 'on_period', 'feeling_sick'))",
   ];
 }
 

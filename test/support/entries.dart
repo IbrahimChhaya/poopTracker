@@ -15,8 +15,8 @@ Entry entryAt(
   String? comment,
   int? stoolType,
   Ease? ease,
-  Set<Symptom> symptoms = const {},
   Set<Tag> tags = const {},
+  bool hasTime = true,
 }) {
   final offset = offsetMinutes ?? _ukOffsetForLocal(year, month, day, hour);
   final utc = DateTime.utc(
@@ -35,8 +35,8 @@ Entry entryAt(
     comment: comment,
     stoolType: stoolType,
     ease: ease,
-    symptoms: symptoms,
     tags: tags,
+    hasTime: hasTime,
     createdAtUtc: utc,
     updatedAtUtc: utc,
   );

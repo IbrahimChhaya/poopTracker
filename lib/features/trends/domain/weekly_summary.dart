@@ -32,37 +32,14 @@ final class StoolFormSummary {
   int get entriesWithType => countsByType.values.fold(0, (a, b) => a + b);
 }
 
-/// Symptom counts. "None" and "not answered" both count as no symptoms.
-final class SymptomSummary {
-  SymptomSummary({
-    required List<MapEntry<Symptom, int>> counts,
-    required this.entriesWithSymptoms,
-    required this.entriesWithoutSymptoms,
-  }) : counts = List.unmodifiable(counts);
-
-  /// Symptoms recorded at least once, most frequent first. An entry with two
-  /// symptoms counts once for each.
-  final List<MapEntry<Symptom, int>> counts;
-
-  /// Entries with at least one real symptom.
-  final int entriesWithSymptoms;
-
-  /// Entries with "None" or no symptom answer.
-  final int entriesWithoutSymptoms;
-}
-
 /// Simple, descriptive figures for a run of whole weeks.
 final class WeeklySummary {
-  WeeklySummary({
-    required List<WeekCount> weeks,
-    required this.stoolForm,
-    required this.symptoms,
-  }) : weeks = List.unmodifiable(weeks);
+  WeeklySummary({required List<WeekCount> weeks, required this.stoolForm})
+    : weeks = List.unmodifiable(weeks);
 
   /// Oldest week first.
   final List<WeekCount> weeks;
   final StoolFormSummary stoolForm;
-  final SymptomSummary symptoms;
 
   LocalDate get firstDay => weeks.first.weekStart;
   LocalDate get lastDay => weeks.last.weekStart.weekEnd;
@@ -91,33 +68,16 @@ WeeklySummary summariseWeeks(
 
   final perWeek = List<int>.filled(weeks, 0);
   final stool = {for (var t = minStoolType; t <= maxStoolType; t++) t: 0};
-  final symptomCounts = <Symptom, int>{};
-  var withSymptoms = 0;
-  var total = 0;
 
   for (final e in entries) {
     final day = e.localDate;
     if (day.isBefore(firstStart) || day.isAfter(lastEnd)) continue;
-    total++;
     perWeek[firstStart.daysUntil(day.weekStart) ~/ 7]++;
     final type = e.stoolType;
     if (type != null && stool.containsKey(type)) {
       stool[type] = stool[type]! + 1;
     }
-    if (e.hasSymptoms) {
-      withSymptoms++;
-      for (final s in e.symptoms) {
-        if (s == Symptom.none) continue;
-        symptomCounts[s] = (symptomCounts[s] ?? 0) + 1;
-      }
-    }
   }
-
-  final sortedSymptoms = symptomCounts.entries.toList()
-    ..sort((a, b) {
-      final byCount = b.value.compareTo(a.value);
-      return byCount != 0 ? byCount : a.key.index.compareTo(b.key.index);
-    });
 
   return WeeklySummary(
     weeks: [
@@ -125,11 +85,6 @@ WeeklySummary summariseWeeks(
         WeekCount(firstStart.addDays(7 * i), perWeek[i]),
     ],
     stoolForm: StoolFormSummary(stool),
-    symptoms: SymptomSummary(
-      counts: sortedSymptoms,
-      entriesWithSymptoms: withSymptoms,
-      entriesWithoutSymptoms: total - withSymptoms,
-    ),
   );
 }
 

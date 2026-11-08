@@ -4,6 +4,7 @@ import '../../../core/clock.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/ids/uid.dart';
 import '../domain/entry.dart';
+import '../domain/grouping.dart';
 
 /// A draft failed validation. Nothing was written.
 class EntryValidationException implements Exception {
@@ -27,7 +28,7 @@ class EntryNotFoundException implements Exception {
 /// The only way the app reads or writes journal entries.
 ///
 /// Every write validates first, uses one transaction for the entry and its
-/// symptoms and tags, and completes only after the commit. Queries use
+/// tags, and completes only after the commit. Queries use
 /// drift's bound parameters; nothing is logged.
 class EntryRepository {
   EntryRepository(this._db, this._clock, {String Function()? newUid})
@@ -49,6 +50,7 @@ class EntryRepository {
               uid: _newUid(),
               occurredAtUtcMs: draft.occurredAtUtc.millisecondsSinceEpoch,
               originalUtcOffsetMinutes: draft.originalUtcOffsetMinutes,
+              hasTime: Value(draft.hasTime),
               comment: Value(draft.comment),
               stoolType: Value(draft.stoolType),
               ease: Value(draft.ease?.code),
@@ -73,6 +75,7 @@ class EntryRepository {
                 draft.occurredAtUtc.millisecondsSinceEpoch,
               ),
               originalUtcOffsetMinutes: Value(draft.originalUtcOffsetMinutes),
+              hasTime: Value(draft.hasTime),
               comment: Value(draft.comment),
               stoolType: Value(draft.stoolType),
               ease: Value(draft.ease?.code),
@@ -81,9 +84,6 @@ class EntryRepository {
           );
       if (changed == 0) throw const EntryNotFoundException();
       await (_db.delete(
-        _db.entrySymptoms,
-      )..where((s) => s.entryId.equals(id))).go();
-      await (_db.delete(
         _db.entryTags,
       )..where((t) => t.entryId.equals(id))).go();
       await _writeDetails(id, draft);
@@ -91,7 +91,7 @@ class EntryRepository {
     return (await byId(id))!;
   }
 
-  /// Deletes the entry with its symptoms and tags.
+  /// Deletes the entry with its tags.
   Future<void> delete(int id) async {
     final removed = await (_db.delete(
       _db.entries,
@@ -107,11 +107,17 @@ class EntryRepository {
     return (await _withDetails([row])).single;
   }
 
-  /// Every entry, newest first.
-  Future<List<Entry>> all() async => _withDetails(await _allQuery().get());
+  /// Every entry, newest first (see [compareNewestFirst]).
+  Future<List<Entry>> all() async =>
+      _sorted(await _withDetails(await _allQuery().get()));
 
   /// Every entry, newest first, updated after each change.
-  Stream<List<Entry>> watchAll() => _allQuery().watch().asyncMap(_withDetails);
+  Stream<List<Entry>> watchAll() => _allQuery().watch().asyncMap(
+    (rows) async => _sorted(await _withDetails(rows)),
+  );
+
+  static List<Entry> _sorted(List<Entry> entries) =>
+      [...entries]..sort(compareNewestFirst);
 
   SimpleSelectStatement<$EntriesTable, EntryRow> _allQuery() =>
       _db.select(_db.entries)..orderBy([
@@ -126,31 +132,17 @@ class EntryRepository {
 
   Future<void> _writeDetails(int id, EntryDraft draft) async {
     await _db.batch((b) {
-      b
-        ..insertAll(_db.entrySymptoms, [
-          for (final s in draft.symptoms)
-            EntrySymptomsCompanion.insert(entryId: id, code: s.code),
-        ])
-        ..insertAll(_db.entryTags, [
-          for (final t in draft.tags)
-            EntryTagsCompanion.insert(entryId: id, code: t.code),
-        ]);
+      b.insertAll(_db.entryTags, [
+        for (final t in draft.tags)
+          EntryTagsCompanion.insert(entryId: id, code: t.code),
+      ]);
     });
   }
 
   Future<List<Entry>> _withDetails(List<EntryRow> rows) async {
     if (rows.isEmpty) return const [];
     final ids = [for (final r in rows) r.id];
-    final symptoms = <int, Set<Symptom>>{};
     final tags = <int, Set<Tag>>{};
-    for (final s in await (_db.select(
-      _db.entrySymptoms,
-    )..where((s) => s.entryId.isIn(ids))).get()) {
-      final symptom = Symptom.fromCode(s.code);
-      if (symptom != null) {
-        symptoms.putIfAbsent(s.entryId, () => {}).add(symptom);
-      }
-    }
     for (final t in await (_db.select(
       _db.entryTags,
     )..where((t) => t.entryId.isIn(ids))).get()) {
@@ -167,10 +159,10 @@ class EntryRepository {
             isUtc: true,
           ),
           originalUtcOffsetMinutes: r.originalUtcOffsetMinutes,
+          hasTime: r.hasTime,
           comment: r.comment,
           stoolType: r.stoolType,
           ease: r.ease == null ? null : Ease.fromCode(r.ease!),
-          symptoms: symptoms[r.id] ?? const {},
           tags: tags[r.id] ?? const {},
           createdAtUtc: DateTime.fromMillisecondsSinceEpoch(
             r.createdAtUtcMs,

@@ -81,12 +81,11 @@ class _EditEntryScreenState extends ConsumerState<EditEntryScreen> {
   }
 }
 
-/// "Easy · Bloating · After a meal, Coffee", or "Not set".
+/// "Easy · After a meal, Coffee", or "Not set".
 String _contextSummary(EntryDetails d) {
   if (d.contextEmpty) return 'Not set';
   return [
     if (d.ease != null) easeChip(d.ease!),
-    ?symptomSummary(d.symptoms),
     if (d.tags.isNotEmpty) sortedTags(d.tags).map(tagLabel).join(', '),
   ].join(' · ');
 }
@@ -124,12 +123,22 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
   Future<void> _chooseTime(EntryEditorState s) async {
     final picked = await showEntryTimeSheet(
       context,
-      initial: (date: s.date, hour: s.hour, minute: s.minute),
+      initial: (
+        date: s.date,
+        hour: s.hour,
+        minute: s.minute,
+        hasTime: s.hasTime,
+      ),
       today: ref.read(clockProvider).today(),
       isInFuture: _controller.isInFuture,
     );
     if (picked != null) {
-      _controller.setDateTime(picked.date, picked.hour, picked.minute);
+      _controller.setDateTime(
+        picked.date,
+        picked.hour,
+        picked.minute,
+        hasTime: picked.hasTime,
+      );
     }
   }
 
@@ -183,8 +192,9 @@ class _EntryEditorState extends ConsumerState<EntryEditor> {
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
     final today = ref.watch(clockProvider).today();
-    final whenLabel =
-        '${relativeDay(s.date, today: today)}, ${formatTime(s.wall)}';
+    final whenLabel = s.hasTime
+        ? '${relativeDay(s.date, today: today)}, ${formatTime(s.wall)}'
+        : '${relativeDay(s.date, today: today)} · No time';
 
     return PopScope(
       canPop: !s.hasChanges && !s.saving,

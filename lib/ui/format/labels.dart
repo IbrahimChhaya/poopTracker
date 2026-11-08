@@ -69,12 +69,19 @@ String formatDayHeading(LocalDate day, {required LocalDate today}) {
   return relative == date ? date : '$relative · $date';
 }
 
-/// Journal entry title: "Today · 1:35 pm", "Wednesday · 6:20 pm".
+/// Journal entry title: "Today · 1:35 pm", "Wednesday · 6:20 pm", or just
+/// "Wednesday" when no time was recorded ([wall] null).
 String formatEntryTitle(
   LocalDate day,
-  DateTime wall, {
+  DateTime? wall, {
   required LocalDate today,
-}) => '${relativeDay(day, today: today)} · ${formatTime(wall)}';
+}) => wall == null
+    ? relativeDay(day, today: today)
+    : '${relativeDay(day, today: today)} · ${formatTime(wall)}';
+
+/// The time on its own, or "No time" when none was recorded.
+String formatTimeOrNone(DateTime? wall) =>
+    wall == null ? 'No time' : formatTime(wall);
 
 /// "24 Oct – 6 Nov", "12 Oct – 8 Nov 2026" when [withYear], and
 /// "28 Dec 2026 – 3 Jan 2027" whenever the range spans two years.

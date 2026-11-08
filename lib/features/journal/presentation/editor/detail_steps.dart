@@ -8,7 +8,6 @@ import '../../../../core/clock.dart';
 import '../../../../ui/format/labels.dart';
 import '../../../../ui/theme/morrow_colors.dart';
 import '../../../../ui/theme/morrow_tokens.dart';
-import '../../../../ui/theme/morrow_typography.dart';
 import '../../../../ui/widgets/morrow_button.dart';
 import '../../../../ui/widgets/morrow_chip.dart';
 import '../../../../ui/widgets/overlays.dart';
@@ -87,18 +86,20 @@ void _next(
   }
 }
 
-/// Eyebrow, title, and the progress bar shared by both steps.
+/// Title, optional back button, trailing action and the progress bar shared
+/// by both steps. The bar shows how many steps there are (one bar per
+/// enabled step) and where the user is.
 class _StepHeader extends StatelessWidget {
   const _StepHeader({
-    required this.eyebrow,
     required this.title,
     required this.index,
     required this.count,
+    this.showBack = false,
     this.trailing,
   });
 
-  final String eyebrow;
   final String title;
+  final bool showBack;
   final int index;
   final int count;
   final Widget? trailing;
@@ -110,17 +111,18 @@ class _StepHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(eyebrow, style: MorrowTextStyles.of(context).eyebrow),
-        const SizedBox(height: MorrowSpacing.sm),
         Row(
           children: [
-            IconButton(
-              tooltip: 'Back',
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(Icons.arrow_back),
-              color: colors.ink,
-            ),
-            const SizedBox(width: MorrowSpacing.xs),
+            if (showBack) ...[
+              IconButton(
+                tooltip: 'Back',
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back),
+                color: colors.ink,
+              ),
+              const SizedBox(width: MorrowSpacing.xs),
+            ] else
+              const SizedBox(width: 12),
             Expanded(
               child: Semantics(
                 header: true,
@@ -132,6 +134,7 @@ class _StepHeader extends StatelessWidget {
         ),
         const SizedBox(height: MorrowSpacing.md),
         Semantics(
+          container: true,
           label: 'Step ${index + 1} of $count',
           excludeSemantics: true,
           child: Row(
@@ -198,15 +201,6 @@ class _StepScaffold extends StatelessWidget {
 Widget _indent(Widget child) =>
     Padding(padding: const EdgeInsets.only(left: 12), child: child);
 
-/// "ADD DETAILS · OPTIONAL · 1 OF 2". The context step leaves out
-/// "OPTIONAL": it says so once, in its first line (3.3).
-String _stepEyebrow(List<DetailStep> steps, DetailStep step) {
-  final count = '${steps.indexOf(step) + 1} OF ${steps.length}';
-  return step == DetailStep.context
-      ? 'ADD DETAILS · $count'
-      : 'ADD DETAILS · OPTIONAL · $count';
-}
-
 /// "What was the form?" (3.2).
 class StoolFormStep extends ConsumerWidget {
   const StoolFormStep({required this.target, required this.steps, super.key});
@@ -226,12 +220,22 @@ class StoolFormStep extends ConsumerWidget {
     Future<void> chooseTime() async {
       final picked = await showEntryTimeSheet(
         context,
-        initial: (date: s.date, hour: s.hour, minute: s.minute),
+        initial: (
+          date: s.date,
+          hour: s.hour,
+          minute: s.minute,
+          hasTime: s.hasTime,
+        ),
         today: today,
         isInFuture: controller.isInFuture,
       );
       if (picked != null) {
-        controller.setDateTime(picked.date, picked.hour, picked.minute);
+        controller.setDateTime(
+          picked.date,
+          picked.hour,
+          picked.minute,
+          hasTime: picked.hasTime,
+        );
       }
     }
 
@@ -243,22 +247,9 @@ class StoolFormStep extends ConsumerWidget {
               ? null
               : () => _next(context, target, steps, DetailStep.stoolForm),
         ),
-        TextButton(
-          onPressed: s.saving
-              ? null
-              : () => _saveAndClose(context, ref, target),
-          child: Text(
-            s.saving
-                ? 'Saving…'
-                : target.original == null
-                ? 'Skip and save entry'
-                : 'Save changes',
-          ),
-        ),
       ],
       children: [
         _StepHeader(
-          eyebrow: _stepEyebrow(steps, DetailStep.stoolForm),
           title: target.original == null ? 'New entry' : 'Edit entry',
           index: steps.indexOf(DetailStep.stoolForm),
           count: steps.length,
@@ -286,7 +277,7 @@ class StoolFormStep extends ConsumerWidget {
                 label:
                     '${relativeDay(s.date, today: today)}, '
                     '${formatDayMonth(s.date)}',
-                time: formatTime(s.wall),
+                time: s.hasTime ? formatTime(s.wall) : 'No time',
                 onTap: chooseTime,
               ),
               const SizedBox(height: MorrowSpacing.xxl),
@@ -296,8 +287,7 @@ class StoolFormStep extends ConsumerWidget {
               ),
               const SizedBox(height: MorrowSpacing.xs),
               Text(
-                'Optional. Choose the closest match, or skip. An estimate is '
-                'fine.',
+                'Choose the closest match',
                 style: text.bodySmall!.copyWith(fontSize: 13),
               ),
               const SizedBox(height: MorrowSpacing.md),
@@ -363,7 +353,14 @@ class _WhenSummary extends StatelessWidget {
                 ),
                 const SizedBox(width: MorrowSpacing.sm),
                 Expanded(child: Text(label, style: text.bodyMedium)),
-                Text(time, style: text.bodyMedium),
+                const SizedBox(width: MorrowSpacing.sm),
+                Flexible(
+                  child: Text(
+                    time,
+                    textAlign: TextAlign.end,
+                    style: text.bodyMedium,
+                  ),
+                ),
                 const SizedBox(width: MorrowSpacing.xs),
                 Icon(Icons.expand_more, size: 18, color: colors.mutedIcon),
               ],
@@ -506,44 +503,23 @@ class _ContextStepState extends ConsumerState<ContextStep> {
           busy: s.saving,
           onPressed: () => _saveAndClose(context, ref, target),
         ),
-        const SizedBox(height: MorrowSpacing.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ExcludeSemantics(
-              child: Icon(
-                Icons.lock_outline,
-                size: 14,
-                color: colors.mutedIcon,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                'No account. No cloud syncing.',
-                style: text.labelSmall,
-              ),
-            ),
-          ],
-        ),
       ],
       children: [
         _StepHeader(
-          eyebrow: _stepEyebrow(steps, DetailStep.context),
           title: 'A little context',
           index: steps.indexOf(DetailStep.context),
           count: steps.length,
+          showBack: true,
+          trailing: TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Skip'),
+          ),
         ),
         const SizedBox(height: MorrowSpacing.lg),
         _indent(
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'All of this is optional. Save now, or add what feels useful.',
-                style: text.bodySmall!.copyWith(fontSize: 13),
-              ),
-              const SizedBox(height: MorrowSpacing.lg),
               if (s.saveFailed) ...[
                 const ErrorBanner(
                   title: 'Couldn’t save your entry',
@@ -575,8 +551,8 @@ class _ContextStepState extends ConsumerState<ContextStep> {
                             const SizedBox(height: 3),
                             Text(
                               '${relativeDay(s.date, today: today)}, '
-                              '${formatDayMonth(s.date)} · '
-                              '${formatTime(s.wall)}',
+                              '${formatDayMonth(s.date)}'
+                              '${s.hasTime ? ' · ${formatTime(s.wall)}' : ''}',
                               style: text.labelSmall,
                             ),
                           ],
@@ -605,18 +581,6 @@ class _ContextStepState extends ConsumerState<ContextStep> {
                       label: easeChip(e),
                       selected: d.ease == e,
                       onSelected: (_) => controller.toggleEase(e),
-                    ),
-                ],
-              ),
-              section(
-                'Any symptoms?',
-                hint: 'Choose all that apply',
-                chips: [
-                  for (final sym in Symptom.values)
-                    MorrowChip(
-                      label: symptomLabel(sym),
-                      selected: d.symptoms.contains(sym),
-                      onSelected: (_) => controller.toggleSymptom(sym),
                     ),
                 ],
               ),

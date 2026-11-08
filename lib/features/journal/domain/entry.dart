@@ -16,25 +16,6 @@ enum Ease {
   static Ease? fromCode(String code) => _byCode(values, code, (e) => e.code);
 }
 
-/// Predefined symptoms (no free-text symptoms). Stored by [code].
-///
-/// [none] is an explicit "no symptoms" answer and cannot be combined with any
-/// other symptom. In summaries it counts the same as not answering.
-enum Symptom {
-  none('none'),
-  bloating('bloating'),
-  cramping('cramping'),
-  urgency('urgency'),
-  mucus('mucus'),
-  blood('blood');
-
-  const Symptom(this.code);
-
-  final String code;
-
-  static Symptom? fromCode(String code) => _byCode(values, code, (e) => e.code);
-}
-
 /// Circumstance tags ("Anything to note?"). Stored by [code].
 enum Tag {
   afterMeal('after_meal'),
@@ -42,7 +23,8 @@ enum Tag {
   stress('stress'),
   lowFluids('low_fluids'),
   medication('medication'),
-  exercise('exercise');
+  onPeriod('on_period'),
+  feelingSick('feeling_sick');
 
   const Tag(this.code);
 
@@ -73,6 +55,11 @@ const Duration futureTolerance = Duration(minutes: 1);
 const int minUtcOffsetMinutes = -12 * 60;
 const int maxUtcOffsetMinutes = 14 * 60;
 
+/// An entry without a time is stored at this local hour on its day. The hour
+/// is never shown; midday keeps the local day stable if the offset shifts a
+/// little.
+const int dateOnlyHour = 12;
+
 /// Trims a note. A note that is empty after trimming becomes null.
 String? normaliseComment(String? raw) {
   final trimmed = raw?.trim();
@@ -85,35 +72,36 @@ int commentLength(String text) => text.characters.length;
 enum EntryValidationError {
   commentTooLong,
   stoolTypeOutOfRange,
-  noneWithOtherSymptoms,
   inFuture,
   utcOffsetOutOfRange,
   timeNotUtc,
 }
 
-/// The editable fields of an entry, before or after saving. Only the date and
-/// time are required; every other field is optional.
+/// The editable fields of an entry, before or after saving. Only the date is
+/// required; the time and every other field are optional.
 final class EntryDraft {
   EntryDraft({
     required this.occurredAtUtc,
     required this.originalUtcOffsetMinutes,
+    this.hasTime = true,
     String? comment,
     this.stoolType,
     this.ease,
-    Set<Symptom> symptoms = const {},
     Set<Tag> tags = const {},
   }) : comment = normaliseComment(comment),
-       symptoms = Set.unmodifiable(symptoms),
        tags = Set.unmodifiable(tags);
 
+  /// For a date-only entry ([hasTime] false), midday on its local day.
   final DateTime occurredAtUtc;
   final int originalUtcOffsetMinutes;
+
+  /// False when the user did not record a time of day.
+  final bool hasTime;
 
   /// Trimmed; null when there is no note.
   final String? comment;
   final int? stoolType;
   final Ease? ease;
-  final Set<Symptom> symptoms;
   final Set<Tag> tags;
 
   /// Every problem with this draft. Empty means it can be saved.
@@ -127,13 +115,23 @@ final class EntryDraft {
     if (s != null && (s < minStoolType || s > maxStoolType)) {
       errors.add(EntryValidationError.stoolTypeOutOfRange);
     }
-    if (symptoms.contains(Symptom.none) && symptoms.length > 1) {
-      errors.add(EntryValidationError.noneWithOtherSymptoms);
-    }
     if (!occurredAtUtc.isUtc) {
       errors.add(EntryValidationError.timeNotUtc);
-    } else if (occurredAtUtc.isAfter(nowUtc.add(futureTolerance))) {
-      errors.add(EntryValidationError.inFuture);
+    } else if (hasTime) {
+      if (occurredAtUtc.isAfter(nowUtc.add(futureTolerance))) {
+        errors.add(EntryValidationError.inFuture);
+      }
+    } else {
+      // Without a time only the day matters: today is fine, tomorrow is not.
+      final day = LocalDate.fromUtc(
+        occurredAtUtc,
+        offsetMinutes: originalUtcOffsetMinutes,
+      );
+      final today = LocalDate.fromUtc(
+        nowUtc,
+        offsetMinutes: originalUtcOffsetMinutes,
+      );
+      if (day.isAfter(today)) errors.add(EntryValidationError.inFuture);
     }
     if (originalUtcOffsetMinutes < minUtcOffsetMinutes ||
         originalUtcOffsetMinutes > maxUtcOffsetMinutes) {
@@ -152,13 +150,12 @@ final class Entry {
     required this.originalUtcOffsetMinutes,
     required this.createdAtUtc,
     required this.updatedAtUtc,
+    this.hasTime = true,
     this.comment,
     this.stoolType,
     this.ease,
-    Set<Symptom> symptoms = const {},
     Set<Tag> tags = const {},
-  }) : symptoms = Set.unmodifiable(symptoms),
-       tags = Set.unmodifiable(tags);
+  }) : tags = Set.unmodifiable(tags);
 
   /// Local database key.
   final int id;
@@ -166,12 +163,16 @@ final class Entry {
   /// Stable identity across devices and backups, used to skip duplicates on
   /// restore.
   final String uid;
+
+  /// For a date-only entry, midday on its local day (never shown).
   final DateTime occurredAtUtc;
   final int originalUtcOffsetMinutes;
+
+  /// False when no time of day was recorded.
+  final bool hasTime;
   final String? comment;
   final int? stoolType;
   final Ease? ease;
-  final Set<Symptom> symptoms;
   final Set<Tag> tags;
   final DateTime createdAtUtc;
   final DateTime updatedAtUtc;
@@ -180,21 +181,21 @@ final class Entry {
   LocalDate get localDate =>
       LocalDate.fromUtc(occurredAtUtc, offsetMinutes: originalUtcOffsetMinutes);
 
-  /// The clock time when the entry happened, where it happened.
+  /// The clock time when the entry happened, where it happened. Meaningless
+  /// when [hasTime] is false; use [localTime] for display.
   DateTime get localWallClock =>
       wallClock(occurredAtUtc, offsetMinutes: originalUtcOffsetMinutes);
 
-  /// True when at least one real symptom was recorded ("None" and no answer
-  /// both count as no symptoms).
-  bool get hasSymptoms => symptoms.any((s) => s != Symptom.none);
+  /// The recorded wall-clock time, or null for a date-only entry.
+  DateTime? get localTime => hasTime ? localWallClock : null;
 
   EntryDraft toDraft() => EntryDraft(
     occurredAtUtc: occurredAtUtc,
     originalUtcOffsetMinutes: originalUtcOffsetMinutes,
+    hasTime: hasTime,
     comment: comment,
     stoolType: stoolType,
     ease: ease,
-    symptoms: symptoms,
     tags: tags,
   );
 
@@ -205,11 +206,12 @@ final class Entry {
       other.uid == uid &&
       other.occurredAtUtc == occurredAtUtc &&
       other.originalUtcOffsetMinutes == originalUtcOffsetMinutes &&
+      other.hasTime == hasTime &&
       other.comment == comment &&
       other.stoolType == stoolType &&
       other.ease == ease &&
-      _sameSet(other.symptoms, symptoms) &&
-      _sameSet(other.tags, tags) &&
+      other.tags.length == tags.length &&
+      other.tags.containsAll(tags) &&
       other.createdAtUtc == createdAtUtc &&
       other.updatedAtUtc == updatedAtUtc;
 
@@ -219,10 +221,10 @@ final class Entry {
     uid,
     occurredAtUtc,
     originalUtcOffsetMinutes,
+    hasTime,
     comment,
     stoolType,
     ease,
-    Object.hashAllUnordered(symptoms),
     Object.hashAllUnordered(tags),
     createdAtUtc,
     updatedAtUtc,
@@ -232,6 +234,3 @@ final class Entry {
   @override
   String toString() => 'Entry(id: $id)';
 }
-
-bool _sameSet<T>(Set<T> a, Set<T> b) =>
-    a.length == b.length && a.containsAll(b);

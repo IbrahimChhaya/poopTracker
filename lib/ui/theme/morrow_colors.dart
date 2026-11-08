@@ -30,7 +30,7 @@ abstract final class MorrowPalette {
   /// illustration. Not for text (3.3:1 on sand).
   static const warmIcon = Color(0xFFAC7157);
 
-  /// Warm accent for small text, for example "TYPE 4" or a symptom label.
+  /// Warm accent for small text, for example "TYPE 4" or the date on entry detail.
   /// Same hue as [warmIcon], darker so it meets 4.5:1 on sand, card and
   /// background. Kept brown so it does not read as [danger].
   static const warmText = Color(0xFF895943);

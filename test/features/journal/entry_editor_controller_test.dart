@@ -63,17 +63,40 @@ void main() {
     expect(saved.originalUtcOffsetMinutes, 60);
   });
 
-  test('a selected past day is the default, with no changes', () async {
-    final day = LocalDate(2026, 11, 4);
-    final e = editor(null, day);
-    final s = stateOf(null, day);
-    expect(s.date, day);
-    expect((s.hour, s.minute), (13, 41));
-    expect(s.hasChanges, isFalse);
+  test(
+    'a selected past day is the default, with no time and no changes',
+    () async {
+      final day = LocalDate(2026, 11, 4);
+      final e = editor(null, day);
+      final s = stateOf(null, day);
+      expect(s.date, day);
+      expect(s.hasTime, isFalse);
+      expect(s.hasChanges, isFalse);
+      expect(await e.save(), SaveOutcome.saved);
+      final saved = (await repo.all()).single;
+      expect(saved.localDate, day);
+      expect(saved.hasTime, isFalse);
+      // Stored at midday on that day, never shown.
+      expect(saved.occurredAtUtc, DateTime.utc(2026, 11, 4, 12));
+    },
+  );
+
+  test('today defaults to now, with a time', () {
+    editor(null);
+    expect(stateOf(null).hasTime, isTrue);
+  });
+
+  test('the time can be removed for today, and today is never "future"', () async {
+    // 09:30: midday is still to come, but a date-only entry for today is fine.
+    clock.utc = DateTime.utc(2026, 11, 6, 9, 30);
+    final e = editor(null)
+      ..setDateTime(LocalDate(2026, 11, 6), 9, 30, hasTime: false);
+    expect(e.isInFuture(LocalDate(2026, 11, 6), 0, 0, hasTime: false), isFalse);
+    expect(e.isInFuture(LocalDate(2026, 11, 7), 0, 0, hasTime: false), isTrue);
     expect(await e.save(), SaveOutcome.saved);
     final saved = (await repo.all()).single;
-    expect(saved.localDate, day);
-    expect(saved.occurredAtUtc, DateTime.utc(2026, 11, 4, 13, 41));
+    expect(saved.hasTime, isFalse);
+    expect(saved.localDate, LocalDate(2026, 11, 6));
   });
 
   test('today or a future day as the default means now', () {
@@ -122,20 +145,6 @@ void main() {
       expect(stateOf(null).hasChanges, isFalse);
     });
 
-    test('"None" and other symptoms exclude each other', () {
-      final e = editor(null)
-        ..toggleSymptom(Symptom.bloating)
-        ..toggleSymptom(Symptom.cramping);
-      expect(stateOf(null).details.symptoms, {
-        Symptom.bloating,
-        Symptom.cramping,
-      });
-      e.toggleSymptom(Symptom.none);
-      expect(stateOf(null).details.symptoms, {Symptom.none});
-      e.toggleSymptom(Symptom.urgency);
-      expect(stateOf(null).details.symptoms, {Symptom.urgency});
-    });
-
     test('ease is single choice and clears on a second tap', () {
       final e = editor(null)
         ..toggleEase(Ease.easy)
@@ -149,15 +158,13 @@ void main() {
       final e = editor(null)
         ..toggleStoolType(3)
         ..toggleEase(Ease.someStraining)
-        ..toggleSymptom(Symptom.mucus)
         ..toggleTag(Tag.stress)
-        ..toggleTag(Tag.exercise);
+        ..toggleTag(Tag.feelingSick);
       expect(await e.save(), SaveOutcome.saved);
       final saved = (await repo.all()).single;
       expect(saved.stoolType, 3);
       expect(saved.ease, Ease.someStraining);
-      expect(saved.symptoms, {Symptom.mucus});
-      expect(saved.tags, {Tag.stress, Tag.exercise});
+      expect(saved.tags, {Tag.stress, Tag.feelingSick});
     });
   });
 
@@ -174,7 +181,6 @@ void main() {
           comment: 'Original note',
           stoolType: 4,
           ease: Ease.easy,
-          symptoms: {Symptom.bloating},
           tags: {Tag.coffee},
         ),
       );
@@ -200,7 +206,6 @@ void main() {
         expect(saved.originalUtcOffsetMinutes, -300);
         expect(saved.stoolType, 4);
         expect(saved.ease, Ease.easy);
-        expect(saved.symptoms, {Symptom.bloating});
         expect(saved.tags, {Tag.coffee});
         expect(saved.uid, original.uid);
       },
@@ -209,6 +214,16 @@ void main() {
     test('choosing the same time again is not a change', () {
       editor(original).setDateTime(LocalDate(2026, 11, 5), 21, 0);
       expect(stateOf(original).hasChanges, isFalse);
+    });
+
+    test('removing and adding back the time', () async {
+      final e = editor(original)
+        ..setDateTime(original.localDate, 21, 0, hasTime: false);
+      expect(stateOf(original).hasChanges, isTrue);
+      await e.save();
+      final untimed = (await repo.byId(original.id))!;
+      expect(untimed.hasTime, isFalse);
+      expect(untimed.localDate, LocalDate(2026, 11, 5));
     });
 
     test('clearing the note removes it', () async {

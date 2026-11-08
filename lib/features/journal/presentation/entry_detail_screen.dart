@@ -98,10 +98,18 @@ class EntryDetailScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: MorrowSpacing.sm),
-                    Text(
-                      formatTime(entry.localWallClock),
-                      style: text.headlineMedium,
-                    ),
+                    if (entry.hasTime)
+                      Text(
+                        formatTime(entry.localWallClock),
+                        style: text.headlineMedium,
+                      )
+                    else
+                      Text(
+                        'No time recorded',
+                        style: text.bodyLarge!.copyWith(
+                          color: colors.mutedText,
+                        ),
+                      ),
                     if (display.showStoolForm && entry.stoolType != null) ...[
                       const SizedBox(height: MorrowSpacing.lg),
                       Container(
@@ -126,8 +134,6 @@ class EntryDetailScreen extends ConsumerWidget {
                         textAlign: TextAlign.center,
                         style: text.bodySmall,
                       ),
-                      const SizedBox(height: MorrowSpacing.xs),
-                      Text('Optional detail', style: text.labelSmall),
                     ],
                   ],
                 ),
@@ -151,26 +157,6 @@ class EntryDetailScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: MorrowSpacing.xl),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ExcludeSemantics(
-                    child: Icon(
-                      Icons.lock_outline,
-                      size: 14,
-                      color: colors.mutedIcon,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      'Saved on this device · Not shared anywhere',
-                      style: text.labelSmall,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: MorrowSpacing.sm),
               Center(
                 child: TextButton.icon(
                   onPressed: () =>
@@ -188,48 +174,29 @@ class EntryDetailScreen extends ConsumerWidget {
   }
 }
 
-/// Ease, symptoms and context tags (4.8). Shown only when "A little context"
-/// is on.
+/// Ease and context tags (4.8). Shown only when "A little context" is on.
 List<Widget> _contextDetails(BuildContext context, Entry entry) {
   final colors = MorrowColors.of(context);
   final text = Theme.of(context).textTheme;
   const notRecorded = 'Not recorded';
 
-  Widget heading(String title) => Row(
-    children: [
-      Expanded(
-        child: Semantics(
-          header: true,
-          child: Text(title, style: text.titleMedium),
-        ),
-      ),
-      Text('Optional', style: text.labelSmall),
-    ],
-  );
-
-  Widget chip(String label, {bool warm = false}) => Container(
+  Widget chip(String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     decoration: BoxDecoration(
-      color: warm ? colors.sand : colors.card,
+      color: colors.card,
       borderRadius: BorderRadius.circular(MorrowRadii.pill),
-      border: warm ? null : Border.all(color: colors.line),
+      border: Border.all(color: colors.line),
     ),
-    child: Text(
-      label,
-      style: text.bodySmall!.copyWith(
-        color: warm ? colors.warmText : colors.ink,
-      ),
-    ),
+    child: Text(label, style: text.bodySmall!.copyWith(color: colors.ink)),
   );
 
-  final symptoms = entry.symptoms;
   return [
     const SizedBox(height: MorrowSpacing.xl),
     Row(
       children: [
         Expanded(
           child: Text(
-            'Ease of passage · Optional',
+            'Ease of passage',
             style: text.bodyMedium!.copyWith(color: colors.mutedText),
           ),
         ),
@@ -252,22 +219,7 @@ List<Widget> _contextDetails(BuildContext context, Entry entry) {
     const SizedBox(height: MorrowSpacing.lg),
     const Divider(),
     const SizedBox(height: MorrowSpacing.lg),
-    heading('Symptoms'),
-    const SizedBox(height: MorrowSpacing.md),
-    Wrap(
-      spacing: MorrowSpacing.sm,
-      runSpacing: MorrowSpacing.sm,
-      children: symptoms.isEmpty
-          ? [Text(notRecorded, style: text.bodySmall)]
-          : symptoms.contains(Symptom.none)
-          ? [chip('No symptoms')]
-          : [
-              for (final s in sortedSymptoms(symptoms))
-                chip(symptomLabel(s), warm: true),
-            ],
-    ),
-    const SizedBox(height: MorrowSpacing.xl),
-    heading('Context'),
+    Semantics(header: true, child: Text('Context', style: text.titleMedium)),
     const SizedBox(height: MorrowSpacing.md),
     Wrap(
       spacing: MorrowSpacing.sm,

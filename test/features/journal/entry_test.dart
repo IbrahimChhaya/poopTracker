@@ -14,24 +14,24 @@ EntryDraft _draft({
   int offset = 0,
   String? comment,
   int? stoolType,
-  Set<Symptom> symptoms = const {},
+  bool hasTime = true,
 }) => EntryDraft(
   occurredAtUtc: at ?? _now.subtract(const Duration(minutes: 6)),
   originalUtcOffsetMinutes: offset,
+  hasTime: hasTime,
   comment: comment,
   stoolType: stoolType,
-  symptoms: symptoms,
 );
 
 void main() {
-  group('only date and time are required', () {
-    test('a draft with just a time is valid', () {
+  group('only the date is required', () {
+    test('a draft with just a date and time is valid', () {
       final d = _draft();
       expect(d.validate(nowUtc: _now), isEmpty);
       expect(d.comment, isNull);
       expect(d.stoolType, isNull);
       expect(d.ease, isNull);
-      expect(d.symptoms, isEmpty);
+      expect(d.hasTime, isTrue);
       expect(d.tags, isEmpty);
     });
   });
@@ -92,37 +92,47 @@ void main() {
     });
   });
 
-  group('symptoms', () {
-    test('"None" on its own is valid', () {
-      expect(_draft(symptoms: {Symptom.none}).validate(nowUtc: _now), isEmpty);
-    });
-
-    test('several real symptoms are valid', () {
+  group('optional time', () {
+    test('a date-only entry for today is valid at any hour', () {
+      // Stored at midday, which is later than "now" (09:30) but still today.
+      final morning = DateTime.utc(2026, 11, 6, 9, 30);
       expect(
-        _draft(symptoms: {Symptom.bloating, Symptom.cramping})
-            .validate(nowUtc: _now),
+        _draft(
+          at: DateTime.utc(2026, 11, 6, 12),
+          hasTime: false,
+        ).validate(nowUtc: morning),
         isEmpty,
       );
     });
 
-    test('"None" cannot be combined with another symptom', () {
+    test('a date-only entry for tomorrow is rejected', () {
       expect(
-        _draft(symptoms: {Symptom.none, Symptom.bloating})
-            .validate(nowUtc: _now),
-        [EntryValidationError.noneWithOtherSymptoms],
+        _draft(
+          at: DateTime.utc(2026, 11, 7, 12),
+          hasTime: false,
+        ).validate(nowUtc: _now),
+        [EntryValidationError.inFuture],
       );
     });
 
-    test('"None" and no answer both mean no symptoms', () {
+    test('the day is judged in the offset the entry was recorded in', () {
+      // 23:30 UTC on the 6th is the 7th in Auckland (UTC+13).
+      final now = DateTime.utc(2026, 11, 6, 23, 30);
       expect(
-        entryAt(2026, 11, 6, 8, 0, symptoms: {Symptom.none}).hasSymptoms,
-        isFalse,
+        _draft(
+          at: DateTime.utc(2026, 11, 6, 23),
+          offset: 780,
+          hasTime: false,
+        ).validate(nowUtc: now),
+        isEmpty,
       );
-      expect(entryAt(2026, 11, 6, 8, 0).hasSymptoms, isFalse);
-      expect(
-        entryAt(2026, 11, 6, 8, 0, symptoms: {Symptom.urgency}).hasSymptoms,
-        isTrue,
-      );
+    });
+
+    test('an entry without a time has no local time to show', () {
+      final e = entryAt(2026, 11, 5, 12, 0, hasTime: false);
+      expect(e.localTime, isNull);
+      expect(e.localDate, LocalDate(2026, 11, 5));
+      expect(entryAt(2026, 11, 5, 8, 25).localTime?.hour, 8);
     });
   });
 
@@ -175,14 +185,12 @@ void main() {
         originalUtcOffsetMinutes: 0,
         comment: 'a' * 501,
         stoolType: 9,
-        symptoms: {Symptom.none, Symptom.blood},
       ).validate(nowUtc: _now);
       expect(
         errors,
         unorderedEquals([
           EntryValidationError.commentTooLong,
           EntryValidationError.stoolTypeOutOfRange,
-          EntryValidationError.noneWithOtherSymptoms,
           EntryValidationError.inFuture,
         ]),
       );
@@ -198,9 +206,8 @@ void main() {
       expect((e.localWallClock.hour, e.localWallClock.minute), (21, 0));
     });
 
-    test('sets are unmodifiable', () {
-      final e = entryAt(2026, 11, 6, 8, 0, symptoms: {Symptom.bloating});
-      expect(() => e.symptoms.add(Symptom.blood), throwsUnsupportedError);
+    test('tags are unmodifiable', () {
+      final e = entryAt(2026, 11, 6, 8, 0, tags: {Tag.stress});
       expect(() => e.tags.add(Tag.coffee), throwsUnsupportedError);
     });
 
@@ -212,7 +219,7 @@ void main() {
         8,
         0,
         id: 1,
-        symptoms: {Symptom.bloating, Symptom.cramping},
+        tags: {Tag.coffee, Tag.onPeriod},
       );
       final b = entryAt(
         2026,
@@ -221,7 +228,7 @@ void main() {
         8,
         0,
         id: 1,
-        symptoms: {Symptom.cramping, Symptom.bloating},
+        tags: {Tag.onPeriod, Tag.coffee},
       );
       expect(a, b);
       expect(a.hashCode, b.hashCode);
@@ -242,8 +249,8 @@ void main() {
         comment: 'Quiet evening',
         stoolType: 4,
         ease: Ease.easy,
-        symptoms: {Symptom.none},
         tags: {Tag.coffee, Tag.afterMeal},
+        hasTime: false,
       );
       final d = e.toDraft();
       expect(d.occurredAtUtc, e.occurredAtUtc);
@@ -251,8 +258,8 @@ void main() {
       expect(d.comment, e.comment);
       expect(d.stoolType, 4);
       expect(d.ease, Ease.easy);
-      expect(d.symptoms, {Symptom.none});
       expect(d.tags, {Tag.coffee, Tag.afterMeal});
+      expect(d.hasTime, isFalse);
     });
   });
 
@@ -263,27 +270,17 @@ void main() {
         'some_straining',
         'difficult',
       ]);
-      expect(Symptom.values.map((e) => e.code), [
-        'none',
-        'bloating',
-        'cramping',
-        'urgency',
-        'mucus',
-        'blood',
-      ]);
       expect(Tag.values.map((e) => e.code), [
         'after_meal',
         'coffee',
         'stress',
         'low_fluids',
         'medication',
-        'exercise',
+        'on_period',
+        'feeling_sick',
       ]);
       for (final e in Ease.values) {
         expect(Ease.fromCode(e.code), e);
-      }
-      for (final s in Symptom.values) {
-        expect(Symptom.fromCode(s.code), s);
       }
       for (final t in Tag.values) {
         expect(Tag.fromCode(t.code), t);
@@ -292,7 +289,7 @@ void main() {
 
     test('unknown codes give null', () {
       expect(Ease.fromCode('unknown'), isNull);
-      expect(Symptom.fromCode(''), isNull);
+      expect(Tag.fromCode('exercise'), isNull, reason: 'removed in v2');
       expect(Tag.fromCode('Coffee'), isNull);
     });
   });

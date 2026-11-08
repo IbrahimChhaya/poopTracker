@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -226,7 +227,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tapText(tester, 'Add an entry');
-      expect(find.text('Wednesday, 1:41 pm'), findsOneWidget);
+      // A past day starts without a time: the current time would be a guess.
+      expect(find.text('Wednesday · No time'), findsOneWidget);
       // Opening on a chosen day is not an edit: closing needs no confirmation.
       await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
@@ -236,8 +238,9 @@ void main() {
       await tapText(tester, 'Save entry');
       final saved = (await seed.all()).single;
       expect(saved.localDate.day, 4);
+      expect(saved.hasTime, isFalse);
       expect(find.text('Wednesday’s journal'), findsOneWidget);
-      expect(find.text('1:41 pm'), findsOneWidget);
+      expect(find.text('No time'), findsOneWidget);
     });
 
     appTest('a day with no entries says so', (tester) async {
@@ -301,15 +304,46 @@ void main() {
       await tapText(tester, 'When');
       expect(find.text('When did this happen?'), findsOneWidget);
       expect(
-        find.text('Date and time are the only required parts of an entry.'),
+        find.text('Only the date is required. Add a time if you know it.'),
         findsOneWidget,
       );
+      // Today starts with a time; picking a past day turns it off.
+      expect(find.text('Hour'), findsNothing);
       await tapText(tester, 'Yesterday');
+      expect(find.byType(CupertinoPicker), findsNothing);
       await tapText(tester, 'Done');
-      expect(find.text('Yesterday, 1:41 pm'), findsOneWidget);
+      expect(find.text('Yesterday · No time'), findsOneWidget);
       await tapText(tester, 'Save entry');
       final saved = (await seed.all()).single;
       expect(saved.localDate.day, 5);
+      expect(saved.hasTime, isFalse);
+      // The card shows just the day.
+      expect(find.bySemanticsLabel(RegExp(r'^Yesterday\. ')), findsOneWidget);
+    });
+
+    appTest('a time can be added back for a past day, and removed for today', (
+      tester,
+    ) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      await tapText(tester, 'Yesterday');
+      await tapText(tester, 'Record a time');
+      expect(find.byType(CupertinoPicker), findsNWidgets(3));
+      await tapText(tester, 'Done');
+      expect(find.text('Yesterday, 1:41 pm'), findsOneWidget);
+
+      await tapText(tester, 'When');
+      await tapText(tester, 'Today');
+      await tapText(tester, 'Record a time');
+      await tapText(tester, 'Done');
+      expect(find.text('Today · No time'), findsOneWidget);
+      await tapText(tester, 'Save entry');
+      final saved = (await seed.all()).single;
+      expect(saved.hasTime, isFalse);
+      expect(saved.localDate.day, 6);
+      // Untimed entries show just the day.
+      expect(find.bySemanticsLabel(RegExp(r'^Today\. ')), findsOneWidget);
     });
   });
 
@@ -368,7 +402,7 @@ void main() {
       expect(find.text('Felt fine after lunch'), findsOneWidget);
       expect(
         find.text('Saved on this device · Not shared anywhere'),
-        findsOneWidget,
+        findsNothing,
       );
     });
 
@@ -455,7 +489,8 @@ void main() {
       await pumpReady(tester);
       await openHistory(tester);
       expect(find.text('24 Oct – 6 Nov'), findsOneWidget);
-      expect(find.text('4 entries · Most recent first'), findsOneWidget);
+      expect(find.textContaining('Most recent first'), findsNothing);
+      expect(find.text('THE JOURNAL'), findsNothing);
       final headings = [
         'Today · 6 Nov',
         'Yesterday · 5 Nov',
@@ -479,7 +514,8 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'LUNCH');
       await tester.pumpAndSettle();
-      expect(find.text('1 entry · Most recent first'), findsOneWidget);
+      expect(find.text('Quiet morning'), findsNothing);
+      expect(find.text('0 entries'), findsNothing);
       expect(find.text('Felt fine after lunch'), findsOneWidget);
       expect(find.text('Quiet morning'), findsNothing);
 
@@ -487,7 +523,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('No matching entries'), findsOneWidget);
       await tapText(tester, 'Clear search');
-      expect(find.text('3 entries · Most recent first'), findsOneWidget);
+      expect(find.text('Quiet morning'), findsOneWidget);
     });
 
     appTest('filter and show earlier entries (4.4)', (tester) async {

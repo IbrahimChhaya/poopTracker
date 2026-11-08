@@ -12,8 +12,8 @@ import '../../support/harness.dart';
 /// Wording that must not appear in the main flows while both optional-detail
 /// settings are off (the default).
 final RegExp _detailWording = RegExp(
-  r'stool|symptom|bristol|type \d|bloating|cramping|urgency|mucus|blood|'
-  'easy to pass|straining|little context',
+  r'stool|symptom|bristol|type \d|easy to pass|straining|little context|'
+  'on my period|feeling sick',
   caseSensitive: false,
 );
 
@@ -41,7 +41,6 @@ void main() {
       comment: 'Felt fine after lunch',
       stoolType: 5,
       ease: Ease.easy,
-      symptoms: {Symptom.bloating},
       tags: {Tag.afterMeal, Tag.coffee},
     ),
   );
@@ -83,7 +82,7 @@ void main() {
   }
 
   group('default: both settings off', () {
-    appTest('no stool or symptom wording in the main flows', (tester) async {
+    appTest('no stool or context wording in the main flows', (tester) async {
       await seedDetailed();
       await pump(tester);
       expectNoDetailWording('journal');
@@ -145,7 +144,7 @@ void main() {
         // Journal card.
         expect(find.text('TYPE 5'), c.stool ? findsOneWidget : findsNothing);
         expect(
-          find.text('Bloating'),
+          find.textContaining('Easy to pass'),
           c.context ? findsOneWidget : findsNothing,
         );
 
@@ -163,12 +162,12 @@ void main() {
         }
         if (c.steps.isNotEmpty) {
           await tapText(tester, c.steps.first);
-          final optional = c.steps.first == 'Stool form' ? 'OPTIONAL · ' : '';
+          // The progress bar has one segment per enabled step.
           expect(
-            find.text('ADD DETAILS · ${optional}1 OF ${c.steps.length}'),
+            find.bySemanticsLabel('Step 1 of ${c.steps.length}'),
             findsOneWidget,
           );
-          await tester.tap(find.byTooltip('Back'));
+          await tester.binding.handlePopRoute();
           await tester.pumpAndSettle();
         }
         await tester.tap(find.byTooltip('Close'));
@@ -181,10 +180,11 @@ void main() {
           c.stool ? findsOneWidget : findsNothing,
         );
         expect(
-          find.text('Symptoms'),
+          find.text('Ease of passage'),
           c.context ? findsOneWidget : findsNothing,
         );
         expect(find.text('Coffee'), c.context ? findsOneWidget : findsNothing);
+        expect(find.textContaining('Optional'), findsNothing);
         expect(find.text('Felt fine after lunch'), findsOneWidget);
       });
     }
@@ -198,8 +198,10 @@ void main() {
       expect(find.text('Not set'), findsNWidgets(2));
 
       await tapText(tester, 'Stool form');
-      expect(find.text('ADD DETAILS · OPTIONAL · 1 OF 2'), findsOneWidget);
+      expect(find.bySemanticsLabel('Step 1 of 2'), findsOneWidget);
       expect(find.text('What was the form?'), findsOneWidget);
+      expect(find.text('Choose the closest match'), findsOneWidget);
+      expect(find.text('Skip and save entry'), findsNothing);
       await tapText(tester, '4 · Smooth and soft');
       expect(
         tester.getSemantics(find.bySemanticsLabel(RegExp('^Type 4, '))),
@@ -207,53 +209,60 @@ void main() {
       );
       await tapText(tester, 'Continue');
 
-      expect(find.text('ADD DETAILS · 2 OF 2'), findsOneWidget);
-      expect(
-        find.text(
-          'All of this is optional. Save now, or add what feels useful.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('Step 2 of 2'), findsOneWidget);
       expect(
         find.textContaining(RegExp('optional', caseSensitive: false)),
-        findsOneWidget,
-        reason: 'said once only',
+        findsNothing,
       );
+      expect(find.text('Any symptoms?'), findsNothing);
+      expect(find.text('Exercise'), findsNothing);
+      expect(find.text('On my period'), findsOneWidget);
+      expect(find.text('Feeling sick'), findsOneWidget);
       expect(find.text('Type 4 · Smooth and soft'), findsOneWidget);
       await tapText(tester, 'Easy');
-      await tapText(tester, 'None');
       await tapText(tester, 'Coffee');
+      await tapText(tester, 'Feeling sick');
       await tester.enterText(find.byType(TextField), 'Synthetic note');
       await tester.pump();
       await tapText(tester, 'Save entry');
 
       expect(find.text('Entry saved'), findsOneWidget);
-      expect(find.text('ADD DETAILS · 2 OF 2'), findsNothing);
+      expect(find.text('What was the form?'), findsNothing);
       expect(find.text('New entry'), findsNothing);
       final saved = (await repo.all()).single;
       expect(saved.stoolType, 4);
       expect(saved.ease, Ease.easy);
-      expect(saved.symptoms, {Symptom.none});
-      expect(saved.tags, {Tag.coffee});
+      expect(saved.tags, {Tag.coffee, Tag.feelingSick});
       expect(saved.comment, 'Synthetic note');
 
       expect(find.text('TYPE 4'), findsOneWidget);
       expect(find.text('Smooth and soft · Easy to pass'), findsOneWidget);
-      expect(find.text('No symptoms'), findsOneWidget);
     });
 
-    appTest('one step only says 1 OF 1, and can save straight away', (
+    appTest('one step only: one progress segment, Done returns to editor', (
       tester,
     ) async {
       await configure(stool: true, context: false);
       await pump(tester);
       await tapText(tester, 'Add an entry');
       await tapText(tester, 'Stool form');
-      expect(find.text('ADD DETAILS · OPTIONAL · 1 OF 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Step 1 of 1'), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
       await tapText(tester, '7 · Entirely liquid');
-      await tapText(tester, 'Skip and save entry');
+      await tapText(tester, 'Done');
+      expect(find.text('Type 7 · Entirely liquid'), findsOneWidget);
+      await tapText(tester, 'Save entry');
       expect((await repo.all()).single.stoolType, 7);
+    });
+
+    appTest('Skip on the context step returns to the editor', (tester) async {
+      await configure(stool: false, context: true);
+      await pump(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'A little context');
+      await tapText(tester, 'Skip');
+      expect(find.text('Optional details'), findsOneWidget);
+      expect(find.text('Not set'), findsOneWidget);
     });
 
     appTest('every step can be skipped; saving with only a time works', (
@@ -269,35 +278,28 @@ void main() {
       final saved = (await repo.all()).single;
       expect(saved.stoolType, isNull);
       expect(saved.ease, isNull);
-      expect(saved.symptoms, isEmpty);
       expect(saved.tags, isEmpty);
     });
 
-    appTest('"None" and other symptoms exclude each other', (tester) async {
+    appTest('tapping a chosen chip again clears it', (tester) async {
       await configure(stool: false, context: true);
       await pump(tester);
       await tapText(tester, 'Add an entry');
       await tapText(tester, 'A little context');
-      expect(find.text('ADD DETAILS · 1 OF 1'), findsOneWidget);
-
       bool selected(String label) => tester
           .getSemantics(find.text(label))
           .flagsCollection
           .isSelected
           .toBoolOrNull()!;
-
-      await tapText(tester, 'Bloating');
-      await tapText(tester, 'Cramping');
-      expect(selected('Bloating') && selected('Cramping'), isTrue);
-      await tapText(tester, 'None');
-      expect(selected('None'), isTrue);
-      expect(selected('Bloating') || selected('Cramping'), isFalse);
-      await tapText(tester, 'Urgency');
-      expect(selected('None'), isFalse);
-      expect(selected('Urgency'), isTrue);
-      // Tapping a chosen chip again clears it.
-      await tapText(tester, 'Urgency');
-      expect(selected('Urgency'), isFalse);
+      await tapText(tester, 'Stress');
+      await tapText(tester, 'On my period');
+      expect(selected('Stress') && selected('On my period'), isTrue);
+      await tapText(tester, 'Stress');
+      expect(selected('Stress'), isFalse);
+      await tapText(tester, 'Easy');
+      await tapText(tester, 'Difficult');
+      expect(selected('Easy'), isFalse, reason: 'ease is single choice');
+      expect(selected('Difficult'), isTrue);
     });
   });
 
@@ -320,7 +322,6 @@ void main() {
       expect(saved.comment, 'Edited while hidden');
       expect(saved.stoolType, 5);
       expect(saved.ease, Ease.easy);
-      expect(saved.symptoms, {Symptom.bloating});
       expect(saved.tags, {Tag.afterMeal, Tag.coffee});
       await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
@@ -335,7 +336,7 @@ void main() {
       await tester.tap(find.text('Journal').last);
       await tester.pumpAndSettle();
       expect(find.text('TYPE 5'), findsOneWidget);
-      expect(find.text('Bloating'), findsOneWidget);
+      expect(find.text('Soft blobs · Easy to pass'), findsOneWidget);
     });
   });
 
@@ -357,14 +358,14 @@ void main() {
       await tester.tap(find.text('History'));
       await tester.pumpAndSettle();
       expect(find.text('All types'), findsOneWidget);
-      expect(find.text('2 entries · Most recent first'), findsOneWidget);
+      expect(find.text('TYPE 5'), findsOneWidget);
 
       await tester.tap(find.bySemanticsLabel(RegExp('^Stool form filter')));
       await tester.pumpAndSettle();
       await tapText(tester, 'Type 4 · Smooth and soft');
       await tapText(tester, 'Apply');
       expect(find.text('Type 4'), findsOneWidget);
-      expect(find.text('1 entry · Most recent first'), findsOneWidget);
+      expect(find.text('TYPE 4'), findsOneWidget);
       expect(find.text('TYPE 5'), findsNothing);
     });
   });
@@ -374,19 +375,19 @@ void main() {
       await configure(stool: true, context: true);
       await seedDetailed();
       await pump(tester, textScale: 2);
-      expect(tester.takeException(), isNull, reason: 'journal');
+      expect(tester.takeException(), isNull, reason: '');
       await tapText(tester, 'Add an entry');
       await tapText(tester, 'Stool form');
-      expect(tester.takeException(), isNull, reason: 'stool step');
+      expect(tester.takeException(), isNull, reason: '');
       await tapText(tester, 'Continue');
-      expect(tester.takeException(), isNull, reason: 'context step');
+      expect(tester.takeException(), isNull, reason: '');
       // At 200% the headers have scrolled away; use the system back action.
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await tapText(tester, 'Soft blobs · Easy to pass');
-      expect(tester.takeException(), isNull, reason: 'detail');
+      expect(tester.takeException(), isNull, reason: '');
     });
   });
 }

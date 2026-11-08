@@ -10,13 +10,20 @@ final class DayGroup {
   final List<Entry> entries;
 }
 
-/// Newest first: by the real instant, then by id so the order is stable.
+/// Newest first: by local day, then entries with a time (latest first), then
+/// entries without a time (most recently added first), then by id.
 ///
 /// Within a day this follows when entries actually happened. After a time zone
 /// change the clock times shown can then look out of order, which is rare
-/// and truthful.
+/// and truthful. Date-only entries go last in their day rather than at the
+/// hidden midday placeholder.
 int compareNewestFirst(Entry a, Entry b) {
-  final byTime = b.occurredAtUtc.compareTo(a.occurredAtUtc);
+  final byDay = b.localDate.compareTo(a.localDate);
+  if (byDay != 0) return byDay;
+  if (a.hasTime != b.hasTime) return a.hasTime ? -1 : 1;
+  final byTime = a.hasTime
+      ? b.occurredAtUtc.compareTo(a.occurredAtUtc)
+      : b.createdAtUtc.compareTo(a.createdAtUtc);
   return byTime != 0 ? byTime : b.id.compareTo(a.id);
 }
 

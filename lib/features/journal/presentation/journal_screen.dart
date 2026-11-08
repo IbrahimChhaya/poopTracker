@@ -100,7 +100,7 @@ class _JournalBody extends ConsumerWidget {
             message: selected != null
                 ? 'No entries on this day.'
                 : view.selection.weeksBack == 0
-                ? 'Add an entry whenever you’re ready. It stays on this phone.'
+                ? 'Add an entry whenever you’re ready'
                 : 'No entries in this week.',
           )
         else
@@ -108,15 +108,18 @@ class _JournalBody extends ConsumerWidget {
             EntryCard(
               entry: e,
               title: selected != null
-                  ? formatTime(e.localWallClock)
+                  ? formatTimeOrNone(e.localTime)
                   : view.selection.weeksBack == 0
                   ? formatEntryTitle(
                       e.localDate,
-                      e.localWallClock,
+                      e.localTime,
                       today: view.today,
                     )
-                  : '${weekdayName(e.localDate)} ${formatDayMonth(e.localDate)}'
-                        ' · ${formatTime(e.localWallClock)}',
+                  : [
+                      '${weekdayName(e.localDate)} '
+                          '${formatDayMonth(e.localDate)}',
+                      if (e.hasTime) formatTime(e.localWallClock),
+                    ].join(' · '),
               onTap: () => openEntry(e),
             ),
             const SizedBox(height: MorrowSpacing.md),
@@ -287,7 +290,7 @@ class _StatCard extends StatelessWidget {
         : 'Logged ${formatDateRange(start, start.weekEnd, withYear: start.year != view.today.year)}';
     final recentLabel = recent == null
         ? '—'
-        : recent.localDate == view.today
+        : recent.localDate == view.today && recent.hasTime
         ? formatTime(recent.localWallClock)
         : relativeDay(recent.localDate, today: view.today);
 

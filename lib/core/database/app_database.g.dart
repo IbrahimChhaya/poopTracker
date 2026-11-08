@@ -53,6 +53,21 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, EntryRow> {
         type: DriftSqlType.int,
         requiredDuringInsert: true,
       );
+  static const VerificationMeta _hasTimeMeta = const VerificationMeta(
+    'hasTime',
+  );
+  @override
+  late final GeneratedColumn<bool> hasTime = GeneratedColumn<bool>(
+    'has_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("has_time" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _commentMeta = const VerificationMeta(
     'comment',
   );
@@ -112,6 +127,7 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, EntryRow> {
     uid,
     occurredAtUtcMs,
     originalUtcOffsetMinutes,
+    hasTime,
     comment,
     stoolType,
     ease,
@@ -162,6 +178,12 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, EntryRow> {
       );
     } else if (isInserting) {
       context.missing(_originalUtcOffsetMinutesMeta);
+    }
+    if (data.containsKey('has_time')) {
+      context.handle(
+        _hasTimeMeta,
+        hasTime.isAcceptableOrUnknown(data['has_time']!, _hasTimeMeta),
+      );
     }
     if (data.containsKey('comment')) {
       context.handle(
@@ -228,6 +250,10 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, EntryRow> {
         DriftSqlType.int,
         data['${effectivePrefix}original_utc_offset_minutes'],
       )!,
+      hasTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}has_time'],
+      )!,
       comment: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}comment'],
@@ -265,6 +291,10 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
   final int occurredAtUtcMs;
   final int originalUtcOffsetMinutes;
 
+  /// False when no time of day was recorded (schema v2). The stored instant
+  /// is then midday on the entry's local day and is never shown.
+  final bool hasTime;
+
   /// Plain text, at most 500 characters (validated in Dart; see Entry).
   final String? comment;
   final int? stoolType;
@@ -276,6 +306,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
     required this.uid,
     required this.occurredAtUtcMs,
     required this.originalUtcOffsetMinutes,
+    required this.hasTime,
     this.comment,
     this.stoolType,
     this.ease,
@@ -291,6 +322,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
     map['original_utc_offset_minutes'] = Variable<int>(
       originalUtcOffsetMinutes,
     );
+    map['has_time'] = Variable<bool>(hasTime);
     if (!nullToAbsent || comment != null) {
       map['comment'] = Variable<String>(comment);
     }
@@ -311,6 +343,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
       uid: Value(uid),
       occurredAtUtcMs: Value(occurredAtUtcMs),
       originalUtcOffsetMinutes: Value(originalUtcOffsetMinutes),
+      hasTime: Value(hasTime),
       comment: comment == null && nullToAbsent
           ? const Value.absent()
           : Value(comment),
@@ -335,6 +368,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
       originalUtcOffsetMinutes: serializer.fromJson<int>(
         json['originalUtcOffsetMinutes'],
       ),
+      hasTime: serializer.fromJson<bool>(json['hasTime']),
       comment: serializer.fromJson<String?>(json['comment']),
       stoolType: serializer.fromJson<int?>(json['stoolType']),
       ease: serializer.fromJson<String?>(json['ease']),
@@ -352,6 +386,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
       'originalUtcOffsetMinutes': serializer.toJson<int>(
         originalUtcOffsetMinutes,
       ),
+      'hasTime': serializer.toJson<bool>(hasTime),
       'comment': serializer.toJson<String?>(comment),
       'stoolType': serializer.toJson<int?>(stoolType),
       'ease': serializer.toJson<String?>(ease),
@@ -365,6 +400,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
     String? uid,
     int? occurredAtUtcMs,
     int? originalUtcOffsetMinutes,
+    bool? hasTime,
     Value<String?> comment = const Value.absent(),
     Value<int?> stoolType = const Value.absent(),
     Value<String?> ease = const Value.absent(),
@@ -376,6 +412,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
     occurredAtUtcMs: occurredAtUtcMs ?? this.occurredAtUtcMs,
     originalUtcOffsetMinutes:
         originalUtcOffsetMinutes ?? this.originalUtcOffsetMinutes,
+    hasTime: hasTime ?? this.hasTime,
     comment: comment.present ? comment.value : this.comment,
     stoolType: stoolType.present ? stoolType.value : this.stoolType,
     ease: ease.present ? ease.value : this.ease,
@@ -392,6 +429,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
       originalUtcOffsetMinutes: data.originalUtcOffsetMinutes.present
           ? data.originalUtcOffsetMinutes.value
           : this.originalUtcOffsetMinutes,
+      hasTime: data.hasTime.present ? data.hasTime.value : this.hasTime,
       comment: data.comment.present ? data.comment.value : this.comment,
       stoolType: data.stoolType.present ? data.stoolType.value : this.stoolType,
       ease: data.ease.present ? data.ease.value : this.ease,
@@ -411,6 +449,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
           ..write('uid: $uid, ')
           ..write('occurredAtUtcMs: $occurredAtUtcMs, ')
           ..write('originalUtcOffsetMinutes: $originalUtcOffsetMinutes, ')
+          ..write('hasTime: $hasTime, ')
           ..write('comment: $comment, ')
           ..write('stoolType: $stoolType, ')
           ..write('ease: $ease, ')
@@ -426,6 +465,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
     uid,
     occurredAtUtcMs,
     originalUtcOffsetMinutes,
+    hasTime,
     comment,
     stoolType,
     ease,
@@ -440,6 +480,7 @@ class EntryRow extends DataClass implements Insertable<EntryRow> {
           other.uid == this.uid &&
           other.occurredAtUtcMs == this.occurredAtUtcMs &&
           other.originalUtcOffsetMinutes == this.originalUtcOffsetMinutes &&
+          other.hasTime == this.hasTime &&
           other.comment == this.comment &&
           other.stoolType == this.stoolType &&
           other.ease == this.ease &&
@@ -452,6 +493,7 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
   final Value<String> uid;
   final Value<int> occurredAtUtcMs;
   final Value<int> originalUtcOffsetMinutes;
+  final Value<bool> hasTime;
   final Value<String?> comment;
   final Value<int?> stoolType;
   final Value<String?> ease;
@@ -462,6 +504,7 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
     this.uid = const Value.absent(),
     this.occurredAtUtcMs = const Value.absent(),
     this.originalUtcOffsetMinutes = const Value.absent(),
+    this.hasTime = const Value.absent(),
     this.comment = const Value.absent(),
     this.stoolType = const Value.absent(),
     this.ease = const Value.absent(),
@@ -473,6 +516,7 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
     required String uid,
     required int occurredAtUtcMs,
     required int originalUtcOffsetMinutes,
+    this.hasTime = const Value.absent(),
     this.comment = const Value.absent(),
     this.stoolType = const Value.absent(),
     this.ease = const Value.absent(),
@@ -488,6 +532,7 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
     Expression<String>? uid,
     Expression<int>? occurredAtUtcMs,
     Expression<int>? originalUtcOffsetMinutes,
+    Expression<bool>? hasTime,
     Expression<String>? comment,
     Expression<int>? stoolType,
     Expression<String>? ease,
@@ -500,6 +545,7 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
       if (occurredAtUtcMs != null) 'occurred_at_utc_ms': occurredAtUtcMs,
       if (originalUtcOffsetMinutes != null)
         'original_utc_offset_minutes': originalUtcOffsetMinutes,
+      if (hasTime != null) 'has_time': hasTime,
       if (comment != null) 'comment': comment,
       if (stoolType != null) 'stool_type': stoolType,
       if (ease != null) 'ease': ease,
@@ -513,6 +559,7 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
     Value<String>? uid,
     Value<int>? occurredAtUtcMs,
     Value<int>? originalUtcOffsetMinutes,
+    Value<bool>? hasTime,
     Value<String?>? comment,
     Value<int?>? stoolType,
     Value<String?>? ease,
@@ -525,6 +572,7 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
       occurredAtUtcMs: occurredAtUtcMs ?? this.occurredAtUtcMs,
       originalUtcOffsetMinutes:
           originalUtcOffsetMinutes ?? this.originalUtcOffsetMinutes,
+      hasTime: hasTime ?? this.hasTime,
       comment: comment ?? this.comment,
       stoolType: stoolType ?? this.stoolType,
       ease: ease ?? this.ease,
@@ -549,6 +597,9 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
       map['original_utc_offset_minutes'] = Variable<int>(
         originalUtcOffsetMinutes.value,
       );
+    }
+    if (hasTime.present) {
+      map['has_time'] = Variable<bool>(hasTime.value);
     }
     if (comment.present) {
       map['comment'] = Variable<String>(comment.value);
@@ -575,226 +626,12 @@ class EntriesCompanion extends UpdateCompanion<EntryRow> {
           ..write('uid: $uid, ')
           ..write('occurredAtUtcMs: $occurredAtUtcMs, ')
           ..write('originalUtcOffsetMinutes: $originalUtcOffsetMinutes, ')
+          ..write('hasTime: $hasTime, ')
           ..write('comment: $comment, ')
           ..write('stoolType: $stoolType, ')
           ..write('ease: $ease, ')
           ..write('createdAtUtcMs: $createdAtUtcMs, ')
           ..write('updatedAtUtcMs: $updatedAtUtcMs')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $EntrySymptomsTable extends EntrySymptoms
-    with TableInfo<$EntrySymptomsTable, EntrySymptomRow> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $EntrySymptomsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _entryIdMeta = const VerificationMeta(
-    'entryId',
-  );
-  @override
-  late final GeneratedColumn<int> entryId = GeneratedColumn<int>(
-    'entry_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES entries (id) ON DELETE CASCADE',
-    ),
-  );
-  static const VerificationMeta _codeMeta = const VerificationMeta('code');
-  @override
-  late final GeneratedColumn<String> code = GeneratedColumn<String>(
-    'code',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [entryId, code];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'entry_symptoms';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<EntrySymptomRow> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('entry_id')) {
-      context.handle(
-        _entryIdMeta,
-        entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_entryIdMeta);
-    }
-    if (data.containsKey('code')) {
-      context.handle(
-        _codeMeta,
-        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_codeMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {entryId, code};
-  @override
-  EntrySymptomRow map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return EntrySymptomRow(
-      entryId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}entry_id'],
-      )!,
-      code: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}code'],
-      )!,
-    );
-  }
-
-  @override
-  $EntrySymptomsTable createAlias(String alias) {
-    return $EntrySymptomsTable(attachedDatabase, alias);
-  }
-}
-
-class EntrySymptomRow extends DataClass implements Insertable<EntrySymptomRow> {
-  final int entryId;
-  final String code;
-  const EntrySymptomRow({required this.entryId, required this.code});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['entry_id'] = Variable<int>(entryId);
-    map['code'] = Variable<String>(code);
-    return map;
-  }
-
-  EntrySymptomsCompanion toCompanion(bool nullToAbsent) {
-    return EntrySymptomsCompanion(entryId: Value(entryId), code: Value(code));
-  }
-
-  factory EntrySymptomRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return EntrySymptomRow(
-      entryId: serializer.fromJson<int>(json['entryId']),
-      code: serializer.fromJson<String>(json['code']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'entryId': serializer.toJson<int>(entryId),
-      'code': serializer.toJson<String>(code),
-    };
-  }
-
-  EntrySymptomRow copyWith({int? entryId, String? code}) => EntrySymptomRow(
-    entryId: entryId ?? this.entryId,
-    code: code ?? this.code,
-  );
-  EntrySymptomRow copyWithCompanion(EntrySymptomsCompanion data) {
-    return EntrySymptomRow(
-      entryId: data.entryId.present ? data.entryId.value : this.entryId,
-      code: data.code.present ? data.code.value : this.code,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('EntrySymptomRow(')
-          ..write('entryId: $entryId, ')
-          ..write('code: $code')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(entryId, code);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is EntrySymptomRow &&
-          other.entryId == this.entryId &&
-          other.code == this.code);
-}
-
-class EntrySymptomsCompanion extends UpdateCompanion<EntrySymptomRow> {
-  final Value<int> entryId;
-  final Value<String> code;
-  final Value<int> rowid;
-  const EntrySymptomsCompanion({
-    this.entryId = const Value.absent(),
-    this.code = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  EntrySymptomsCompanion.insert({
-    required int entryId,
-    required String code,
-    this.rowid = const Value.absent(),
-  }) : entryId = Value(entryId),
-       code = Value(code);
-  static Insertable<EntrySymptomRow> custom({
-    Expression<int>? entryId,
-    Expression<String>? code,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (entryId != null) 'entry_id': entryId,
-      if (code != null) 'code': code,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  EntrySymptomsCompanion copyWith({
-    Value<int>? entryId,
-    Value<String>? code,
-    Value<int>? rowid,
-  }) {
-    return EntrySymptomsCompanion(
-      entryId: entryId ?? this.entryId,
-      code: code ?? this.code,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (entryId.present) {
-      map['entry_id'] = Variable<int>(entryId.value);
-    }
-    if (code.present) {
-      map['code'] = Variable<String>(code.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('EntrySymptomsCompanion(')
-          ..write('entryId: $entryId, ')
-          ..write('code: $code, ')
-          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -1725,7 +1562,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $EntriesTable entries = $EntriesTable(this);
-  late final $EntrySymptomsTable entrySymptoms = $EntrySymptomsTable(this);
   late final $EntryTagsTable entryTags = $EntryTagsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $ReminderTable reminder = $ReminderTable(this);
@@ -1735,20 +1571,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     entries,
-    entrySymptoms,
     entryTags,
     appSettings,
     reminder,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'entries',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('entry_symptoms', kind: UpdateKind.delete)],
-    ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'entries',
@@ -1764,6 +1592,7 @@ typedef $$EntriesTableCreateCompanionBuilder = EntriesCompanion Function({
   required String uid,
   required int occurredAtUtcMs,
   required int originalUtcOffsetMinutes,
+  Value<bool> hasTime,
   Value<String?> comment,
   Value<int?> stoolType,
   Value<String?> ease,
@@ -1775,6 +1604,7 @@ typedef $$EntriesTableUpdateCompanionBuilder = EntriesCompanion Function({
   Value<String> uid,
   Value<int> occurredAtUtcMs,
   Value<int> originalUtcOffsetMinutes,
+  Value<bool> hasTime,
   Value<String?> comment,
   Value<int?> stoolType,
   Value<String?> ease,
@@ -1785,24 +1615,6 @@ typedef $$EntriesTableUpdateCompanionBuilder = EntriesCompanion Function({
 final class $$EntriesTableReferences
     extends BaseReferences<_$AppDatabase, $EntriesTable, EntryRow> {
   $$EntriesTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$EntrySymptomsTable, List<EntrySymptomRow>>
-  _entrySymptomsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.entrySymptoms,
-    aliasName: 'entries__id__entry_symptoms__entry_id',
-  );
-
-  $$EntrySymptomsTableProcessedTableManager get entrySymptomsRefs {
-    final manager = $$EntrySymptomsTableTableManager(
-      $_db,
-      $_db.entrySymptoms,
-    ).filter((f) => f.entryId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_entrySymptomsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
 
   static MultiTypedResultKey<$EntryTagsTable, List<EntryTagRow>>
   _entryTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -1852,6 +1664,11 @@ class $$EntriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get hasTime => $composableBuilder(
+    column: $table.hasTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get comment => $composableBuilder(
     column: $table.comment,
     builder: (column) => ColumnFilters(column),
@@ -1876,31 +1693,6 @@ class $$EntriesTableFilterComposer
     column: $table.updatedAtUtcMs,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> entrySymptomsRefs(
-    Expression<bool> Function($$EntrySymptomsTableFilterComposer f) f,
-  ) {
-    final $$EntrySymptomsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.entrySymptoms,
-      getReferencedColumn: (t) => t.entryId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EntrySymptomsTableFilterComposer(
-            $db: $db,
-            $table: $db.entrySymptoms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 
   Expression<bool> entryTagsRefs(
     Expression<bool> Function($$EntryTagsTableFilterComposer f) f,
@@ -1957,6 +1749,11 @@ class $$EntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get hasTime => $composableBuilder(
+    column: $table.hasTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get comment => $composableBuilder(
     column: $table.comment,
     builder: (column) => ColumnOrderings(column),
@@ -2008,6 +1805,9 @@ class $$EntriesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get hasTime =>
+      $composableBuilder(column: $table.hasTime, builder: (column) => column);
+
   GeneratedColumn<String> get comment =>
       $composableBuilder(column: $table.comment, builder: (column) => column);
 
@@ -2026,31 +1826,6 @@ class $$EntriesTableAnnotationComposer
     column: $table.updatedAtUtcMs,
     builder: (column) => column,
   );
-
-  Expression<T> entrySymptomsRefs<T extends Object>(
-    Expression<T> Function($$EntrySymptomsTableAnnotationComposer a) f,
-  ) {
-    final $$EntrySymptomsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.entrySymptoms,
-      getReferencedColumn: (t) => t.entryId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EntrySymptomsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.entrySymptoms,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 
   Expression<T> entryTagsRefs<T extends Object>(
     Expression<T> Function($$EntryTagsTableAnnotationComposer a) f,
@@ -2091,7 +1866,7 @@ class $$EntriesTableTableManager
           $$EntriesTableUpdateCompanionBuilder,
           (EntryRow, $$EntriesTableReferences),
           EntryRow,
-          PrefetchHooks Function({bool entrySymptomsRefs, bool entryTagsRefs})
+          PrefetchHooks Function({bool entryTagsRefs})
         > {
   $$EntriesTableTableManager(_$AppDatabase db, $EntriesTable table)
     : super(
@@ -2110,6 +1885,7 @@ class $$EntriesTableTableManager
                 Value<String> uid = const Value.absent(),
                 Value<int> occurredAtUtcMs = const Value.absent(),
                 Value<int> originalUtcOffsetMinutes = const Value.absent(),
+                Value<bool> hasTime = const Value.absent(),
                 Value<String?> comment = const Value.absent(),
                 Value<int?> stoolType = const Value.absent(),
                 Value<String?> ease = const Value.absent(),
@@ -2120,6 +1896,7 @@ class $$EntriesTableTableManager
                 uid: uid,
                 occurredAtUtcMs: occurredAtUtcMs,
                 originalUtcOffsetMinutes: originalUtcOffsetMinutes,
+                hasTime: hasTime,
                 comment: comment,
                 stoolType: stoolType,
                 ease: ease,
@@ -2132,6 +1909,7 @@ class $$EntriesTableTableManager
                 required String uid,
                 required int occurredAtUtcMs,
                 required int originalUtcOffsetMinutes,
+                Value<bool> hasTime = const Value.absent(),
                 Value<String?> comment = const Value.absent(),
                 Value<int?> stoolType = const Value.absent(),
                 Value<String?> ease = const Value.absent(),
@@ -2142,6 +1920,7 @@ class $$EntriesTableTableManager
                 uid: uid,
                 occurredAtUtcMs: occurredAtUtcMs,
                 originalUtcOffsetMinutes: originalUtcOffsetMinutes,
+                hasTime: hasTime,
                 comment: comment,
                 stoolType: stoolType,
                 ease: ease,
@@ -2156,61 +1935,33 @@ class $$EntriesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback:
-              ({entrySymptomsRefs = false, entryTagsRefs = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (entrySymptomsRefs) db.entrySymptoms,
-                    if (entryTagsRefs) db.entryTags,
-                  ],
-                  addJoins: null,
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (entrySymptomsRefs)
-                        await $_getPrefetchedDataByColumns<
-                          EntryRow,
-                          $EntriesTable,
-                          EntrySymptomRow,
-                          $EntrySymptomsTable
-                        >(
-                          currentTable: table,
-                          referencedTable: $$EntriesTableReferences
-                              ._entrySymptomsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$EntriesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).entrySymptomsRefs,
-                          currentColumn: 'id',
-                          referencedColumn: 'entry_id',
-                          typedResults: items,
-                        ),
-                      if (entryTagsRefs)
-                        await $_getPrefetchedDataByColumns<
-                          EntryRow,
-                          $EntriesTable,
-                          EntryTagRow,
-                          $EntryTagsTable
-                        >(
-                          currentTable: table,
-                          referencedTable: $$EntriesTableReferences
-                              ._entryTagsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$EntriesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).entryTagsRefs,
-                          currentColumn: 'id',
-                          referencedColumn: 'entry_id',
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
+          prefetchHooksCallback: ({entryTagsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (entryTagsRefs) db.entryTags],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (entryTagsRefs)
+                    await $_getPrefetchedDataByColumns<
+                      EntryRow,
+                      $EntriesTable,
+                      EntryTagRow,
+                      $EntryTagsTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EntriesTableReferences
+                          ._entryTagsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$EntriesTableReferences(db, table, p0).entryTagsRefs,
+                      currentColumn: 'id',
+                      referencedColumn: 'entry_id',
+                      typedResults: items,
+                    ),
+                ];
               },
+            );
+          },
         ),
       );
 }
@@ -2227,270 +1978,7 @@ typedef $$EntriesTableProcessedTableManager =
       $$EntriesTableUpdateCompanionBuilder,
       (EntryRow, $$EntriesTableReferences),
       EntryRow,
-      PrefetchHooks Function({bool entrySymptomsRefs, bool entryTagsRefs})
-    >;
-typedef $$EntrySymptomsTableCreateCompanionBuilder =
-    EntrySymptomsCompanion Function({
-      required int entryId,
-      required String code,
-      Value<int> rowid,
-    });
-typedef $$EntrySymptomsTableUpdateCompanionBuilder =
-    EntrySymptomsCompanion Function({
-      Value<int> entryId,
-      Value<String> code,
-      Value<int> rowid,
-    });
-
-final class $$EntrySymptomsTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $EntrySymptomsTable, EntrySymptomRow> {
-  $$EntrySymptomsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $EntriesTable _entryIdTable(_$AppDatabase db) =>
-      db.entries.createAlias('entry_symptoms__entry_id__entries__id');
-
-  $$EntriesTableProcessedTableManager get entryId {
-    final $_column = $_itemColumn<int>('entry_id')!;
-
-    final manager = $$EntriesTableTableManager(
-      $_db,
-      $_db.entries,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_entryIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$EntrySymptomsTableFilterComposer
-    extends Composer<_$AppDatabase, $EntrySymptomsTable> {
-  $$EntrySymptomsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get code => $composableBuilder(
-    column: $table.code,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$EntriesTableFilterComposer get entryId {
-    final $$EntriesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.entryId,
-      referencedTable: $db.entries,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EntriesTableFilterComposer(
-            $db: $db,
-            $table: $db.entries,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$EntrySymptomsTableOrderingComposer
-    extends Composer<_$AppDatabase, $EntrySymptomsTable> {
-  $$EntrySymptomsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get code => $composableBuilder(
-    column: $table.code,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$EntriesTableOrderingComposer get entryId {
-    final $$EntriesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.entryId,
-      referencedTable: $db.entries,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EntriesTableOrderingComposer(
-            $db: $db,
-            $table: $db.entries,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$EntrySymptomsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $EntrySymptomsTable> {
-  $$EntrySymptomsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get code =>
-      $composableBuilder(column: $table.code, builder: (column) => column);
-
-  $$EntriesTableAnnotationComposer get entryId {
-    final $$EntriesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.entryId,
-      referencedTable: $db.entries,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$EntriesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.entries,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$EntrySymptomsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $EntrySymptomsTable,
-          EntrySymptomRow,
-          $$EntrySymptomsTableFilterComposer,
-          $$EntrySymptomsTableOrderingComposer,
-          $$EntrySymptomsTableAnnotationComposer,
-          $$EntrySymptomsTableCreateCompanionBuilder,
-          $$EntrySymptomsTableUpdateCompanionBuilder,
-          (EntrySymptomRow, $$EntrySymptomsTableReferences),
-          EntrySymptomRow,
-          PrefetchHooks Function({bool entryId})
-        > {
-  $$EntrySymptomsTableTableManager(_$AppDatabase db, $EntrySymptomsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$EntrySymptomsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$EntrySymptomsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$EntrySymptomsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> entryId = const Value.absent(),
-                Value<String> code = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => EntrySymptomsCompanion(
-                entryId: entryId,
-                code: code,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required int entryId,
-                required String code,
-                Value<int> rowid = const Value.absent(),
-              }) => EntrySymptomsCompanion.insert(
-                entryId: entryId,
-                code: code,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable<$EntrySymptomsTable, EntrySymptomRow>(table),
-                  $$EntrySymptomsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({entryId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (entryId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.entryId,
-                        referencedTable: $$EntrySymptomsTableReferences
-                            ._entryIdTable(db),
-                        referencedColumn: $$EntrySymptomsTableReferences
-                            ._entryIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$EntrySymptomsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $EntrySymptomsTable,
-      EntrySymptomRow,
-      $$EntrySymptomsTableFilterComposer,
-      $$EntrySymptomsTableOrderingComposer,
-      $$EntrySymptomsTableAnnotationComposer,
-      $$EntrySymptomsTableCreateCompanionBuilder,
-      $$EntrySymptomsTableUpdateCompanionBuilder,
-      (EntrySymptomRow, $$EntrySymptomsTableReferences),
-      EntrySymptomRow,
-      PrefetchHooks Function({bool entryId})
+      PrefetchHooks Function({bool entryTagsRefs})
     >;
 typedef $$EntryTagsTableCreateCompanionBuilder = EntryTagsCompanion Function({
   required int entryId,
@@ -3156,8 +2644,6 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$EntriesTableTableManager get entries =>
       $$EntriesTableTableManager(_db, _db.entries);
-  $$EntrySymptomsTableTableManager get entrySymptoms =>
-      $$EntrySymptomsTableTableManager(_db, _db.entrySymptoms);
   $$EntryTagsTableTableManager get entryTags =>
       $$EntryTagsTableTableManager(_db, _db.entryTags);
   $$AppSettingsTableTableManager get appSettings =>

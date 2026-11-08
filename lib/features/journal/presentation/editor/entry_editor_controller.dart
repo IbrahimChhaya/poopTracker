@@ -20,6 +20,7 @@ final class EntryEditorState {
     required this.comment,
     required this.timeChanged,
     required this.commentChanged,
+    this.hasTime = true,
     this.details = const EntryDetails(),
     this.detailsChanged = false,
     this.saving = false,
@@ -36,6 +37,10 @@ final class EntryEditorState {
   final String comment;
   final bool timeChanged;
   final bool commentChanged;
+
+  /// False when the entry has no time of day ([hour] and [minute] are then
+  /// only a starting point for the wheels).
+  final bool hasTime;
   final bool saving;
 
   /// The last save failed. The draft is kept so the user can try again.
@@ -60,6 +65,7 @@ final class EntryEditorState {
     String? comment,
     bool? timeChanged,
     bool? commentChanged,
+    bool? hasTime,
     EntryDetails? details,
     bool? detailsChanged,
     bool? saving,
@@ -72,6 +78,7 @@ final class EntryEditorState {
     comment: comment ?? this.comment,
     timeChanged: timeChanged ?? this.timeChanged,
     commentChanged: commentChanged ?? this.commentChanged,
+    hasTime: hasTime ?? this.hasTime,
     details: details ?? this.details,
     detailsChanged: detailsChanged ?? this.detailsChanged,
     saving: saving ?? this.saving,
@@ -82,45 +89,29 @@ final class EntryEditorState {
 
 /// The optional details of a draft.
 final class EntryDetails {
-  const EntryDetails({
-    this.stoolType,
-    this.ease,
-    this.symptoms = const {},
-    this.tags = const {},
-  });
+  const EntryDetails({this.stoolType, this.ease, this.tags = const {}});
 
-  factory EntryDetails.of(Entry e) => EntryDetails(
-    stoolType: e.stoolType,
-    ease: e.ease,
-    symptoms: e.symptoms,
-    tags: e.tags,
-  );
+  factory EntryDetails.of(Entry e) =>
+      EntryDetails(stoolType: e.stoolType, ease: e.ease, tags: e.tags);
 
   final int? stoolType;
   final Ease? ease;
-  final Set<Symptom> symptoms;
   final Set<Tag> tags;
 
   /// True when nothing on the "A little context" step is filled in.
-  bool get contextEmpty => ease == null && symptoms.isEmpty && tags.isEmpty;
+  bool get contextEmpty => ease == null && tags.isEmpty;
 
   @override
   bool operator ==(Object other) =>
       other is EntryDetails &&
       other.stoolType == stoolType &&
       other.ease == ease &&
-      other.symptoms.length == symptoms.length &&
-      other.symptoms.containsAll(symptoms) &&
       other.tags.length == tags.length &&
       other.tags.containsAll(tags);
 
   @override
-  int get hashCode => Object.hash(
-    stoolType,
-    ease,
-    Object.hashAllUnordered(symptoms),
-    Object.hashAllUnordered(tags),
-  );
+  int get hashCode =>
+      Object.hash(stoolType, ease, Object.hashAllUnordered(tags));
 }
 
 /// What the editor opens: an existing entry, or a new entry, optionally on
@@ -148,23 +139,26 @@ class EntryEditorController extends Notifier<EntryEditorState> {
       final now = _clock.nowLocalWall();
       final today = LocalDate(now.year, now.month, now.day);
       final day = target.initialDate;
-      // A chosen past day keeps the current time of day; never the future.
+      // Today defaults to now. A chosen past day has no time unless the
+      // user adds one: the current time of day would be a guess.
       final useDay = day != null && day.isBefore(today);
       _isExactlyNow = !useDay;
       return EntryEditorState(
         date: useDay ? day : today,
         hour: now.hour,
         minute: now.minute,
+        hasTime: !useDay,
         comment: '',
         timeChanged: false,
         commentChanged: false,
       );
     }
-    final wall = o.localWallClock;
+    final wall = o.localTime ?? _clock.nowLocalWall();
     return EntryEditorState(
       date: o.localDate,
       hour: wall.hour,
       minute: wall.minute,
+      hasTime: o.hasTime,
       comment: o.comment ?? '',
       timeChanged: false,
       commentChanged: false,
@@ -190,7 +184,6 @@ class EntryEditorController extends Notifier<EntryEditorState> {
       EntryDetails(
         stoolType: d.stoolType == type ? null : type,
         ease: d.ease,
-        symptoms: d.symptoms,
         tags: d.tags,
       ),
     );
@@ -203,33 +196,6 @@ class EntryEditorController extends Notifier<EntryEditorState> {
       EntryDetails(
         stoolType: d.stoolType,
         ease: d.ease == ease ? null : ease,
-        symptoms: d.symptoms,
-        tags: d.tags,
-      ),
-    );
-  }
-
-  /// Adds or removes a symptom. "None" and the other symptoms exclude each
-  /// other: choosing one clears the other kind.
-  void toggleSymptom(Symptom symptom) {
-    final d = state.details;
-    final next = {...d.symptoms};
-    if (next.contains(symptom)) {
-      next.remove(symptom);
-    } else if (symptom == Symptom.none) {
-      next
-        ..clear()
-        ..add(Symptom.none);
-    } else {
-      next
-        ..remove(Symptom.none)
-        ..add(symptom);
-    }
-    _setDetails(
-      EntryDetails(
-        stoolType: d.stoolType,
-        ease: d.ease,
-        symptoms: next,
         tags: d.tags,
       ),
     );
@@ -239,14 +205,7 @@ class EntryEditorController extends Notifier<EntryEditorState> {
     final d = state.details;
     final next = {...d.tags};
     if (!next.remove(tag)) next.add(tag);
-    _setDetails(
-      EntryDetails(
-        stoolType: d.stoolType,
-        ease: d.ease,
-        symptoms: d.symptoms,
-        tags: next,
-      ),
-    );
+    _setDetails(EntryDetails(stoolType: d.stoolType, ease: d.ease, tags: next));
   }
 
   bool get isEditing => original != null;
@@ -260,8 +219,10 @@ class EntryEditorController extends Notifier<EntryEditorState> {
     );
   }
 
-  /// True when the local time [hour]:[minute] on [date] has not happened yet.
-  bool isInFuture(LocalDate date, int hour, int minute) {
+  /// True when [date] (at [hour]:[minute] if [hasTime]) has not happened yet.
+  /// Without a time only the day counts, so today is always allowed.
+  bool isInFuture(LocalDate date, int hour, int minute, {bool hasTime = true}) {
+    if (!hasTime) return date.isAfter(_clock.today());
     final r = _clock.resolveLocal(
       date.year,
       date.month,
@@ -272,17 +233,25 @@ class EntryEditorController extends Notifier<EntryEditorState> {
     return r.utc.isAfter(_clock.nowUtc().add(futureTolerance));
   }
 
-  void setDateTime(LocalDate date, int hour, int minute) {
+  void setDateTime(
+    LocalDate date,
+    int hour,
+    int minute, {
+    bool hasTime = true,
+  }) {
     final o = original;
     final unchanged =
         o != null &&
         date == o.localDate &&
-        hour == o.localWallClock.hour &&
-        minute == o.localWallClock.minute;
+        hasTime == o.hasTime &&
+        (!hasTime ||
+            (hour == o.localWallClock.hour &&
+                minute == o.localWallClock.minute));
     state = state.copyWith(
       date: date,
       hour: hour,
       minute: minute,
+      hasTime: hasTime,
       timeChanged: o == null ? true : !unchanged,
       errors: const [],
     );
@@ -331,8 +300,8 @@ class EntryEditorController extends Notifier<EntryEditorState> {
         state.date.year,
         state.date.month,
         state.date.day,
-        state.hour,
-        state.minute,
+        state.hasTime ? state.hour : dateOnlyHour,
+        state.hasTime ? state.minute : 0,
       );
     }
     // Details hidden by a setting are still in the draft, unchanged.
@@ -340,10 +309,10 @@ class EntryEditorController extends Notifier<EntryEditorState> {
     return EntryDraft(
       occurredAtUtc: time.utc,
       originalUtcOffsetMinutes: time.offsetMinutes,
+      hasTime: state.hasTime,
       comment: state.comment,
       stoolType: d.stoolType,
       ease: d.ease,
-      symptoms: d.symptoms,
       tags: d.tags,
     );
   }

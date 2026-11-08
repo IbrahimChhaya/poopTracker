@@ -44,7 +44,7 @@ void main() {
     String? comment,
     int? stoolType,
     Ease? ease,
-    Set<Symptom> symptoms = const {},
+    bool hasTime = true,
     Set<Tag> tags = const {},
   }) => EntryDraft(
     occurredAtUtc: at ?? DateTime.utc(2026, 11, 6, 13, 35),
@@ -52,7 +52,7 @@ void main() {
     comment: comment,
     stoolType: stoolType,
     ease: ease,
-    symptoms: symptoms,
+    hasTime: hasTime,
     tags: tags,
   );
 
@@ -62,7 +62,7 @@ void main() {
     expect(isValidUid(e.uid), isTrue);
     expect(e.comment, isNull);
     expect(e.stoolType, isNull);
-    expect(e.symptoms, isEmpty);
+    expect(e.hasTime, isTrue);
     expect(e.createdAtUtc, clock.utc);
     expect(e.updatedAtUtc, clock.utc);
   });
@@ -73,8 +73,7 @@ void main() {
         comment: '  Felt fine after lunch  ',
         stoolType: 4,
         ease: Ease.someStraining,
-        symptoms: {Symptom.bloating, Symptom.cramping},
-        tags: {Tag.afterMeal, Tag.coffee},
+        tags: {Tag.afterMeal, Tag.coffee, Tag.feelingSick},
       ),
     );
     final back = await repo.byId(e.id);
@@ -82,8 +81,7 @@ void main() {
     expect(back!.comment, 'Felt fine after lunch');
     expect(back.occurredAtUtc, DateTime.utc(2026, 11, 6, 13, 35));
     expect(back.occurredAtUtc.isUtc, isTrue);
-    expect(back.symptoms, {Symptom.bloating, Symptom.cramping});
-    expect(back.tags, {Tag.afterMeal, Tag.coffee});
+    expect(back.tags, {Tag.afterMeal, Tag.coffee, Tag.feelingSick});
   });
 
   test('invalid drafts throw and write nothing', () async {
@@ -96,10 +94,39 @@ void main() {
       ),
     );
     await expectLater(
-      repo.create(draft(symptoms: {Symptom.none, Symptom.blood})),
+      repo.create(draft(stoolType: 0)),
       throwsA(isA<EntryValidationException>()),
     );
     expect(await repo.all(), isEmpty);
+  });
+
+  test('an entry without a time is stored and read back as such', () async {
+    final e = await repo.create(
+      draft(at: DateTime.utc(2026, 11, 5, 12), hasTime: false),
+    );
+    final back = (await repo.byId(e.id))!;
+    expect(back.hasTime, isFalse);
+    expect(back.localTime, isNull);
+    final timed = await repo.update(
+      e.id,
+      draft(at: DateTime.utc(2026, 11, 5, 8, 25)),
+    );
+    expect(timed.hasTime, isTrue);
+  });
+
+  test('untimed entries sort after timed ones on the same day', () async {
+    final untimed = await repo.create(
+      draft(at: DateTime.utc(2026, 11, 5, 12), hasTime: false),
+    );
+    final evening = await repo.create(draft(at: DateTime.utc(2026, 11, 5, 20)));
+    final morning = await repo.create(draft(at: DateTime.utc(2026, 11, 5, 7)));
+    final today = await repo.create(draft(at: DateTime.utc(2026, 11, 6, 9)));
+    expect((await repo.all()).map((e) => e.id), [
+      today.id,
+      evening.id,
+      morning.id,
+      untimed.id,
+    ]);
   });
 
   test('every entry gets its own uid', () async {
@@ -109,13 +136,11 @@ void main() {
   });
 
   test('update replaces details and keeps identity', () async {
-    final e = await repo.create(
-      draft(stoolType: 3, symptoms: {Symptom.bloating}, tags: {Tag.stress}),
-    );
+    final e = await repo.create(draft(stoolType: 3, tags: {Tag.stress}));
     clock.utc = clock.utc.add(const Duration(minutes: 5));
     final u = await repo.update(
       e.id,
-      draft(comment: 'Edited', symptoms: {Symptom.none}),
+      draft(comment: 'Edited', tags: {Tag.onPeriod}),
     );
     expect(u.id, e.id);
     expect(u.uid, e.uid);
@@ -123,8 +148,7 @@ void main() {
     expect(u.updatedAtUtc, clock.utc);
     expect(u.comment, 'Edited');
     expect(u.stoolType, isNull);
-    expect(u.symptoms, {Symptom.none});
-    expect(u.tags, isEmpty);
+    expect(u.tags, {Tag.onPeriod});
   });
 
   test('an invalid update changes nothing', () async {
@@ -144,13 +168,10 @@ void main() {
     await expectLater(repo.delete(999), throwsA(isA<EntryNotFoundException>()));
   });
 
-  test('delete removes the entry with its symptoms and tags', () async {
-    final e = await repo.create(
-      draft(symptoms: {Symptom.urgency}, tags: {Tag.exercise}),
-    );
+  test('delete removes the entry with its tags', () async {
+    final e = await repo.create(draft(tags: {Tag.lowFluids}));
     await repo.delete(e.id);
     expect(await repo.byId(e.id), isNull);
-    expect(await db.select(db.entrySymptoms).get(), isEmpty);
     expect(await db.select(db.entryTags).get(), isEmpty);
   });
 

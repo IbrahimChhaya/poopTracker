@@ -7,7 +7,6 @@ import '../../../app/scope.dart';
 import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
-import '../../../ui/theme/morrow_typography.dart';
 import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/overlays.dart';
 import '../../../ui/widgets/states.dart';
@@ -73,14 +72,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final colors = MorrowColors.of(context);
 
     final header = <Widget>[
-      Text('THE JOURNAL', style: MorrowTextStyles.of(context).eyebrow),
-      const SizedBox(height: MorrowSpacing.sm),
       Semantics(
         header: true,
         child: Text('Your history', style: text.headlineLarge),
       ),
-      const SizedBox(height: MorrowSpacing.sm),
-      Text('Small observations, kept in one place.', style: text.bodyMedium),
       const SizedBox(height: MorrowSpacing.xxl),
       TextField(
         controller: _search,
@@ -168,13 +163,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
         ],
       ),
-      const SizedBox(height: MorrowSpacing.sm),
-      Text(
-        v.matchCount == 0
-            ? formatEntryCount(0)
-            : '${formatEntryCount(v.matchCount)} · Most recent first',
-        style: text.labelSmall,
-      ),
+      // Only an empty result is counted (4.5, 4.6); lists speak for
+      // themselves.
+      if (v.matchCount == 0) ...[
+        const SizedBox(height: MorrowSpacing.sm),
+        Text(formatEntryCount(0), style: text.labelSmall),
+      ],
       const SizedBox(height: MorrowSpacing.lg),
       if (v.journalIsEmpty)
         _EmptyJournal(onAdd: () => context.push(AppPaths.newEntry))
@@ -195,7 +189,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           for (final e in g.entries) ...[
             EntryCard(
               entry: e,
-              title: formatTime(e.localWallClock),
+              title: formatTimeOrNone(e.localTime),
               onTap: () => context.go(AppPaths.historyEntry, extra: e.id),
             ),
             const SizedBox(height: 10),

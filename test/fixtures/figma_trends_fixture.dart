@@ -20,8 +20,6 @@ List<Entry> figmaTrendsFixture() {
     required LocalDate firstMonday,
     required List<int> perWeek,
     required List<int> stoolCounts,
-    required int bloating,
-    required int cramping,
     List<Entry> extra = const [],
   }) {
     final types = [
@@ -34,12 +32,6 @@ List<Entry> figmaTrendsFixture() {
       for (var n = 0; n < perWeek[w]; n++) {
         // Spread across the week, including the Sunday, at varied times.
         final day = monday.addDays(const [0, 2, 4, 5, 6][n]);
-        final symptoms = i < bloating
-            ? {Symptom.bloating}
-            : i < bloating + cramping
-            ? {Symptom.cramping}
-            // "None" and no answer must count the same.
-            : (i.isEven ? {Symptom.none} : <Symptom>{});
         entries.add(
           entryAt(
             day.year,
@@ -49,7 +41,6 @@ List<Entry> figmaTrendsFixture() {
             (n * 17) % 60,
             id: id++,
             stoolType: types[i],
-            symptoms: symptoms,
           ),
         );
         i++;
@@ -66,8 +57,6 @@ List<Entry> figmaTrendsFixture() {
     firstMonday: LocalDate(2026, 5, 11),
     perWeek: const [5, 5, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4],
     stoolCounts: const [1, 2, 10, 31, 10, 8, 2],
-    bloating: 10,
-    cramping: 5,
   );
 
   // Weeks 15-22 (17 August to 11 October): 38 entries.
@@ -75,8 +64,6 @@ List<Entry> figmaTrendsFixture() {
     firstMonday: LocalDate(2026, 8, 17),
     perWeek: const [5, 5, 5, 5, 5, 5, 4, 4],
     stoolCounts: const [1, 2, 6, 18, 6, 4, 1],
-    bloating: 6,
-    cramping: 3,
   );
 
   // Weeks 23-25 (12 October to 1 November): 13 entries. The week of
@@ -85,8 +72,6 @@ List<Entry> figmaTrendsFixture() {
     firstMonday: LocalDate(2026, 10, 12),
     perWeek: const [4, 4, 5],
     stoolCounts: const [0, 0, 2, 7, 2, 2, 0],
-    bloating: 2,
-    cramping: 1,
   );
 
   // Week 26 (2 to 8 November, in progress): the five entries on the
@@ -101,7 +86,6 @@ List<Entry> figmaTrendsFixture() {
       id: id++,
       stoolType: 3,
       ease: Ease.someStraining,
-      symptoms: {Symptom.none},
     ),
     entryAt(
       2026,
@@ -113,30 +97,9 @@ List<Entry> figmaTrendsFixture() {
       stoolType: 4,
       ease: Ease.easy,
       comment: 'Quiet evening',
-      symptoms: {Symptom.none},
     ),
-    entryAt(
-      2026,
-      11,
-      5,
-      8,
-      25,
-      id: id++,
-      stoolType: 4,
-      ease: Ease.easy,
-      symptoms: {Symptom.none},
-    ),
-    entryAt(
-      2026,
-      11,
-      6,
-      8,
-      10,
-      id: id++,
-      stoolType: 4,
-      ease: Ease.easy,
-      symptoms: {Symptom.none},
-    ),
+    entryAt(2026, 11, 5, 8, 25, id: id++, stoolType: 4, ease: Ease.easy),
+    entryAt(2026, 11, 6, 8, 10, id: id++, stoolType: 4, ease: Ease.easy),
     entryAt(
       2026,
       11,
@@ -147,7 +110,6 @@ List<Entry> figmaTrendsFixture() {
       stoolType: 5,
       ease: Ease.easy,
       comment: 'Felt fine after lunch',
-      symptoms: {Symptom.bloating},
     ),
   ]);
 

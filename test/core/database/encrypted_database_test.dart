@@ -272,16 +272,14 @@ void main() {
                 ),
               );
           await db
-              .into(db.entrySymptoms)
-              .insert(
-                EntrySymptomsCompanion.insert(entryId: id, code: 'bloating'),
-              );
+              .into(db.entryTags)
+              .insert(EntryTagsCompanion.insert(entryId: id, code: 'coffee'));
           throw StateError('simulated failure');
         }),
         throwsStateError,
       );
       expect(await db.select(db.entries).get(), isEmpty);
-      expect(await db.select(db.entrySymptoms).get(), isEmpty);
+      expect(await db.select(db.entryTags).get(), isEmpty);
       await db.close();
     });
 
@@ -302,10 +300,8 @@ void main() {
               );
           // Not an allowed code: the database itself refuses it.
           await db
-              .into(db.entrySymptoms)
-              .insert(
-                EntrySymptomsCompanion.insert(entryId: id, code: 'invented'),
-              );
+              .into(db.entryTags)
+              .insert(EntryTagsCompanion.insert(entryId: id, code: 'invented'));
         }),
         throwsA(anything),
       );
@@ -314,7 +310,7 @@ void main() {
     });
   });
 
-  group('schema v1', () {
+  group('current schema', () {
     test('creates one settings row and one reminder row, both off', () async {
       final db = await openReady();
       final settings = await db.select(db.appSettings).getSingle();
@@ -357,11 +353,11 @@ void main() {
       await db.close();
     });
 
-    test('schema version is 1', () async {
+    test('schema version is 2', () async {
       final db = await openReady();
-      expect(db.schemaVersion, 1);
+      expect(db.schemaVersion, 2);
       final v = await db.customSelect('PRAGMA user_version').getSingle();
-      expect(v.data.values.single, 1);
+      expect(v.data.values.single, 2);
       await db.close();
     });
   });

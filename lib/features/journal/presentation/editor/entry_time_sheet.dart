@@ -9,16 +9,17 @@ import '../../../../ui/widgets/morrow_button.dart';
 import '../../../../ui/widgets/morrow_chip.dart';
 import '../../../../ui/widgets/overlays.dart';
 
-typedef EntryTime = ({LocalDate date, int hour, int minute});
+typedef EntryTime = ({LocalDate date, int hour, int minute, bool hasTime});
 
-/// "When did this happen?" (screen 2.3). Completes with the chosen local date
-/// and time, or null if dismissed. Times that have not happened yet cannot
-/// be chosen.
+/// "When did this happen?" (2.3, 2.8). Completes with the chosen local date
+/// and, if "Record a time" is on, the time; null if dismissed. Times that have
+/// not happened yet cannot be chosen.
 Future<EntryTime?> showEntryTimeSheet(
   BuildContext context, {
   required EntryTime initial,
   required LocalDate today,
-  required bool Function(LocalDate date, int hour, int minute) isInFuture,
+  required bool Function(LocalDate date, int hour, int minute, {bool hasTime})
+  isInFuture,
 }) {
   return showMorrowSheet<EntryTime>(
     context,
@@ -37,7 +38,8 @@ class _TimeSheet extends StatefulWidget {
 
   final EntryTime initial;
   final LocalDate today;
-  final bool Function(LocalDate date, int hour, int minute) isInFuture;
+  final bool Function(LocalDate date, int hour, int minute, {bool hasTime})
+  isInFuture;
 
   @override
   State<_TimeSheet> createState() => _TimeSheetState();
@@ -47,6 +49,21 @@ class _TimeSheetState extends State<_TimeSheet> {
   late LocalDate _date = widget.initial.date;
   late int _hour = widget.initial.hour;
   late int _minute = widget.initial.minute;
+  late bool _hasTime = widget.initial.hasTime;
+
+  /// Until the user flips "Record a time" themselves, picking today turns it
+  /// on and picking a past day turns it off.
+  bool _timeTouched = false;
+
+  void _setHasTime(bool v) => setState(() {
+    _hasTime = v;
+    _timeTouched = true;
+  });
+
+  void _pickDate(LocalDate d) => setState(() {
+    _date = d;
+    if (!_timeTouched) _hasTime = d == widget.today;
+  });
 
   late final _hourCtl = FixedExtentScrollController(
     initialItem: (_hour % 12 == 0 ? 12 : _hour % 12) - 1,
@@ -84,7 +101,7 @@ class _TimeSheetState extends State<_TimeSheet> {
       ),
     );
     if (picked != null) {
-      setState(() => _date = LocalDate(picked.year, picked.month, picked.day));
+      _pickDate(LocalDate(picked.year, picked.month, picked.day));
     }
   }
 
@@ -94,7 +111,7 @@ class _TimeSheetState extends State<_TimeSheet> {
     final text = Theme.of(context).textTheme;
     final isToday = _date == widget.today;
     final isYesterday = _date == _yesterday;
-    final future = widget.isInFuture(_date, _hour, _minute);
+    final future = widget.isInFuture(_date, _hour, _minute, hasTime: _hasTime);
 
     Widget wheel({
       required String label,
@@ -149,12 +166,12 @@ class _TimeSheetState extends State<_TimeSheet> {
             MorrowChip(
               label: 'Today',
               selected: isToday,
-              onSelected: (_) => setState(() => _date = widget.today),
+              onSelected: (_) => _pickDate(widget.today),
             ),
             MorrowChip(
               label: 'Yesterday',
               selected: isYesterday,
-              onSelected: (_) => setState(() => _date = _yesterday),
+              onSelected: (_) => _pickDate(_yesterday),
             ),
             MorrowChip(
               label: isToday || isYesterday
@@ -168,47 +185,71 @@ class _TimeSheetState extends State<_TimeSheet> {
             ),
           ],
         ),
-        const SizedBox(height: MorrowSpacing.lg),
-        Container(
-          height: 150,
-          padding: const EdgeInsets.symmetric(horizontal: MorrowSpacing.md),
-          decoration: BoxDecoration(
-            color: colors.background,
-            borderRadius: BorderRadius.circular(MorrowRadii.lg),
-          ),
-          child: Row(
-            children: [
-              wheel(
-                label: 'Hour',
-                controller: _hourCtl,
-                count: 12,
-                itemLabel: (i) => '${i + 1}',
-                onChanged: _setHour12,
-              ),
-              wheel(
-                label: 'Minute',
-                controller: _minuteCtl,
-                count: 60,
-                itemLabel: (i) => i.toString().padLeft(2, '0'),
-                onChanged: (i) => setState(() => _minute = i),
-              ),
-              wheel(
-                label: 'am or pm',
-                controller: _periodCtl,
-                count: 2,
-                itemLabel: (i) => i == 0 ? 'am' : 'pm',
-                onChanged: (i) => _setHour12(_hourCtl.selectedItem, pm: i == 1),
-              ),
-            ],
+        const SizedBox(height: MorrowSpacing.md),
+        // The whole row toggles the switch, not just the switch itself.
+        MergeSemantics(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(MorrowRadii.sm),
+            onTap: () => _setHasTime(!_hasTime),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Record a time',
+                    style: text.bodyLarge!.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Switch(value: _hasTime, onChanged: _setHasTime),
+              ],
+            ),
           ),
         ),
+        if (_hasTime) ...[
+          const SizedBox(height: MorrowSpacing.sm),
+          Container(
+            height: 150,
+            padding: const EdgeInsets.symmetric(horizontal: MorrowSpacing.md),
+            decoration: BoxDecoration(
+              color: colors.background,
+              borderRadius: BorderRadius.circular(MorrowRadii.lg),
+            ),
+            child: Row(
+              children: [
+                wheel(
+                  label: 'Hour',
+                  controller: _hourCtl,
+                  count: 12,
+                  itemLabel: (i) => '${i + 1}',
+                  onChanged: _setHour12,
+                ),
+                wheel(
+                  label: 'Minute',
+                  controller: _minuteCtl,
+                  count: 60,
+                  itemLabel: (i) => i.toString().padLeft(2, '0'),
+                  onChanged: (i) => setState(() => _minute = i),
+                ),
+                wheel(
+                  label: 'am or pm',
+                  controller: _periodCtl,
+                  count: 2,
+                  itemLabel: (i) => i == 0 ? 'am' : 'pm',
+                  onChanged: (i) =>
+                      _setHour12(_hourCtl.selectedItem, pm: i == 1),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: MorrowSpacing.md),
         Semantics(
           liveRegion: true,
           child: Text(
             future
                 ? 'That time hasn’t happened yet. Choose an earlier time.'
-                : 'Date and time are the only required parts of an entry.',
+                : 'Only the date is required. Add a time if you know it.',
             style: text.bodySmall!.copyWith(
               color: future ? colors.danger : colors.mutedText,
             ),
@@ -219,9 +260,12 @@ class _TimeSheetState extends State<_TimeSheet> {
           label: 'Done',
           onPressed: future
               ? null
-              : () => Navigator.of(
-                  context,
-                ).pop<EntryTime>((date: _date, hour: _hour, minute: _minute)),
+              : () => Navigator.of(context).pop<EntryTime>((
+                  date: _date,
+                  hour: _hour,
+                  minute: _minute,
+                  hasTime: _hasTime,
+                )),
         ),
       ],
     );

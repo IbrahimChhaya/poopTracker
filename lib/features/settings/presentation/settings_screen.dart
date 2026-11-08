@@ -42,8 +42,8 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.monitor_heart_outlined,
               title: 'A little context',
               subtitle:
-                  'Show the optional step for ease, symptoms and tags, and '
-                  'symptoms in your journal and trends.',
+                  'Show the optional step for ease and tags, and those '
+                  'details in your journal.',
               value: display.showContext,
               onChanged: repo.setShowContext,
             ),
