@@ -12,8 +12,10 @@ import 'package:poop_tracker/features/journal/presentation/journal_screen.dart';
 
 import '../test/fixtures/figma_trends_fixture.dart';
 import '../test/support/fake_clock.dart';
+import '../test/support/fake_diagnostics.dart';
 import '../test/support/fake_key_store.dart';
 import '../test/support/fake_lock.dart';
+import '../test/support/fake_reminders.dart';
 
 /// Trends on a real device with the synthetic Figma journal, through the
 /// real app and an encrypted database in a temporary folder (the device's
@@ -35,6 +37,10 @@ void main() {
           keyStoreProvider.overrideWithValue(FakeKeyStore()),
           // Never read or change the phone's real app-lock setting.
           lockSettingsProvider.overrideWithValue(FakeLockSettings()),
+          // Never schedule or cancel the phone's real reminder.
+          reminderSchedulerProvider.overrideWithValue(FakeReminderScheduler()),
+          // Never write test events into the phone's real diagnostics log.
+          diagnosticLogProvider.overrideWithValue(MemoryDiagnosticLog()),
           databaseFileProvider.overrideWithValue(
             () async => File('${dir.path}/journal.db'),
           ),

@@ -61,6 +61,7 @@ class SettingRow extends StatelessWidget {
         : action != null
         ? Text(
             action,
+            textAlign: TextAlign.end,
             style: text.labelLarge!.copyWith(
               color: colors.primary,
               fontSize: 14,
@@ -101,7 +102,12 @@ class SettingRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: MorrowSpacing.md),
-          ExcludeSemantics(excluding: !_isToggle, child: trailing),
+          // A text action ("Change", "6:00 pm") may wrap at large text
+          // sizes instead of pushing the row past the screen edge.
+          if (action != null)
+            Flexible(child: ExcludeSemantics(child: trailing))
+          else
+            ExcludeSemantics(excluding: !_isToggle, child: trailing),
         ],
       ),
     );

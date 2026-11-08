@@ -7,6 +7,7 @@ import '../features/journal/presentation/entry/entry_page.dart';
 import '../features/journal/presentation/entry/quick_add.dart';
 import '../features/journal/presentation/history_screen.dart';
 import '../features/journal/presentation/journal_screen.dart';
+import '../features/reminders/presentation/reminder_screen.dart';
 import '../features/settings/presentation/app_lock_screen.dart';
 import '../features/settings/presentation/diagnostics_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -65,6 +66,10 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
                 path: AppPaths.settings,
                 builder: (_, _) => const SettingsScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'reminder',
+                    builder: (_, _) => const ReminderScreen(),
+                  ),
                   GoRoute(
                     path: 'app-lock',
                     builder: (_, _) => const AppLockScreen(),

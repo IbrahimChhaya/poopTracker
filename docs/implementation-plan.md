@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20. M8 (app lock) is built and checked on the S20; iOS and lockout checks remain.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20. M8 (app lock) is built and checked on the S20; iOS and lockout checks remain. M9 (weekly reminder) is built and checked on the S20; delivery and reboot checks remain.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -21,7 +21,7 @@ Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma f
 | sqlite3_flutter_libs | 0.6.0+eol | **End of life — do not add.** Use sqlite3 3.x hooks instead |
 | flutter_secure_storage | 11.2.0 | |
 | local_auth | 3.0.2 | |
-| flutter_local_notifications | 23.0.0 | |
+| flutter_local_notifications | 22.3.3 | 23.0.0 needs AGP 9.1.1 and compileSdk 37; upgrade in M12 |
 | timezone / flutter_timezone | 0.11.2 / 5.1.1 | |
 | path_provider / path | 2.1.6 / current | |
 | build_runner | 2.17.1 | dev |
@@ -487,10 +487,10 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
     - A cold start with the lock on.
     - TalkBack.
     - iOS: Face ID, and the app-switcher cover, which isn't guaranteed.
-    - The first-launch screens (1.1–1.3), which wait for the welcome flow.
+    - The first-launch screens (1.1–1.3), now planned as M11.1.
   - **Security note:** the lock is an app gate. A successful local_auth result does not unlock the database key cryptographically; binding the key to authentication remains a separate enhancement.
 
-### M9 — Weekly reminder
+### M9 — Weekly reminder (built)
 - **Scope (6.1–6.5):**
   - Reminder intent stored in the database.
   - Permission requested only when the reminder is switched on; denial leaves journalling untouched.
@@ -502,6 +502,57 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - The plugin's boot receiver reschedules without opening the journal.
 - **Native:** `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED` and the plugin receivers. No exact-alarm or battery-exemption permissions.
 - **Accept when:** reconciliation unit tests pass for a time-zone change, permission revoked and a duplicate-schedule guard. Manual device checks: delivery, reboot, Force Stop then reopen, permission revoked in system Settings, battery saver.
+- **Decided on 8 November:**
+  - flutter_local_notifications 22.3.3 with the current tooling (AGP 9.1.0, compileSdk 36).
+  - The native changes as proposed, including "Open phone settings".
+- **Built (8 November):**
+  - **Code:**
+    - `core/notifications/reminder_scheduler.dart`: one adapter for permission, `zonedSchedule` and cancel, with `inexactAllowWhileIdle` and `DateTimeComponents.dayOfWeekAndTime`.
+      - The zone is read by IANA name through flutter_timezone every time it schedules.
+      - `nextWeekly` keeps the wall-clock time across a clock change.
+      - The wording is generic ("Weekly check-in" / "Ready to add an entry?") and there's no payload.
+    - `features/reminders/`:
+      - The repository holds the existing `reminder` row (no schema change).
+      - `ReminderController` keeps the intent apart from the observed permission and schedule. It reconciles when the journal opens, on resume and after every change.
+      - Operations run one at a time, the one stable id is always replaced, and rescheduling is skipped when nothing changed.
+      - A refusal saves the reminder anyway (6.4).
+    - The Weekly reminder screen (6.1–6.4) and Settings > Reminders.
+    - Diagnostics events: scheduled, turned off, scheduling failed, notifications not allowed.
+  - **Native:**
+    - `RECEIVE_BOOT_COMPLETED`, plus the plugin's `ScheduledNotificationReceiver` and boot receiver (boot, package replaced, quick boot).
+    - Core library desugaring (desugar_jdk_libs 2.1.4) and multidex.
+    - The `openNotificationSettings` method on the `morrow/privacy` channel.
+    - iOS: the `UNUserNotificationCenter` delegate.
+    - The merged manifest adds `POST_NOTIFICATIONS` and `VIBRATE` (from the plugin) and `RECEIVE_BOOT_COMPLETED`. There are no exact-alarm or battery permissions.
+    - On iOS, "Open phone settings" is replaced by text (no native channel yet).
+    - The `timezone` package pulls in `http` as a dependency. The app never imports it.
+  - **Found on the device and fixed:**
+    - The permission prompt backgrounds the app, and the reconcile on resume overwrote the result, leaving "Turning on…". This is fixed by serialising operations and has a regression test.
+    - The day picker laid out as a column. It's now one row of seven circles, with a test.
+    - Text actions in setting rows ("6:00 pm") overflowed at 200%. They now wrap.
+    - The device tests started the real app with an empty journal, which cancelled the real reminder and wrote test events into the real diagnostics log. All device tests now use fake schedulers, lock settings and logs.
+  - **Tests:** 378 pass. Controller tests cover:
+    - off by default, switching on, refusal, a resume during the prompt, and replacing the reminder
+    - switching off keeping the day and time
+    - an unchanged reconcile, permission revoked, a zone change, a schedule cleared by the OS, a scheduling failure, and a restart
+    - `nextWeekly`, including the October clock change
+
+    Screen tests cover 6.1, 6.3 (one-row days), 6.4 (Open phone settings), allowing later and picking it up on return, switching off, and 100% and 200% text.
+  - **Device check (S20, Android 13, 8 November):**
+    - The prompt appears only when switching on, and "Don't allow" shows 6.4.
+    - Open phone settings goes to morrow's notification page, and allowing there is picked up on return (6.3).
+    - `dumpsys alarm` shows one morrow alarm, Sunday 15 November at 18:00, with a one-hour inexact window. Changing the day replaces it rather than adding another.
+    - An app update keeps it.
+    - A Force Stop clears it and reopening restores it.
+    - The journal, startup, trends and encryption device tests pass.
+  - **Not checked:**
+    - Actual delivery at the time.
+    - Reboot.
+    - Battery saver.
+    - Tapping the notification (it opens the app through the lock gate, with no payload).
+    - iOS.
+    - TalkBack.
+  - **Behaviour while closed:** the OS keeps the reminder at the wall-clock time in the zone it was scheduled in. After travelling, it moves to the new zone the next time morrow is opened.
 
 ### M10 — Data & privacy and Delete all data
 - **Scope (8.1, 8.3–8.9):**
@@ -524,6 +575,23 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Restore into a non-empty journal works.
   - Restoring a backup made with an older schema works.
   - Manual device checks: Files, Google Drive and iCloud Drive with real system sheets.
+
+### M11.1 — Welcome and first launch (Figma 1.1–1.4)
+- **Why:** no milestone covered the first-launch screens. Today a fresh install goes straight to the empty journal.
+- **Scope:**
+  - **1.1 Welcome**, shown once on a fresh install, before the journal: "A little daily clarity.", three promises (stays on this phone, private by default, keep your own backup), and Get started, Set up app lock and Restore from a backup.
+  - **1.2 and 1.3:** "Set up app lock" turns the lock on with the phone's own prompt (M8), then confirms "App lock is on".
+  - **Restore:** "Restore from a backup" goes to the M11 restore flow, then into the journal.
+  - **1.4:** "Get started" leads to the empty journal.
+  - **Seen flag:** whether Welcome has been seen is security bootstrap metadata, so it lives in secure storage, not in the database. A restored or reinstalled phone that already has a journal never shows Welcome again.
+  - **Wording:** neutral throughout ("entry", "journal"). Nothing reveals what is tracked.
+- **Depends on:** M8 (app lock) and M11 (restore).
+- **Accept when:**
+  - Widget tests show Welcome only on a genuine first install, never again after Get started, and never when a journal exists.
+  - Set up app lock handles success, cancel and no screen lock.
+  - Restore from a backup returns to Welcome on cancel.
+  - 200% text works.
+  - Manual device check: a fresh install on the S20.
 
 ### M12 — Hardening and release readiness
 - **Scope:**

@@ -77,9 +77,9 @@ The following decisions were made with the product owner after the scan:
 - **0.1 How to read this file:** conventions (journeys, primary state, details on, weekly).
 
 ### 1 · First launch (M8, M11)
-- **1.1 Welcome:** "A little daily clarity." with three promises (stays on this phone, private by default, keep your own backup), plus Get started, Set up app lock and Restore from a backup. *Not built (M8/M11).*
-- **1.2 Confirm to turn on app lock:** the system authentication sheet over Welcome. *M8.*
-- **1.3 App lock is on:** confirmation, then Continue. *M8.*
+- **1.1 Welcome:** "A little daily clarity." with three promises (stays on this phone, private by default, keep your own backup), plus Get started, Set up app lock and Restore from a backup. *To build (M11.1).*
+- **1.2 Confirm to turn on app lock:** the system authentication sheet over Welcome. *To build (M11.1); uses M8.*
+- **1.3 App lock is on:** confirmation, then Continue. *To build (M11.1).*
 - **1.4 Journal · Empty:** *Built (M5).*
 
 ### 2 · Log an entry (details off): one-tap entry, built (M6.3)
@@ -117,7 +117,7 @@ The following decisions were made with the product owner after the scan:
 - **5.4–5.6 Details on:** adds the stool form counts chart. The "Symptoms you noted" section is removed by the 8 November decision.
 - **5.7 Not enough data.**
 
-### 6 · Weekly reminder (M9)
+### 6 · Weekly reminder, built (M9)
 - **6.1 Off, 6.2 Allow notifications?, 6.3 On** (day and time, preview, status), **6.4 Notifications off, 6.5 Reminder notification.**
 
 ### 7 · App lock, built (M8)

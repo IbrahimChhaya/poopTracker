@@ -6,7 +6,9 @@ import 'package:poop_tracker/app/providers.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/ui/widgets/morrow_navigation_bar.dart';
 
+import '../test/support/fake_diagnostics.dart';
 import '../test/support/fake_lock.dart';
+import '../test/support/fake_reminders.dart';
 
 /// Real startup on a device: platform secure storage, the encrypted journal
 /// in app-private storage, the gate and the shell. On a device that already
@@ -40,7 +42,12 @@ void main() {
     // the phone's own lock setting is neither read nor changed here.
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [lockSettingsProvider.overrideWithValue(FakeLockSettings())],
+        overrides: [
+          lockSettingsProvider.overrideWithValue(FakeLockSettings()),
+          reminderSchedulerProvider.overrideWithValue(FakeReminderScheduler()),
+          // Never write test events into the phone's real diagnostics log.
+          diagnosticLogProvider.overrideWithValue(MemoryDiagnosticLog()),
+        ],
         child: const MorrowApp(),
       ),
     );

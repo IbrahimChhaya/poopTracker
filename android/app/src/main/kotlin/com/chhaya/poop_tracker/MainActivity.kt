@@ -1,6 +1,8 @@
 package com.chhaya.poop_tracker
 
+import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -11,7 +13,8 @@ import io.flutter.plugin.common.MethodChannel
  *
  * The "morrow/privacy" channel lets the app hide its recent-apps thumbnail
  * while app lock is on (Android 13+). Screenshots stay allowed: no
- * FLAG_SECURE.
+ * FLAG_SECURE. It also opens morrow's notification settings ("Open phone
+ * settings" on the weekly reminder screen).
  */
 class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -24,6 +27,12 @@ class MainActivity : FlutterFragmentActivity() {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             setRecentsScreenshotEnabled(!hidden)
                         }
+                        result.success(null)
+                    }
+                    "openNotificationSettings" -> {
+                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                        startActivity(intent)
                         result.success(null)
                     }
                     else -> result.notImplemented()

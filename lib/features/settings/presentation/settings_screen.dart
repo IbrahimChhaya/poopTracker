@@ -10,6 +10,8 @@ import '../../../ui/theme/morrow_tokens.dart';
 import '../../../ui/widgets/card_group.dart';
 import '../../../ui/widgets/page_body.dart';
 import '../../../ui/widgets/setting_row.dart';
+import '../../reminders/presentation/reminder_controller.dart';
+import '../../reminders/presentation/reminder_screen.dart';
 
 /// Settings (8.1, 8.2). Reminders, app lock and data rows arrive in M8–M10.
 class SettingsScreen extends ConsumerWidget {
@@ -19,15 +21,31 @@ class SettingsScreen extends ConsumerWidget {
   static const String selfCheckPath = '/settings/self-check';
   static const String diagnosticsPath = '/settings/diagnostics';
   static const String appLockPath = '/settings/app-lock';
+  static const String reminderPath = '/settings/reminder';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final display = ref.watch(displayProvider);
     final repo = ref.read(settingsRepositoryProvider);
     final lockOn = ref.watch(appLockEnabledProvider);
+    final reminder = ref.watch(reminderControllerProvider).value?.intent;
     return PageBody(
       title: 'Settings',
       children: [
+        CardGroup(
+          label: 'Reminders',
+          children: [
+            SettingRow.navigation(
+              icon: Icons.notifications_none,
+              title: 'Weekly reminder',
+              subtitle: reminder != null && reminder.enabled
+                  ? reminderSummary(reminder)
+                  : 'Off',
+              onTap: () => context.go(reminderPath),
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
         CardGroup(
           label: 'Privacy',
           children: [

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/database/bootstrap.dart';
+import '../features/reminders/presentation/reminder_controller.dart';
 import '../ui/theme/morrow_colors.dart';
 import '../ui/theme/morrow_theme.dart';
 import 'gate/gate_screens.dart';
@@ -145,18 +146,39 @@ class _JournalGate extends ConsumerWidget {
 
 /// The real app, inside the unlocked scope. Owns the router for this
 /// session only.
-class _UnlockedApp extends StatefulWidget {
+class _UnlockedApp extends ConsumerStatefulWidget {
   const _UnlockedApp();
 
   @override
-  State<_UnlockedApp> createState() => _UnlockedAppState();
+  ConsumerState<_UnlockedApp> createState() => _UnlockedAppState();
 }
 
-class _UnlockedAppState extends State<_UnlockedApp> {
+class _UnlockedAppState extends ConsumerState<_UnlockedApp> {
   late final GoRouter _router = buildAppRouter();
+
+  /// Makes the OS reminder match what the user asked for whenever the
+  /// journal opens and whenever the app comes back (a time-zone change,
+  /// permission revoked in Settings, or a Force Stop that cleared it).
+  late final AppLifecycleListener _lifecycle;
+
+  void _reconcileReminder() {
+    final reminder = ref.read(reminderControllerProvider);
+    if (reminder.hasValue) {
+      ref.read(reminderControllerProvider.notifier).reconcile();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _reconcileReminder);
+    // Building the controller reconciles once.
+    ref.read(reminderControllerProvider);
+  }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _router.dispose();
     super.dispose();
   }

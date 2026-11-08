@@ -87,6 +87,13 @@ void main() {
       await pumpApp(tester, [ready()]);
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('UI kit preview'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.text('UI kit preview'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('UI kit preview'));
       await tester.pumpAndSettle();
       expect(find.text('UI kit'), findsOneWidget);

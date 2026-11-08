@@ -13,6 +13,7 @@ import 'package:poop_tracker/core/database/app_database.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/core/database/journal_reset.dart';
 import 'package:poop_tracker/core/diagnostics/diagnostic_log.dart';
+import 'package:poop_tracker/core/notifications/reminder_scheduler.dart';
 import 'package:poop_tracker/core/platform/file_export.dart';
 import 'package:poop_tracker/core/security/device_auth.dart';
 import 'package:poop_tracker/core/security/lock_settings.dart';
@@ -21,6 +22,7 @@ import 'fake_clock.dart';
 import 'fake_diagnostics.dart';
 import 'fake_key_store.dart';
 import 'fake_lock.dart';
+import 'fake_reminders.dart';
 import 'harness.dart';
 
 /// A real (in-memory, unencrypted) database that records when it is closed.
@@ -111,6 +113,7 @@ Future<AppUnderTest> pumpMorrowApp(
   FileExport? fileExport,
   DeviceAuthenticator? authenticator,
   LockSettingsStore? lockSettings,
+  ReminderScheduler? reminders,
 }) async {
   final bootstrap = ScriptedBootstrap(results);
   final diagnostics = log ?? MemoryDiagnosticLog();
@@ -130,6 +133,9 @@ Future<AppUnderTest> pumpMorrowApp(
         authenticator ?? FakeAuthenticator(),
       ),
       privacyShieldProvider.overrideWithValue(FakePrivacyShield()),
+      reminderSchedulerProvider.overrideWithValue(
+        reminders ?? FakeReminderScheduler(),
+      ),
       clockProvider.overrideWithValue(clock ?? figmaNow),
       diagnosticLogProvider.overrideWithValue(diagnostics),
       fileExportProvider.overrideWithValue(fileExport ?? FakeFileExport()),

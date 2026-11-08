@@ -7,6 +7,7 @@ import '../core/database/bootstrap.dart';
 import '../core/database/database_location.dart';
 import '../core/database/journal_reset.dart';
 import '../core/diagnostics/diagnostic_log.dart';
+import '../core/notifications/reminder_scheduler.dart';
 import '../core/platform/file_export.dart';
 import '../core/platform/privacy_shield.dart';
 import '../core/security/device_auth.dart';
@@ -43,6 +44,11 @@ final lockSettingsProvider = Provider<LockSettingsStore>(
 /// Hides the recent-apps thumbnail while app lock is on (Android 13+).
 final privacyShieldProvider = Provider<PrivacyShield>(
   (ref) => const PlatformPrivacyShield(),
+);
+
+/// The OS scheduler for the weekly reminder. Holds no journal data.
+final reminderSchedulerProvider = Provider<ReminderScheduler>(
+  (ref) => PluginReminderScheduler(),
 );
 
 final keyStoreProvider = Provider<KeyStore>((ref) => SecureStorageKeyStore());

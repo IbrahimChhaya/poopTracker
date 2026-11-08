@@ -150,7 +150,8 @@ void main() {
     await tester.tap(find.text('Settings').last);
     await tester.pumpAndSettle();
     expect(find.text('App lock'), findsOneWidget);
-    expect(find.text('Off'), findsOneWidget);
+    // Weekly reminder and App lock are both off.
+    expect(find.text('Off'), findsNWidgets(2));
     await tester.tap(find.text('App lock'));
     await tester.pumpAndSettle();
     expect(find.text('Require unlock'), findsOneWidget);

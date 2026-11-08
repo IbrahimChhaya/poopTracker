@@ -66,6 +66,16 @@ enum DiagnosticEvent {
     'lock.setting_failed',
     'Couldn’t read the app lock setting',
   ),
+  reminderScheduled('reminder.scheduled', 'Weekly reminder scheduled'),
+  reminderCancelled('reminder.cancelled', 'Weekly reminder turned off'),
+  reminderScheduleFailed(
+    'reminder.schedule_failed',
+    'Couldn’t schedule the weekly reminder',
+  ),
+  reminderPermissionDenied(
+    'reminder.permission_denied',
+    'Notifications not allowed',
+  ),
   logTurnedOn('log.on', 'Log turned on'),
   logSaved('log.saved', 'Log saved'),
   logShared('log.shared', 'Log shared');
