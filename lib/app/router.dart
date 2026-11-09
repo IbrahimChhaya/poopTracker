@@ -16,6 +16,9 @@ import '../features/settings/presentation/delete_all_data_screen.dart';
 import '../features/settings/presentation/diagnostics_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/trends/presentation/trends_screen.dart';
+import '../features/welcome/presentation/tour_screen.dart';
+import '../features/welcome/presentation/welcome_controller.dart';
+import '../features/welcome/presentation/welcome_screen.dart';
 import '../ui/gallery/ui_kit_gallery.dart';
 import '../ui/widgets/morrow_navigation_bar.dart';
 import 'debug/self_check_screen.dart';
@@ -31,6 +34,15 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
     routes: [
       // The entry page, full screen above the tab bar (no bottom
       // navigation). Opened from the journal, a selected day and History.
+      GoRoute(path: AppPaths.welcome, builder: (_, _) => const WelcomeScreen()),
+      GoRoute(
+        path: AppPaths.tour,
+        builder: (_, state) => TourScreen(
+          mode: state.extra is TourMode
+              ? state.extra! as TourMode
+              : TourMode.replay,
+        ),
+      ),
       GoRoute(
         path: AppPaths.entry,
         builder: (_, state) => EntryPage(

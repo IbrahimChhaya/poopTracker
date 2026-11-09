@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/paths.dart';
+import '../../../app/scope.dart';
 import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
@@ -11,6 +12,7 @@ import '../../../ui/widgets/icon_tile.dart';
 import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/states.dart';
 import '../../../ui/widgets/week_strip.dart';
+import '../../welcome/presentation/welcome_controller.dart';
 import '../domain/entry.dart';
 import 'entry/quick_add.dart';
 import 'journal_controller.dart';
@@ -93,6 +95,14 @@ class _JournalBody extends ConsumerWidget {
           busyLabel: 'Adding…',
           onPressed: () => addEntryAndOpen(context, ref, day: newEntryDay),
         ),
+        // After the welcome, until "Got it" or the first entry (1.6).
+        if (ref.watch(firstRunHintProvider) &&
+            (ref.watch(entriesProvider).value?.isEmpty ?? false)) ...[
+          const SizedBox(height: MorrowSpacing.md),
+          _FirstRunHint(
+            onDismiss: ref.read(firstRunHintProvider.notifier).dismiss,
+          ),
+        ],
         if (adding.failed) ...[
           const SizedBox(height: MorrowSpacing.md),
           const ErrorBanner(
@@ -421,6 +431,45 @@ class _TrendPreview extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "Start with one tap" (1.6): a one-time hint under Add an entry.
+class _FirstRunHint extends StatelessWidget {
+  const _FirstRunHint({required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = MorrowColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      decoration: BoxDecoration(
+        color: colors.tint,
+        borderRadius: BorderRadius.circular(MorrowRadii.md),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Start with one tap', style: text.titleSmall),
+                const SizedBox(height: MorrowSpacing.xxs),
+                Text(
+                  '“Add an entry” saves today’s entry straight away. You can '
+                  'change or undo it.',
+                  style: text.bodyMedium!.copyWith(color: colors.primary),
+                ),
+              ],
+            ),
+          ),
+          TextButton(onPressed: onDismiss, child: const Text('Got it')),
+        ],
       ),
     );
   }

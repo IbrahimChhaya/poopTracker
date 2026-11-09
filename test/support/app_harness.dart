@@ -20,6 +20,7 @@ import 'package:poop_tracker/core/platform/file_export.dart';
 import 'package:poop_tracker/core/platform/file_import.dart';
 import 'package:poop_tracker/core/security/device_auth.dart';
 import 'package:poop_tracker/core/security/lock_settings.dart';
+import 'package:poop_tracker/core/security/welcome_store.dart';
 
 import 'fake_backup.dart';
 import 'fake_clock.dart';
@@ -164,6 +165,7 @@ Future<AppUnderTest> pumpMorrowApp(
   void Function(FakeEraser eraser)? configureEraser,
   FileImport? fileImport,
   bool use24HourClock = false,
+  WelcomeStore? welcome,
 }) async {
   final bootstrap = ScriptedBootstrap(results);
   final diagnostics = log ?? MemoryDiagnosticLog();
@@ -192,6 +194,7 @@ Future<AppUnderTest> pumpMorrowApp(
       ),
       privacyShieldProvider.overrideWithValue(FakePrivacyShield()),
       reminderSchedulerProvider.overrideWithValue(scheduler),
+      welcomeStoreProvider.overrideWithValue(welcome ?? FakeWelcomeStore()),
       dataEraserProvider.overrideWithValue(eraser),
       databaseFileProvider.overrideWithValue(
         () async => File('/test-support/journal/morrow.db'),

@@ -17,6 +17,7 @@ import '../core/platform/privacy_shield.dart';
 import '../core/security/device_auth.dart';
 import '../core/security/key_store.dart';
 import '../core/security/lock_settings.dart';
+import '../core/security/welcome_store.dart';
 
 // Root (always available) providers. None of these hold journal data; the
 // database and everything that reads it live in the unlocked scope (see
@@ -53,6 +54,11 @@ final deviceAuthenticatorProvider = Provider<DeviceAuthenticator>(
 /// Whether app lock is on, in secure storage.
 final lockSettingsProvider = Provider<LockSettingsStore>(
   (ref) => SecureLockSettings(),
+);
+
+/// Whether the welcome has been seen (secure storage).
+final welcomeStoreProvider = Provider<WelcomeStore>(
+  (ref) => SecureWelcomeStore(),
 );
 
 /// Hides the recent-apps thumbnail while app lock is on (Android 13+).

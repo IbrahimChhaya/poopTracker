@@ -51,6 +51,7 @@ void main() {
           () async => File('/test-support/journal/morrow.db'),
         ),
         privacyShieldProvider.overrideWithValue(FakePrivacyShield()),
+        welcomeStoreProvider.overrideWithValue(FakeWelcomeStore()),
       ],
     );
     addTearDown(container.dispose);

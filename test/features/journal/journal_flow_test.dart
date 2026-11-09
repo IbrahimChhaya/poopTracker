@@ -103,6 +103,9 @@ void main() {
 
   Finder noteField() => find.byType(TextField);
 
+  /// The time sheet's Done (the page footer also says Done).
+  Finder sheetDoneOrLast() => find.text('Done').last;
+
   group('journal home', () {
     appTest('stats sit side by side at normal text size', (tester) async {
       await seedAt(6, 13, 35);
@@ -437,6 +440,10 @@ void main() {
       expect(find.byType(CupertinoPicker), findsNWidgets(2));
       expect(find.text('am'), findsNothing);
       expect(find.text('13'), findsWidgets);
+      // The rest of the page agrees with the wheel.
+      await tester.tap(sheetDoneOrLast());
+      await tester.pumpAndSettle();
+      expect(find.text('Today · 13:41'), findsOneWidget);
     });
 
     appTest('a time can be added back for a past day, and removed for today', (

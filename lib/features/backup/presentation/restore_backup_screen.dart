@@ -5,14 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../../app/paths.dart';
 
 import '../../../core/backup/backup_file.dart';
-import '../../../core/time/local_date.dart';
-import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
 import '../../../ui/widgets/card_group.dart';
 import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/page_layouts.dart';
 import '../../../ui/widgets/states.dart';
+import '../../welcome/presentation/welcome_controller.dart';
+import '../../welcome/presentation/welcome_screen.dart';
 import 'backup_controller.dart';
 import 'passphrase_field.dart';
 
@@ -76,7 +76,13 @@ class _RestoreBackupScreenState extends ConsumerState<RestoreBackupScreen> {
         actions: [
           MorrowButton(
             label: 'Done',
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () {
+              if (GoRouterState.of(context).extra == RestoreOrigin.welcome) {
+                finishWelcome(context, ref);
+              } else {
+                Navigator.of(context).maybePop();
+              }
+            },
           ),
           // Restored entries are often in earlier weeks: History shows them.
           if (added > 0)
@@ -216,10 +222,7 @@ String formatFileSize(int bytes) {
   return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
-final RegExp _datedName = RegExp(r'morrow-backup-(\d{4})-(\d{2})-(\d{2})');
-
-/// The picked file, as in 9.7: its name, and the date it was made (from
-/// the name) with its size.
+/// The picked file, as in 9.7: its name and size.
 class _FileCard extends StatelessWidget {
   const _FileCard({
     required this.name,
@@ -235,18 +238,9 @@ class _FileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
-    final m = _datedName.firstMatch(name);
-    final made = m == null
-        ? null
-        : formatDayMonth(
-            LocalDate(
-              int.parse(m.group(1)!),
-              int.parse(m.group(2)!),
-              int.parse(m.group(3)!),
-            ),
-            withYear: true,
-          );
-    final details = [?made, formatFileSize(sizeBytes)].join(' · ');
+    // Only the size: a date read from the file name would be wrong for a
+    // renamed file.
+    final details = formatFileSize(sizeBytes);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.card,

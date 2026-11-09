@@ -4,6 +4,7 @@ import 'package:poop_tracker/core/platform/privacy_shield.dart';
 import 'package:poop_tracker/core/security/device_auth.dart';
 import 'package:poop_tracker/core/security/key_store.dart';
 import 'package:poop_tracker/core/security/lock_settings.dart';
+import 'package:poop_tracker/core/security/welcome_store.dart';
 
 /// Authenticator whose answers are scripted. With [hold] set, each prompt
 /// waits until [complete] is called, so tests can act while it is showing.
@@ -69,4 +70,22 @@ class FakePrivacyShield implements PrivacyShield {
   @override
   Future<void> excludeFromBackup(String directoryPath) async =>
       excluded.add(directoryPath);
+}
+
+/// The welcome's seen flag. Seen by default, so tests that start a new
+/// journal go straight to it; welcome tests start unseen.
+class FakeWelcomeStore implements WelcomeStore {
+  FakeWelcomeStore({this.seen = true});
+
+  bool seen;
+  bool failRead = false;
+
+  @override
+  Future<bool> readSeen() async {
+    if (failRead) throw const KeyStoreException('read welcome');
+    return seen;
+  }
+
+  @override
+  Future<void> markSeen() async => seen = true;
 }

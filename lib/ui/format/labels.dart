@@ -44,8 +44,19 @@ String formatDayMonth(LocalDate d, {bool withYear = false}) {
 String formatFullDate(LocalDate d) =>
     '${weekdayName(d)}, ${d.day} ${monthName(d.month)} ${d.year}';
 
-/// "1:35 pm", "12:05 am", "12:00 pm". [wall] holds local wall-clock fields.
+/// Whether times are shown on a 24-hour clock ("13:35"), following the
+/// phone's own setting. Set by the app root from
+/// `MediaQuery.alwaysUse24HourFormat` each time it builds, so every label
+/// below agrees with the time picker. False (12-hour) until then.
+bool use24HourClock = false;
+
+/// "1:35 pm", "12:05 am", "12:00 pm", or "13:35" on a 24-hour clock. [wall]
+/// holds local wall-clock fields.
 String formatTime(DateTime wall) {
+  if (use24HourClock) {
+    return '${wall.hour.toString().padLeft(2, '0')}:'
+        '${wall.minute.toString().padLeft(2, '0')}';
+  }
   final hour12 = wall.hour % 12 == 0 ? 12 : wall.hour % 12;
   final minute = wall.minute.toString().padLeft(2, '0');
   final suffix = wall.hour < 12 ? 'am' : 'pm';

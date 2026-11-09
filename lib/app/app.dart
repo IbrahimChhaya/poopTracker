@@ -4,10 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../core/database/bootstrap.dart';
 import '../features/reminders/presentation/reminder_controller.dart';
+import '../features/welcome/presentation/welcome_controller.dart';
+import '../ui/format/labels.dart';
 import '../ui/theme/morrow_colors.dart';
 import '../ui/theme/morrow_theme.dart';
 import 'gate/gate_screens.dart';
 import 'lock/lock_controller.dart';
+import 'paths.dart';
+import 'providers.dart';
 import 'router.dart';
 import 'scope.dart';
 import 'session/data_reset.dart';
@@ -156,10 +160,20 @@ class _JournalGate extends ConsumerWidget {
                 ref.read(erasePhaseProvider.notifier).set(ErasePhase.none),
           ),
         ),
-      AsyncData(value: StartupReady(:final database)) => UnlockedScope(
-        database: database,
-        child: const _UnlockedApp(),
-      ),
+      // An existing journal never shows the welcome: no need to ask.
+      AsyncData(value: StartupReady(:final database, createdNew: false)) =>
+        UnlockedScope(
+          database: database,
+          child: const _UnlockedApp(startAtWelcome: false),
+        ),
+      AsyncData(value: StartupReady(:final database, :final createdNew)) =>
+        switch (ref.watch(_welcomeDueProvider(createdNew))) {
+          AsyncData(:final value) => UnlockedScope(
+            database: database,
+            child: _UnlockedApp(startAtWelcome: value),
+          ),
+          _ => const _GateApp(home: StartupLoadingScreen()),
+        },
       AsyncData(value: StartupBlocked(:final reason)) => blocked(reason),
       AsyncError() => blocked(null),
       _ => _GateApp(
@@ -173,15 +187,29 @@ class _JournalGate extends ConsumerWidget {
 
 /// The real app, inside the unlocked scope. Owns the router for this
 /// session only.
+/// Whether a newly created journal should open on the welcome (1.1).
+final _welcomeDueProvider = FutureProvider.autoDispose.family<bool, bool>(
+  (ref, createdNew) => welcomeDue(
+    ref.read(welcomeStoreProvider).readSeen,
+    createdNew: createdNew,
+  ),
+);
+
 class _UnlockedApp extends ConsumerStatefulWidget {
-  const _UnlockedApp();
+  const _UnlockedApp({required this.startAtWelcome});
+
+  final bool startAtWelcome;
 
   @override
   ConsumerState<_UnlockedApp> createState() => _UnlockedAppState();
 }
 
 class _UnlockedAppState extends ConsumerState<_UnlockedApp> {
-  late final GoRouter _router = buildAppRouter();
+  late final GoRouter _router = buildAppRouter(
+    initialLocation: widget.startAtWelcome
+        ? AppPaths.welcome
+        : AppPaths.journal,
+  );
 
   /// Makes the OS reminder match what the user asked for whenever the
   /// journal opens and whenever the app comes back (a time-zone change,
@@ -217,6 +245,11 @@ class _UnlockedAppState extends ConsumerState<_UnlockedApp> {
       debugShowCheckedModeBanner: false,
       theme: buildMorrowTheme(),
       routerConfig: _router,
+      builder: (context, child) {
+        // Every time label follows the phone's 12- or 24-hour setting.
+        use24HourClock = MediaQuery.alwaysUse24HourFormatOf(context);
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }

@@ -40,6 +40,7 @@ void main() {
           keyStoreProvider.overrideWithValue(FakeKeyStore()),
           // Never read or change the phone's real app-lock setting.
           lockSettingsProvider.overrideWithValue(FakeLockSettings()),
+          welcomeStoreProvider.overrideWithValue(FakeWelcomeStore()),
           // Never schedule or cancel the phone's real reminder.
           reminderSchedulerProvider.overrideWithValue(FakeReminderScheduler()),
           // Never write test events into the phone's real diagnostics log.
@@ -65,7 +66,7 @@ void main() {
           'Couldn’t save your changes',
           'Today’s entry',
           'Saved',
-          'Save',
+          'Done',
           'Saving…',
           'Synthetic test note',
         ])
@@ -93,14 +94,14 @@ void main() {
     expect(find.text('Added to today'), findsOneWidget);
     expect(find.text('Saved'), findsOneWidget);
 
-    // A note needs Save.
+    // A note saves by itself; Done returns to the journal.
     await tester.enterText(find.byType(TextField), 'Synthetic test note');
     await tester.pump();
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller!.text,
       'Synthetic test note',
     );
-    await tap('Save');
+    await tap('Done');
     await pumpUntil(find.text('Synthetic test note'));
     expect(find.text('1 entry'), findsWidgets);
 
@@ -109,7 +110,7 @@ void main() {
     await pumpUntil(find.text('Delete this entry'));
     await tester.enterText(find.byType(TextField), 'Synthetic note, edited');
     await tester.pump();
-    await tap('Save');
+    await tap('Done');
     await pumpUntil(find.text('Changes saved'));
     await pumpUntil(find.text('Synthetic note, edited'));
 

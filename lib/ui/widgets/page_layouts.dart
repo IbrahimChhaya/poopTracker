@@ -84,7 +84,7 @@ class SubPage extends StatelessWidget {
 }
 
 /// The look of a status icon in [StatusPage].
-enum StatusBadge { busy, done, problem }
+enum StatusBadge { busy, done, problem, locked }
 
 /// A full-page status ("Creating your backup…", "Backup saved"): the
 /// morrow wordmark, a centred badge, a title and message, and optional
@@ -93,7 +93,7 @@ class StatusPage extends StatelessWidget {
   const StatusPage({
     required this.badge,
     required this.title,
-    required this.message,
+    this.message,
     this.below,
     this.actions = const [],
     super.key,
@@ -101,7 +101,7 @@ class StatusPage extends StatelessWidget {
 
   final StatusBadge badge;
   final String title;
-  final String message;
+  final String? message;
 
   /// Shown under the message, for example a warning card.
   final Widget? below;
@@ -123,6 +123,10 @@ class StatusPage extends StatelessWidget {
       StatusBadge.problem => _Circle(
         background: colors.sand,
         child: Icon(Icons.error_outline, color: colors.danger),
+      ),
+      StatusBadge.locked => _Circle(
+        background: colors.tint,
+        child: Icon(Icons.lock_outline, color: colors.primary),
       ),
     };
     final extra = below;
@@ -170,14 +174,16 @@ class StatusPage extends StatelessWidget {
                             style: text.headlineSmall,
                           ),
                         ),
-                        const SizedBox(height: MorrowSpacing.sm),
-                        Text(
-                          message,
-                          textAlign: TextAlign.center,
-                          style: text.bodyMedium!.copyWith(
-                            color: colors.mutedText,
+                        if (message case final m?) ...[
+                          const SizedBox(height: MorrowSpacing.sm),
+                          Text(
+                            m,
+                            textAlign: TextAlign.center,
+                            style: text.bodyMedium!.copyWith(
+                              color: colors.mutedText,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),

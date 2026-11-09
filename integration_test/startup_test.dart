@@ -44,6 +44,7 @@ void main() {
       ProviderScope(
         overrides: [
           lockSettingsProvider.overrideWithValue(FakeLockSettings()),
+          welcomeStoreProvider.overrideWithValue(FakeWelcomeStore()),
           reminderSchedulerProvider.overrideWithValue(FakeReminderScheduler()),
           // Never write test events into the phone's real diagnostics log.
           diagnosticLogProvider.overrideWithValue(MemoryDiagnosticLog()),
