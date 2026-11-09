@@ -1,0 +1,369 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../app/providers.dart';
+import '../../../core/notifications/reminder_scheduler.dart';
+import '../../../ui/format/labels.dart';
+import '../../../ui/theme/morrow_colors.dart';
+import '../../../ui/theme/morrow_tokens.dart';
+import '../../../ui/widgets/back_header.dart';
+import '../../../ui/widgets/card_group.dart';
+import '../../../ui/widgets/morrow_button.dart';
+import '../../../ui/widgets/page_layouts.dart';
+import '../../../ui/widgets/setting_row.dart';
+import '../../../ui/widgets/states.dart';
+import '../data/reminder_repository.dart';
+import 'reminder_controller.dart';
+
+const List<String> _weekdayNames = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+/// "6:00 pm" for an hour and minute.
+String reminderTime(int hour, int minute) =>
+    formatTime(DateTime.utc(2000, 1, 1, hour, minute));
+
+/// "Every Sunday at 6:00 pm".
+String reminderSummary(ReminderIntent i) =>
+    'Every ${_weekdayNames[i.effectiveWeekday - 1]} at '
+    '${reminderTime(i.effectiveHour, i.effectiveMinute)}';
+
+/// Why a reminder that is on won't arrive, or null when it will. Shown next
+/// to the summary wherever it appears, so the requested reminder is never
+/// presented as if the phone will deliver it.
+String? reminderProblem(ReminderView v) {
+  if (!v.intent.enabled || v.turningOn) return null;
+  if (v.permission == NotificationPermission.denied) {
+    return 'Notifications off';
+  }
+  if (v.scheduleFailed || !v.scheduled) return 'Not scheduled';
+  return null;
+}
+
+/// "Weekly reminder" (6.1–6.4).
+class ReminderScreen extends ConsumerWidget {
+  const ReminderScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final view = ref.watch(reminderControllerProvider);
+    return Scaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          children: [
+            const BackHeader(title: 'Weekly reminder'),
+            const SizedBox(height: MorrowSpacing.xxl),
+            ...switch (view) {
+              AsyncData(:final value) => _content(context, ref, value),
+              AsyncError() => const [
+                ErrorBanner(
+                  title: 'Couldn’t load your reminder',
+                  message: 'Nothing has been changed.',
+                ),
+              ],
+              _ => const [LoadingState(label: 'Loading…')],
+            },
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _content(BuildContext context, WidgetRef ref, ReminderView v) {
+    final colors = MorrowColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final controller = ref.read(reminderControllerProvider.notifier);
+    final i = v.intent;
+    final on = i.enabled;
+
+    Future<void> chooseTime() async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay(
+          hour: i.effectiveHour,
+          minute: i.effectiveMinute,
+        ),
+        helpText: 'Reminder time',
+      );
+      if (picked != null) {
+        await controller.setDayAndTime(
+          hour: picked.hour,
+          minute: picked.minute,
+        );
+      }
+    }
+
+    return [
+      CardGroup(
+        children: [
+          SettingRow.toggle(
+            icon: Icons.notifications_none,
+            title: 'Remind me weekly',
+            subtitle: v.turningOn
+                ? 'Turning on…'
+                : on
+                ? 'On'
+                : 'Off',
+            value: on || v.turningOn,
+            onChanged: v.turningOn ? null : controller.setEnabled,
+          ),
+        ],
+      ),
+      if (!on) ...[
+        const SizedBox(height: MorrowSpacing.lg),
+        Text(
+          'One weekly check-in to add an entry. You choose the day and '
+          'time.',
+          style: text.bodySmall,
+        ),
+      ] else ...[
+        const SizedBox(height: MorrowSpacing.xxl),
+        Semantics(header: true, child: Text('Day', style: text.labelMedium)),
+        const SizedBox(height: MorrowSpacing.sm),
+        _DayPicker(
+          selected: i.effectiveWeekday,
+          onSelected: (d) => controller.setDayAndTime(weekday: d),
+        ),
+        const SizedBox(height: MorrowSpacing.lg),
+        CardGroup(
+          children: [
+            SettingRow.navigation(
+              icon: Icons.schedule_outlined,
+              title: 'Time',
+              subtitle: 'Follows your phone’s local time',
+              actionLabel: reminderTime(i.effectiveHour, i.effectiveMinute),
+              onTap: chooseTime,
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.lg),
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            reminderProblem(v) == null
+                ? reminderSummary(i)
+                : '${reminderSummary(i)} · ${reminderProblem(v)}',
+            style: text.bodyMedium!.copyWith(color: colors.ink),
+          ),
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
+        if (v.permission == NotificationPermission.denied)
+          _NotificationsOff(
+            canOpenSettings: ref
+                .read(reminderSchedulerProvider)
+                .canOpenSettings,
+            onOpenSettings: controller.openSettings,
+          )
+        else if (v.scheduleFailed)
+          const ErrorBanner(
+            title: 'Couldn’t schedule your reminder',
+            message:
+                'Your choice is saved. morrow will try again next time you '
+                'open it.',
+          )
+        else ...[
+          Text('How it will look', style: text.labelMedium),
+          const SizedBox(height: MorrowSpacing.sm),
+          const _Preview(),
+          const SizedBox(height: MorrowSpacing.xxl),
+          Text('Status', style: text.labelMedium),
+          const SizedBox(height: MorrowSpacing.sm),
+          CardGroup(
+            children: [
+              v.scheduled
+                  ? InfoRow(
+                      icon: Icons.check,
+                      title: 'Scheduled on this phone',
+                      subtitle:
+                          'Your phone will show it '
+                          '${reminderSummary(i).replaceFirst('Every', 'every')}.',
+                    )
+                  : const InfoRow(
+                      icon: Icons.schedule,
+                      title: 'Not scheduled yet',
+                      subtitle:
+                          'Notifications are allowed. morrow will set it up '
+                          'again the next time you open it.',
+                    ),
+            ],
+          ),
+        ],
+        const SizedBox(height: MorrowSpacing.xxl),
+        Text(
+          'Reminders use your phone’s scheduling and may arrive a little '
+          'late, for example when battery saver is on. They never include '
+          'your entries.',
+          style: text.labelSmall,
+        ),
+      ],
+    ];
+  }
+}
+
+/// M T W T F S S, one choice.
+class _DayPicker extends StatelessWidget {
+  const _DayPicker({required this.selected, required this.onSelected});
+
+  final int selected;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = MorrowColors.of(context);
+    final text = Theme.of(context).textTheme;
+    // Letters grow with the text size. At large sizes the circles grow too
+    // and wrap onto two rows; otherwise all seven share one row and each
+    // day's tap area is a full seventh of it, 48 px tall.
+    final large = MediaQuery.textScalerOf(context).scale(14) > 14 * 1.4;
+
+    Widget circle(int d, double size) => Container(
+      width: size,
+      height: size,
+      decoration: ShapeDecoration(
+        color: d == selected ? colors.primary : colors.card,
+        shape: CircleBorder(
+          side: BorderSide(color: d == selected ? colors.primary : colors.line),
+        ),
+      ),
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Padding(
+          padding: const EdgeInsets.all(MorrowSpacing.xs),
+          child: Text(
+            _weekdayNames[d - 1].substring(0, 1),
+            style: text.labelLarge!.copyWith(
+              color: d == selected ? colors.onPrimary : colors.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Widget day(int d, {required double size}) => Semantics(
+      button: true,
+      selected: d == selected,
+      inMutuallyExclusiveGroup: true,
+      label: _weekdayNames[d - 1],
+      excludeSemantics: true,
+      child: InkResponse(
+        onTap: () => onSelected(d),
+        radius: size / 2 + MorrowSpacing.xs,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: MorrowSizes.minTouchTarget,
+            minWidth: MorrowSizes.minTouchTarget,
+          ),
+          child: Center(child: circle(d, size)),
+        ),
+      ),
+    );
+
+    if (large) {
+      return Wrap(
+        spacing: MorrowSpacing.sm,
+        runSpacing: MorrowSpacing.sm,
+        children: [for (var d = 1; d <= 7; d++) day(d, size: 52)],
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = (constraints.maxWidth / 7 - MorrowSpacing.xs).clamp(
+          32.0,
+          44.0,
+        );
+        return Row(
+          children: [
+            for (var d = 1; d <= 7; d++) Expanded(child: day(d, size: size)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// What the notification will look like (generic wording only).
+class _Preview extends StatelessWidget {
+  const _Preview();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = MorrowColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return Semantics(
+      container: true,
+      label: 'Preview: $reminderTitle. $reminderBody',
+      excludeSemantics: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(MorrowSpacing.lg),
+        decoration: BoxDecoration(
+          color: colors.card,
+          borderRadius: BorderRadius.circular(MorrowRadii.lg),
+          border: Border.all(color: colors.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.spa_outlined, size: 14, color: colors.primary),
+                const SizedBox(width: MorrowSpacing.xs),
+                Text('morrow · now', style: text.labelSmall),
+              ],
+            ),
+            const SizedBox(height: MorrowSpacing.xs),
+            Text(reminderTitle, style: text.titleSmall),
+            const SizedBox(height: MorrowSpacing.xxs),
+            Text(reminderBody, style: text.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Notifications are turned off" (6.4). The reminder stays saved.
+class _NotificationsOff extends StatelessWidget {
+  const _NotificationsOff({
+    required this.canOpenSettings,
+    required this.onOpenSettings,
+  });
+
+  final bool canOpenSettings;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ErrorBanner(
+          title: 'Notifications are turned off',
+          message: canOpenSettings
+              ? 'Your reminder is saved, but nothing will be sent until you '
+                    'allow notifications for morrow in your phone’s settings. '
+                    'You can still add entries as usual.'
+              : 'Your reminder is saved, but nothing will be sent until you '
+                    'allow notifications for morrow in Settings > '
+                    'Notifications. You can still add entries as usual.',
+        ),
+        if (canOpenSettings) ...[
+          const SizedBox(height: MorrowSpacing.md),
+          MorrowButton(
+            label: 'Open phone settings',
+            variant: MorrowButtonVariant.secondary,
+            onPressed: onOpenSettings,
+          ),
+        ],
+      ],
+    );
+  }
+}

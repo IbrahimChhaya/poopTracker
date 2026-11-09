@@ -1,0 +1,137 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/lock/lock_controller.dart';
+import '../../../app/scope.dart';
+import '../../../core/diagnostics/encryption_self_check.dart';
+import '../../../ui/theme/morrow_tokens.dart';
+import '../../../ui/widgets/card_group.dart';
+import '../../../ui/widgets/page_body.dart';
+import '../../../ui/widgets/setting_row.dart';
+import '../../reminders/presentation/reminder_controller.dart';
+import '../../reminders/presentation/reminder_screen.dart';
+
+/// Settings (8.1, 8.2).
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key});
+
+  static const String uiKitPath = '/settings/ui-kit';
+  static const String selfCheckPath = '/settings/self-check';
+  static const String diagnosticsPath = '/settings/diagnostics';
+  static const String appLockPath = '/settings/app-lock';
+  static const String reminderPath = '/settings/reminder';
+  static const String dataPath = '/settings/data';
+  static const String deletePath = '/settings/delete';
+  static const String exportPath = '/settings/export';
+  static const String restorePath = '/settings/restore';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final display = ref.watch(displayProvider);
+    final repo = ref.read(settingsRepositoryProvider);
+    final lockOn = ref.watch(appLockEnabledProvider);
+    final reminderView = ref.watch(reminderControllerProvider).value;
+    final reminder = reminderView?.intent;
+    final reminderIssue = reminderView == null
+        ? null
+        : reminderProblem(reminderView);
+    return PageBody(
+      title: 'Settings',
+      children: [
+        CardGroup(
+          label: 'Reminders',
+          children: [
+            SettingRow.navigation(
+              icon: Icons.notifications_none,
+              title: 'Weekly reminder',
+              subtitle: reminder == null || !reminder.enabled
+                  ? 'Off'
+                  : reminderIssue == null
+                  ? reminderSummary(reminder)
+                  : '${reminderSummary(reminder)} · $reminderIssue',
+              onTap: () => context.go(reminderPath),
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
+        CardGroup(
+          label: 'Privacy',
+          children: [
+            SettingRow.navigation(
+              icon: Icons.lock_outline,
+              title: 'App lock',
+              subtitle: lockOn ? 'On' : 'Off',
+              onTap: () => context.go(appLockPath),
+            ),
+            SettingRow.navigation(
+              icon: Icons.shield_outlined,
+              title: 'Data & privacy',
+              subtitle: 'Backups, app lock and deleting data',
+              onTap: () => context.go(dataPath),
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
+        // Turning a setting off hides its details everywhere but keeps any
+        // values already saved.
+        CardGroup(
+          label: 'Journal',
+          children: [
+            SettingRow.toggle(
+              icon: Icons.notes,
+              title: 'Stool form',
+              subtitle:
+                  'Add stool form to entries, and show it in your journal '
+                  'and trends.',
+              value: display.showStoolForm,
+              onChanged: repo.setShowStoolForm,
+            ),
+            SettingRow.toggle(
+              icon: Icons.tune,
+              title: 'Context',
+              subtitle:
+                  'Add how it felt and what was going on to entries, and '
+                  'show them in your journal.',
+              value: display.showContext,
+              onChanged: repo.setShowContext,
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
+        CardGroup(
+          label: 'Support',
+          children: [
+            SettingRow.navigation(
+              icon: Icons.receipt_long_outlined,
+              title: 'Diagnostics',
+              subtitle: 'App events only, never your entries',
+              onTap: () => context.go(diagnosticsPath),
+            ),
+          ],
+        ),
+        const SizedBox(height: MorrowSpacing.xxl),
+        if (kDebugMode || diagnosticsEnabled)
+          CardGroup(
+            label: 'Developer',
+            children: [
+              if (kDebugMode)
+                SettingRow.navigation(
+                  icon: Icons.palette_outlined,
+                  title: 'UI kit preview',
+                  subtitle: 'Debug builds only',
+                  onTap: () => context.go(uiKitPath),
+                ),
+              SettingRow.navigation(
+                icon: Icons.verified_user_outlined,
+                title: 'Encryption self-check',
+                subtitle: 'Uses throwaway data only',
+                onTap: () => context.go(selfCheckPath),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+}

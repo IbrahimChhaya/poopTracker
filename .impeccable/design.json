@@ -1,0 +1,524 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-08T09:52:56+00:00",
+  "title": "Design System: morrow",
+  "extensions": {
+    "colorMeta": {
+      "deep-sage": {
+        "role": "primary",
+        "displayName": "Deep Sage",
+        "canonical": "#3d6552",
+        "oklch": "oklch(47.1% 0.055 163)",
+        "tonalRamp": [
+          "#050e09",
+          "#182a21",
+          "#2e493c",
+          "#476a59",
+          "#678c7a",
+          "#90ad9e",
+          "#b9cfc4",
+          "#e4f3eb"
+        ]
+      },
+      "sage-tint": {
+        "role": "primary",
+        "displayName": "Sage Tint",
+        "canonical": "#e7ede2",
+        "oklch": "oklch(93.9% 0.016 130)",
+        "tonalRamp": [
+          "#0a0c09",
+          "#242622",
+          "#40433d",
+          "#5e635a",
+          "#7f847b",
+          "#a3a79f",
+          "#c7cac5",
+          "#edefeb"
+        ]
+      },
+      "sage-tint-line": {
+        "role": "primary",
+        "displayName": "Sage Tint Line",
+        "canonical": "#ccd5c7",
+        "oklch": "oklch(86.2% 0.021 134)",
+        "tonalRamp": [
+          "#0a0c09",
+          "#232621",
+          "#3f443c",
+          "#5d6459",
+          "#7e8579",
+          "#a1a79e",
+          "#c6cbc4",
+          "#ecf0eb"
+        ]
+      },
+      "on-sage-muted": {
+        "role": "primary",
+        "displayName": "On-Sage Muted",
+        "canonical": "#dce6dc",
+        "oklch": "oklch(91.5% 0.017 145)",
+        "tonalRamp": [
+          "#0a0c0a",
+          "#222622",
+          "#3e443e",
+          "#5c645c",
+          "#7d857d",
+          "#a0a7a0",
+          "#c6cbc6",
+          "#ecefec"
+        ]
+      },
+      "cream-paper": {
+        "role": "neutral",
+        "displayName": "Cream Paper",
+        "canonical": "#f7f4ec",
+        "oklch": "oklch(96.7% 0.011 90)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262522",
+          "#44423d",
+          "#63615b",
+          "#85827c",
+          "#a7a5a0",
+          "#cac9c5",
+          "#efeeec"
+        ]
+      },
+      "card-paper": {
+        "role": "neutral",
+        "displayName": "Card Paper",
+        "canonical": "#fffdf8",
+        "oklch": "oklch(99.4% 0.007 89)",
+        "tonalRamp": [
+          "#0b0b0a",
+          "#262523",
+          "#43423f",
+          "#63615d",
+          "#84827e",
+          "#a6a5a2",
+          "#cac9c6",
+          "#efeeed"
+        ]
+      },
+      "pencil-line": {
+        "role": "neutral",
+        "displayName": "Pencil Line",
+        "canonical": "#dddcd0",
+        "oklch": "oklch(89.2% 0.016 103)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#262521",
+          "#43423b",
+          "#636258",
+          "#848379",
+          "#a6a59d",
+          "#cac9c3",
+          "#efefeb"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#293b34",
+        "oklch": "oklch(33.4% 0.026 169)",
+        "tonalRamp": [
+          "#080c0a",
+          "#1f2724",
+          "#394540",
+          "#54665f",
+          "#758780",
+          "#9aa9a3",
+          "#c1ccc7",
+          "#e9f0ed"
+        ]
+      },
+      "muted-text": {
+        "role": "neutral",
+        "displayName": "Muted Text",
+        "canonical": "#666b60",
+        "oklch": "oklch(52.0% 0.018 127)",
+        "tonalRamp": [
+          "#0a0c09",
+          "#242621",
+          "#40433c",
+          "#5f6359",
+          "#80847a",
+          "#a3a79e",
+          "#c7cac4",
+          "#edefeb"
+        ]
+      },
+      "muted-icon": {
+        "role": "neutral",
+        "displayName": "Muted Icon",
+        "canonical": "#74796d",
+        "oklch": "oklch(56.8% 0.019 126)",
+        "tonalRamp": [
+          "#0a0c09",
+          "#242621",
+          "#40433c",
+          "#5f6359",
+          "#808479",
+          "#a3a79e",
+          "#c7cac3",
+          "#edefeb"
+        ]
+      },
+      "sand": {
+        "role": "tertiary",
+        "displayName": "Sand",
+        "canonical": "#f2e6da",
+        "oklch": "oklch(93.1% 0.021 68)",
+        "tonalRamp": [
+          "#0d0b08",
+          "#292420",
+          "#47413a",
+          "#695f56",
+          "#8a8077",
+          "#aca39b",
+          "#cec8c2",
+          "#f2eeea"
+        ]
+      },
+      "clay": {
+        "role": "tertiary",
+        "displayName": "Clay",
+        "canonical": "#ac7157",
+        "oklch": "oklch(60.5% 0.084 44)",
+        "tonalRamp": [
+          "#150703",
+          "#371e12",
+          "#5d3726",
+          "#85533c",
+          "#a9745c",
+          "#c69a86",
+          "#e3c1b2",
+          "#ffe9df"
+        ]
+      },
+      "clay-text": {
+        "role": "tertiary",
+        "displayName": "Clay Text",
+        "canonical": "#895943",
+        "oklch": "oklch(51.1% 0.072 45)",
+        "tonalRamp": [
+          "#130804",
+          "#341f15",
+          "#59392b",
+          "#805542",
+          "#a47662",
+          "#c19c8b",
+          "#dfc2b5",
+          "#fdeae1"
+        ]
+      },
+      "rust": {
+        "role": "tertiary",
+        "displayName": "Rust",
+        "canonical": "#8a4a32",
+        "oklch": "oklch(48.2% 0.094 41)",
+        "tonalRamp": [
+          "#160603",
+          "#391c11",
+          "#603525",
+          "#8a503a",
+          "#ae715a",
+          "#ca9785",
+          "#e6bfb1",
+          "#ffe8df"
+        ]
+      },
+      "switch-track-off": {
+        "role": "neutral",
+        "displayName": "Switch Track Off",
+        "canonical": "#ece9df",
+        "oklch": "oklch(93.4% 0.014 93)",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#44423c",
+          "#636159",
+          "#85827a",
+          "#a7a59e",
+          "#cbc9c4",
+          "#efeeeb"
+        ]
+      },
+      "disabled-surface": {
+        "role": "neutral",
+        "displayName": "Disabled Surface",
+        "canonical": "#dcdcd2",
+        "oklch": "oklch(89.2% 0.013 107)",
+        "tonalRamp": [
+          "#0b0b09",
+          "#252521",
+          "#42423d",
+          "#62625a",
+          "#83837b",
+          "#a5a59f",
+          "#c9c9c4",
+          "#efefeb"
+        ]
+      },
+      "disabled-text": {
+        "role": "neutral",
+        "displayName": "Disabled Text",
+        "canonical": "#595e53",
+        "oklch": "oklch(47.4% 0.018 127)",
+        "tonalRamp": [
+          "#0a0c09",
+          "#242621",
+          "#40433c",
+          "#5f6359",
+          "#7f847a",
+          "#a3a79e",
+          "#c7cac4",
+          "#edefeb"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "Tab titles: Your journal, Your history, Trends, Settings."
+      },
+      "detail-time": {
+        "displayName": "Detail Time",
+        "purpose": "Kept in the theme; unused since the entry page replaced entry detail (M6.3)."
+      },
+      "stat-value": {
+        "displayName": "Stat Value",
+        "purpose": "Figures in the stat card, in Deep Sage; one line each."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "The lower-case morrow wordmark beside the sprout mark."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Titles of pushed screens: the entry page (Today’s entry, Wednesday’s entry, Entry)."
+      },
+      "title-large": {
+        "displayName": "Title Large",
+        "purpose": "Dialog and sheet titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings and week-strip date numbers."
+      },
+      "title-small": {
+        "displayName": "Title Small",
+        "purpose": "Entry card titles."
+      },
+      "body-large": {
+        "displayName": "Body Large",
+        "purpose": "Inputs, option labels, setting row titles (at 500)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running copy and dialog messages."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Card summaries, row subtitles, chip labels."
+      },
+      "label-large": {
+        "displayName": "Label Large",
+        "purpose": "Button labels."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Group labels above cards."
+      },
+      "label-small": {
+        "displayName": "Label Small",
+        "purpose": "Captions, stat labels, weekday initials, navigation labels."
+      },
+      "eyebrow": {
+        "displayName": "Eyebrow",
+        "purpose": "Reserved uppercase eyebrow; rarely used."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "press-ripple",
+        "value": "Material ink sparkle (Flutter default duration)",
+        "purpose": "Touch feedback on buttons, cards and rows; no lift."
+      },
+      {
+        "name": "page-transition",
+        "value": "Platform default route transition",
+        "purpose": "Navigation between screens follows each OS."
+      },
+      {
+        "name": "week-page",
+        "value": "250ms ease-out",
+        "purpose": "Stepping the week strip with the previous/next buttons."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "single column; designed at 402pt, tested down to 320pt and 200% text"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action on a screen, full width.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>Add an entry</button>",
+      "css": ".ds-btn-primary { font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; width: 320px; min-height: 54px; padding: 14px 20px; background: #3d6552; color: #fffdf8; border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; } .ds-btn-primary:hover { background: #355a48; } .ds-btn-primary:focus-visible { outline: 2px solid #293b34; outline-offset: 2px; } .ds-btn-primary:active { background: #2e4f3f; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The alternative action: outline in Deep Sage.",
+      "html": "<button class=\"ds-btn-secondary\">Clear filters</button>",
+      "css": ".ds-btn-secondary { font-family: Inter, system-ui, sans-serif; width: 320px; min-height: 52px; padding: 14px 20px; background: transparent; color: #3d6552; border: 1px solid #3d6552; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; } .ds-btn-secondary:hover { background: rgba(61,101,82,0.08); } .ds-btn-secondary:focus-visible { outline: 2px solid #293b34; outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Only for a confirmed destructive action.",
+      "html": "<button class=\"ds-btn-danger\">Delete entry</button>",
+      "css": ".ds-btn-danger { font-family: Inter, system-ui, sans-serif; width: 320px; min-height: 52px; padding: 14px 20px; background: #8a4a32; color: #fffdf8; border: none; border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; } .ds-btn-danger:hover { background: #7a412c; } .ds-btn-danger:focus-visible { outline: 2px solid #293b34; outline-offset: 2px; }"
+    },
+    {
+      "name": "Chips",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "Selectable chips: selected shows fill, outline, check and weight.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-chip-on\" aria-pressed=\"true\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12l5 5 9-10\"/></svg>Coffee</button><button class=\"ds-chip\" aria-pressed=\"false\">Stress</button></div>",
+      "css": ".ds-chips { display: flex; gap: 8px; } .ds-chip { font-family: Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 6px 14px; background: #fffdf8; color: #293b34; border: 1px solid #dddcd0; border-radius: 99px; font-size: 12px; font-weight: 400; cursor: pointer; } .ds-chip-on { background: #e7ede2; color: #3d6552; border-color: #3d6552; font-weight: 600; } .ds-chip:focus-visible { outline: 2px solid #3d6552; outline-offset: 2px; }"
+    },
+    {
+      "name": "Entry Card",
+      "kind": "card",
+      "refersTo": "entry-card",
+      "description": "One journal entry: title and summary, opening its detail.",
+      "html": "<a class=\"ds-entry\" href=\"#\"><span class=\"ds-entry-text\"><span class=\"ds-entry-title\">Today · 1:35 pm</span><span class=\"ds-entry-sub\">Felt fine after lunch</span></span><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#74796d\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M9 6l6 6-6 6\"/></svg></a>",
+      "css": ".ds-entry { font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; gap: 12px; width: 320px; padding: 16px; background: #fffdf8; border: 1px solid #dddcd0; border-radius: 18px; text-decoration: none; transition: background 0.15s; } .ds-entry:hover { background: #fbf8f1; } .ds-entry:focus-visible { outline: 2px solid #3d6552; outline-offset: 2px; } .ds-entry-text { display: flex; flex-direction: column; gap: 6px; flex: 1; } .ds-entry-title { color: #293b34; font-size: 15px; font-weight: 600; } .ds-entry-sub { color: #666b60; font-size: 12px; }"
+    },
+    {
+      "name": "Setting Row with Switch",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Grouped card row: icon tile, title, subtitle, outlined switch.",
+      "html": "<div class=\"ds-setting\"><span class=\"ds-tile\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#3d6552\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M5 7h14M5 12h14M5 17h9\"/></svg></span><span class=\"ds-setting-text\"><span class=\"ds-setting-title\">Stool form</span><span class=\"ds-setting-sub\">Show the optional stool form step.</span></span><button class=\"ds-switch\" role=\"switch\" aria-checked=\"false\"><span></span></button></div>",
+      "css": ".ds-setting { font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; gap: 12px; width: 320px; padding: 14px 16px; background: #fffdf8; border: 1px solid #dddcd0; border-radius: 16px; } .ds-tile { display: grid; place-items: center; width: 36px; height: 36px; background: #e7ede2; border-radius: 12px; } .ds-setting-text { display: flex; flex-direction: column; gap: 2px; flex: 1; } .ds-setting-title { color: #293b34; font-size: 15px; font-weight: 500; } .ds-setting-sub { color: #666b60; font-size: 12px; } .ds-switch { position: relative; width: 52px; height: 32px; background: #ece9df; border: 2px solid #74796d; border-radius: 99px; cursor: pointer; } .ds-switch span { position: absolute; top: 6px; left: 6px; width: 16px; height: 16px; background: #74796d; border-radius: 50%; transition: all 0.15s; } .ds-switch[aria-checked=\"true\"] { background: #3d6552; border-color: #3d6552; } .ds-switch[aria-checked=\"true\"] span { top: 2px; left: 22px; width: 24px; height: 24px; background: #fffdf8; } .ds-switch:focus-visible { outline: 2px solid #3d6552; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Note field: paper fill, pencil line, Deep Sage focus.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Note (optional)</span><textarea class=\"ds-input\" rows=\"3\" placeholder=\"Add a note…\"></textarea><span class=\"ds-counter\">0 / 500</span></label>",
+      "css": ".ds-field { font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 8px; width: 320px; } .ds-field-label { color: #666b60; font-size: 12px; font-weight: 500; } .ds-input { font-family: Inter, system-ui, sans-serif; padding: 16px; background: #fffdf8; color: #293b34; border: 1px solid #dddcd0; border-radius: 16px; font-size: 15px; line-height: 1.45; resize: none; } .ds-input::placeholder { color: #666b60; } .ds-input:focus { outline: none; border: 1.5px solid #3d6552; } .ds-counter { align-self: flex-end; color: #666b60; font-size: 11px; }"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "navigation-bar",
+      "description": "Four destinations; active one has a Sage Tint pill.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-on\" href=\"#\" aria-current=\"page\"><span class=\"ds-pill\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M4 5h6a2 2 0 012 2v12a2 2 0 00-2-2H4zM20 5h-6a2 2 0 00-2 2v12a2 2 0 012-2h6z\"/></svg></span>Journal</a><a class=\"ds-nav-item\" href=\"#\"><span class=\"ds-pill\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M12 8v4l3 2\"/></svg></span>History</a></nav>",
+      "css": ".ds-nav { font-family: Inter, system-ui, sans-serif; display: flex; width: 360px; padding: 8px 12px; background: #f7f4ec; border-top: 1px solid #dddcd0; } .ds-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #666b60; font-size: 11px; text-decoration: none; } .ds-nav-item .ds-pill { display: grid; place-items: center; width: 56px; height: 32px; border-radius: 99px; color: #74796d; } .ds-nav-on { color: #3d6552; font-weight: 600; } .ds-nav-on .ds-pill { background: #e7ede2; color: #3d6552; } .ds-nav-item:focus-visible { outline: 2px solid #3d6552; outline-offset: 2px; border-radius: 12px; }"
+    },
+    {
+      "name": "Week Strip",
+      "kind": "custom",
+      "refersTo": "week-day-selected",
+      "description": "Monday to Sunday: today outlined, selected filled, future muted.",
+      "html": "<div class=\"ds-week\"><span class=\"ds-day\"><small>W</small><b>4</b><i></i></span><span class=\"ds-day ds-day-sel\"><small>T</small><b>5</b><i></i></span><span class=\"ds-day ds-day-today\"><small>F</small><b>6</b><i></i></span><span class=\"ds-day ds-day-future\"><small>S</small><b>7</b></span></div>",
+      "css": ".ds-week { font-family: Inter, system-ui, sans-serif; display: flex; gap: 5px; } .ds-day { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 46px; min-height: 72px; padding: 10px 0; border-radius: 14px; box-sizing: border-box; } .ds-day small { color: #666b60; font-size: 11px; } .ds-day b { color: #293b34; font-size: 16px; font-weight: 600; } .ds-day i { width: 4px; height: 4px; border-radius: 50%; background: #3d6552; } .ds-day-today { border: 1px solid #3d6552; } .ds-day-sel { background: #3d6552; } .ds-day-sel small { color: #dce6dc; } .ds-day-sel b { color: #fffdf8; } .ds-day-sel i { background: #fffdf8; } .ds-day-future b { color: #666b60; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Notebook",
+    "overview": "morrow should feel like a small paper notebook kept somewhere private. The pages are cream, the writing is deep sage ink, and nothing on a page performs. It's discreet, plain and tidy. Someone glancing at the screen should see an ordinary, well-kept notes app, never a medical product and never something that draws attention. The craft is in the restraint: steady 24 px margins, soft rounded paper shapes, one green, and type that does the work through weight rather than decoration.\n\nThe density is calm rather than sparse. There's one primary action per screen (the large \"Add an entry\" button, or \"Save\"). Information is grouped into outlined paper cards on a slightly darker cream page. Everything is flat: depth comes from paper on paper, never from shadows. Colour is held back so that the single green carries meaning: it marks what you can do and what you've chosen.\n\nThe rejected references are clinical white-and-blue health-app styling, gamified colour (streaks, badges, celebration palettes), and anything loud enough to reveal what's being tracked.",
+    "keyCharacteristics": [
+      "Cream paper page (`cream-paper`) with brighter paper cards (`card-paper`) outlined by a 1 px pencil line.",
+      "A single accent, Deep Sage, used for actions, selection and the wordmark.",
+      "Inter only, in three weights (400, 500, 600). Hierarchy comes from size and weight, never from colour or decoration.",
+      "Flat everywhere: no drop shadows at rest or on interaction.",
+      "Rounded, friendly geometry (12–20 px corners, pill chips).",
+      "Warm clay and sand appear only around optional details and the patterns link. Rust is kept for destructive actions and errors.",
+      "State is always shown twice: by colour and by a check mark, outline, weight or position."
+    ],
+    "rules": [
+      {
+        "name": "The One Green Rule",
+        "body": "Deep Sage is the only accent and it always means \"you can act here\" or \"this is chosen\". Never add a second accent hue for emphasis.",
+        "section": "colors"
+      },
+      {
+        "name": "The Text Passes Rule",
+        "body": "Every colour used for text reaches 4.5:1 on the surface it sits on. Muted Icon and Clay are icon-only colours: if a colour is below 4.5:1, it doesn't carry words.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm Edge Rule",
+        "body": "Sand and Clay are for optional detail and gentle signposts, and Rust is for destruction and failure. None of them tints primary actions or ordinary content.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Weights Rule",
+        "body": "Inter at 400, 500 and 600 only. Emphasis is weight or size, never italics, never a second family, never colour alone.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "Everything is in sentence case. Upper case is limited to one case: the \"TYPE n\" tile label.",
+        "section": "typography"
+      },
+      {
+        "name": "The Scales With You Rule",
+        "body": "All text follows the system text size up to 200%. Layouts grow, wrap or scroll rather than clip, and a single-line figure may shrink to fit only when there's no room.",
+        "section": "typography"
+      },
+      {
+        "name": "The Steady Margin Rule",
+        "body": "24 px side margins on every screen, including sheets and dialogs (whose content sits 20–24 px inside the card). Nothing touches the screen edge except the navigation bar and full-bleed sheets.",
+        "section": "layout"
+      },
+      {
+        "name": "The Room To Grow Rule",
+        "body": "Heights are minimums, never fixed. Rows, cells and buttons grow with large text. Minimum heights are 52 px for buttons, 72 px for day cells and 48 px for every touch target.",
+        "section": "layout"
+      },
+      {
+        "name": "The Paper Flat Rule",
+        "body": "No shadows. If a surface needs to stand apart, give it a different paper tone or a Pencil Line, not a shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Soft Corner Rule",
+        "body": "Every container is rounded, and larger containers get larger radii. No square corners, no mixed radii on one object.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** put content on Cream Paper (#f7f4ec) in Card Paper (#fffdf8) cards outlined by a 1 px Pencil Line (#dddcd0).",
+      "**Do** keep Deep Sage (#3d6552) as the one accent, for actions, selection, links and the wordmark.",
+      "**Do** show every state twice: colour plus a check mark, outline, weight, position or text (\"Off\", \"No time\").",
+      "**Do** use Muted Text (#666b60) for secondary text, and keep Muted Icon (#74796d) and Clay (#ac7157) for icons only.",
+      "**Do** let every row, cell and button grow with system text up to 200%, with targets of at least 48 px.",
+      "**Do** keep one full-width primary action per screen, at least 52 px tall with 14 px corners.",
+      "**Do** use neutral wording and the plain sprout-and-wordmark identity outside the entry flow."
+    ],
+    "donts": [
+      "**Don't** add drop shadows, glows or lifted hover states. morrow is flat paper.",
+      "**Don't** introduce a second accent colour, gradients, or celebratory and gamified colour (streaks, badges, confetti).",
+      "**Don't** use clinical white-and-blue health-app styling, medical iconography, or imagery that reveals what's tracked outside the entry flow.",
+      "**Don't** set text in Muted Icon, Clay, Sage Tint Line or any colour below 4.5:1 on its surface.",
+      "**Don't** use weights other than 400, 500 and 600, italics, or a second typeface.",
+      "**Don't** hard-code colours in widgets. Use the theme tokens (`MorrowColors`, `ColorScheme`) so a dark palette can follow after v1.",
+      "**Don't** use upper case beyond the \"TYPE n\" tile."
+    ]
+  }
+}
