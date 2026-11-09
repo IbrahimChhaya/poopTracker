@@ -163,6 +163,7 @@ Future<AppUnderTest> pumpMorrowApp(
   ReminderScheduler? reminders,
   void Function(FakeEraser eraser)? configureEraser,
   FileImport? fileImport,
+  bool use24HourClock = false,
 }) async {
   final bootstrap = ScriptedBootstrap(results);
   final diagnostics = log ?? MemoryDiagnosticLog();
@@ -210,6 +211,7 @@ Future<AppUnderTest> pumpMorrowApp(
         data: MediaQueryData(
           size: size,
           textScaler: TextScaler.linear(textScale),
+          alwaysUse24HourFormat: use24HourClock,
         ),
         child: const MorrowApp(),
       ),

@@ -147,14 +147,26 @@ class _JournalGate extends ConsumerWidget {
       ),
     );
 
+    final erase = ref.watch(erasePhaseProvider);
     return switch (session) {
+      AsyncData(value: StartupReady()) when erase == ErasePhase.erased =>
+        _GateApp(
+          home: ErasedScreen(
+            onContinue: () =>
+                ref.read(erasePhaseProvider.notifier).set(ErasePhase.none),
+          ),
+        ),
       AsyncData(value: StartupReady(:final database)) => UnlockedScope(
         database: database,
         child: const _UnlockedApp(),
       ),
       AsyncData(value: StartupBlocked(:final reason)) => blocked(reason),
       AsyncError() => blocked(null),
-      _ => const _GateApp(home: StartupLoadingScreen()),
+      _ => _GateApp(
+        home: erase == ErasePhase.erasing
+            ? const StartupLoadingScreen(label: 'Erasing morrow’s data…')
+            : const StartupLoadingScreen(),
+      ),
     };
   }
 }

@@ -8,9 +8,9 @@ import '../../../app/session/data_reset.dart';
 import '../../../core/security/device_auth.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
-import '../../../ui/widgets/back_header.dart';
 import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/overlays.dart';
+import '../../../ui/widgets/page_layouts.dart';
 import 'settings_screen.dart';
 
 /// "Delete all data" (8.4). The button works only once the person ticks
@@ -58,117 +58,88 @@ class _DeleteAllDataScreenState extends ConsumerState<DeleteAllDataScreen> {
   Widget build(BuildContext context) {
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                children: [
-                  const BackHeader(title: 'Delete all data'),
-                  const SizedBox(height: 64),
-                  Center(
-                    child: Container(
-                      width: 88,
-                      height: 88,
-                      decoration: BoxDecoration(
-                        color: colors.sand,
-                        shape: BoxShape.circle,
-                      ),
-                      child: ExcludeSemantics(
-                        child: Icon(
-                          Icons.delete_outline,
-                          size: 32,
-                          color: colors.danger,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: MorrowSpacing.lg),
-                  Semantics(
-                    header: true,
-                    child: Text(
-                      'Delete everything?',
-                      textAlign: TextAlign.center,
-                      style: text.headlineSmall,
-                    ),
-                  ),
-                  const SizedBox(height: MorrowSpacing.sm),
-                  Text(
-                    deleteSummary(ref.watch(entriesProvider).value?.length),
-                    textAlign: TextAlign.center,
-                    style: text.bodyMedium!.copyWith(color: colors.mutedText),
-                  ),
-                  const SizedBox(height: MorrowSpacing.sm),
-                  // The only way to keep a copy: one tap away, and back.
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: _busy
-                          ? null
-                          : () => context.push(SettingsScreen.exportPath),
-                      icon: const Icon(Icons.download_outlined, size: 18),
-                      label: const Text('Export a backup first'),
-                    ),
-                  ),
-                  const SizedBox(height: MorrowSpacing.md),
-                  Material(
-                    color: colors.card,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(MorrowRadii.lg),
-                      side: BorderSide(color: colors.line),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: CheckboxListTile(
-                      value: _understood,
-                      onChanged: _busy
-                          ? null
-                          : (v) => setState(() => _understood = v ?? false),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(MorrowRadii.lg),
-                      ),
-                      title: Text(
-                        'I understand this can’t be undone',
-                        style: text.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: colors.line)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                child: Column(
-                  children: [
-                    MorrowButton(
-                      label: 'Delete all data',
-                      variant: MorrowButtonVariant.danger,
-                      busy: _busy,
-                      busyLabel: 'Deleting…',
-                      onPressed: _understood ? _delete : null,
-                    ),
-                    const SizedBox(height: MorrowSpacing.md),
-                    MorrowButton(
-                      label: 'Cancel',
-                      variant: MorrowButtonVariant.secondary,
-                      onPressed: _busy
-                          ? null
-                          : () => Navigator.of(context).maybePop(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+    return SubPage(
+      title: 'Delete all data',
+      actions: [
+        MorrowButton(
+          label: 'Delete all data',
+          variant: MorrowButtonVariant.danger,
+          busy: _busy,
+          busyLabel: 'Deleting…',
+          onPressed: _understood ? _delete : null,
         ),
-      ),
+
+        MorrowButton(
+          label: 'Cancel',
+          variant: MorrowButtonVariant.secondary,
+          onPressed: _busy ? null : () => Navigator.of(context).maybePop(),
+        ),
+      ],
+      children: [
+        const SizedBox(height: MorrowSpacing.xxl),
+        Center(
+          child: Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: colors.sand,
+              shape: BoxShape.circle,
+            ),
+            child: ExcludeSemantics(
+              child: Icon(Icons.delete_outline, size: 32, color: colors.danger),
+            ),
+          ),
+        ),
+        const SizedBox(height: MorrowSpacing.lg),
+        Semantics(
+          header: true,
+          child: Text(
+            'Delete everything?',
+            textAlign: TextAlign.center,
+            style: text.headlineSmall,
+          ),
+        ),
+        const SizedBox(height: MorrowSpacing.sm),
+        Text(
+          deleteSummary(ref.watch(entriesProvider).value?.length),
+          textAlign: TextAlign.center,
+          style: text.bodyMedium!.copyWith(color: colors.mutedText),
+        ),
+        const SizedBox(height: MorrowSpacing.sm),
+        // The only way to keep a copy: one tap away, and back.
+        Center(
+          child: TextButton.icon(
+            onPressed: _busy
+                ? null
+                : () => context.push(SettingsScreen.exportPath),
+            icon: const Icon(Icons.download_outlined, size: 18),
+            label: const Text('Export a backup first'),
+          ),
+        ),
+        const SizedBox(height: MorrowSpacing.md),
+        Material(
+          color: colors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MorrowRadii.lg),
+            side: BorderSide(color: colors.line),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: CheckboxListTile(
+            value: _understood,
+            onChanged: _busy
+                ? null
+                : (v) => setState(() => _understood = v ?? false),
+            controlAffinity: ListTileControlAffinity.leading,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(MorrowRadii.lg),
+            ),
+            title: Text(
+              'I understand this can’t be undone',
+              style: text.bodyMedium!.copyWith(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -82,6 +82,29 @@ void main() {
     expect(find.text('Your weeks'), findsOneWidget);
     expect(find.text('Not enough entries yet'), findsOneWidget);
     expect(find.text('Entries each week'), findsNothing);
+    // A way forward, not a locked door.
+    await tester.tap(find.text('Go to your journal'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your journal'), findsOneWidget);
+  });
+
+  appTest('range tabs are full-size targets and show the choice twice', (
+    tester,
+  ) async {
+    await seedFixture();
+    await openTrends(tester);
+    final tab = find.ancestor(
+      of: find.text('4 weeks'),
+      matching: find.byType(InkWell),
+    );
+    expect(tester.getSize(tab.first).height, greaterThanOrEqualTo(48));
+    // Selected: fill and weight, plus a check mark.
+    expect(
+      find.descendant(of: tab.first, matching: find.byIcon(Icons.check)),
+      findsOneWidget,
+    );
+    expect(find.text('average, including this week'), findsOneWidget);
+    expect(find.text('Weeks with entries'), findsOneWidget);
   });
 
   appTest('4 weeks matches Figma 5.1', (tester) async {
@@ -90,7 +113,7 @@ void main() {
     expect(find.text('12 Oct – 8 Nov 2026'), findsOneWidget);
     expect(find.text('18'), findsOneWidget);
     expect(find.text('4.5'), findsOneWidget);
-    expect(find.text('4 / 4'), findsOneWidget);
+    expect(find.text('4 of 4'), findsOneWidget);
     expect(find.text('in 4 weeks'), findsOneWidget);
     // Each bar has its own label; the latest week is in progress.
     expect(find.bySemanticsLabel('Week of 12 Oct, 4 entries'), findsOneWidget);
@@ -121,7 +144,7 @@ void main() {
     expect(find.text('17 Aug – 8 Nov 2026'), findsOneWidget);
     expect(find.text('56'), findsOneWidget);
     expect(find.text('4.7'), findsOneWidget);
-    expect(find.text('12 / 12'), findsOneWidget);
+    expect(find.text('12 of 12'), findsOneWidget);
     expect(
       tester.getSemantics(find.bySemanticsLabel('12 weeks, 2 of 3')),
       isSemantics(isSelected: true, isButton: true),
@@ -132,7 +155,15 @@ void main() {
     expect(find.text('11 May – 8 Nov 2026'), findsOneWidget);
     expect(find.text('120'), findsOneWidget);
     expect(find.text('4.6'), findsOneWidget);
-    expect(find.text('26 / 26'), findsOneWidget);
+    expect(find.text('26 of 26'), findsOneWidget);
+    // 26 bars are one summary for screen readers, not 26 stops.
+    expect(
+      find.bySemanticsLabel(
+        RegExp(r'^Entries each week, 26 weeks from 11 May'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel(RegExp(r'^Week of ')), findsNothing);
     // The range starts with the first entry: nothing earlier to show.
     expect(
       tester

@@ -386,7 +386,7 @@ class _TrendPreview extends StatelessWidget {
     return Semantics(
       button: true,
       label:
-          'See your patterns. ${formatEntryCount(entries)} over the last 4 '
+          'See your weeks. ${formatEntryCount(entries)} over the last 4 '
           'weeks. Opens Trends.',
       excludeSemantics: true,
       child: InkWell(
@@ -406,7 +406,7 @@ class _TrendPreview extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'See your patterns',
+                      'See your weeks',
                       style: text.titleSmall!.copyWith(fontSize: 13),
                     ),
                     const SizedBox(height: MorrowSpacing.xs),

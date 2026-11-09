@@ -96,16 +96,21 @@ class SettingRow extends StatelessWidget {
                 ),
                 if (sub != null) ...[
                   const SizedBox(height: MorrowSpacing.xxs),
-                  Text(sub, style: text.bodySmall),
+                  // A switch already announces On or Off; don't say it twice.
+                  ExcludeSemantics(
+                    excluding: _isToggle && (sub == 'On' || sub == 'Off'),
+                    child: Text(sub, style: text.bodySmall),
+                  ),
                 ],
               ],
             ),
           ),
           const SizedBox(width: MorrowSpacing.md),
           // A text action ("Change", "6:00 pm") may wrap at large text
-          // sizes instead of pushing the row past the screen edge.
+          // sizes instead of pushing the row past the screen edge. It is
+          // read out too: "Time, 6:00 pm".
           if (action != null)
-            Flexible(child: ExcludeSemantics(child: trailing))
+            Flexible(child: trailing)
           else
             ExcludeSemantics(excluding: !_isToggle, child: trailing),
         ],

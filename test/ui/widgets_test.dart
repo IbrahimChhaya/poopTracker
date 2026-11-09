@@ -73,6 +73,51 @@ void main() {
   });
 
   group('SettingRow', () {
+    testWidgets('a text action is read with the row: "Time, 6:00 pm"', (
+      tester,
+    ) async {
+      await pumpThemed(
+        tester,
+        page(
+          CardGroup(
+            children: [
+              SettingRow.navigation(
+                icon: Icons.schedule,
+                title: 'Time',
+                subtitle: 'Follows your phone’s local time',
+                actionLabel: '6:00 pm',
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+      expect(
+        find.bySemanticsLabel(RegExp(r'Time[\s\S]*6:00 pm')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a switch row does not repeat On or Off', (tester) async {
+      await pumpThemed(
+        tester,
+        page(
+          CardGroup(
+            children: [
+              SettingRow.toggle(
+                icon: Icons.lock_outline,
+                title: 'Require unlock',
+                subtitle: 'On',
+                value: true,
+                onChanged: (_) {},
+              ),
+            ],
+          ),
+        ),
+      );
+      expect(find.bySemanticsLabel(RegExp(r'On')), findsNothing);
+    });
+
     testWidgets('toggle row announces title, subtitle and state, and the '
         'whole row toggles', (tester) async {
       var value = false;

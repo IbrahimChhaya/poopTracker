@@ -104,7 +104,11 @@ void main() {
   }
 
   Future<void> press(WidgetTester tester, String label) async {
-    await tester.tap(find.widgetWithText(MorrowButton, label));
+    // At large text the buttons scroll with the page.
+    final button = find.widgetWithText(MorrowButton, label);
+    await tester.scrollUntilVisible(button, 200, scrollable: _vertical);
+    await tester.pumpAndSettle();
+    await tester.tap(button);
     await tester.pumpAndSettle();
   }
 
@@ -246,8 +250,9 @@ void main() {
       expect(find.text('Backup saved'), findsNothing);
       expect(find.text('Couldn’t create the backup'), findsNothing);
       expect(log.events, isNot(contains(DiagnosticEvent.backupSaved)));
-      // The passphrase is not left in the fields.
-      expect(find.text(_pass), findsNothing);
+      // The passphrase is kept, so a cancelled sheet doesn't mean typing it
+      // twice again.
+      expect(find.text(_pass), findsNWidgets(2));
     });
 
     appTest('a failed save says nothing was saved', (tester) async {
@@ -259,6 +264,20 @@ void main() {
       await press(tester, 'Create backup');
       expect(find.text('Couldn’t create the backup'), findsOneWidget);
       expect(log.events, contains(DiagnosticEvent.backupFailed));
+    });
+
+    appTest('an empty journal has nothing to back up', (tester) async {
+      final export = FakeFileExport();
+      for (final e in await repo.all()) {
+        await repo.delete(e.id);
+      }
+      await pump(tester, export: export);
+      await open(tester, 'Export a backup');
+      await type(tester, _create, _pass);
+      await type(tester, _confirm, _pass);
+      await press(tester, 'Create backup');
+      expect(find.text('Nothing to back up yet'), findsOneWidget);
+      expect(export.calls, isEmpty);
     });
 
     appTest('a double tap creates one backup', (tester) async {
@@ -334,8 +353,8 @@ void main() {
       expect(find.text('Couldn’t restore'), findsOneWidget);
       expect(
         find.text(
-          'The passphrase didn’t match, or the file isn’t a morrow backup. '
-          'Nothing was changed.',
+          'The passphrase didn’t match, or the file is damaged. Nothing was '
+          'changed. Check capital letters and spaces.',
         ),
         findsOneWidget,
       );
@@ -344,6 +363,42 @@ void main() {
       await type(tester, 'Passphrase', _pass);
       await press(tester, 'Try again');
       expect(find.text('Restore complete'), findsOneWidget);
+    });
+
+    appTest('after three wrong tries it says the passphrase is needed', (
+      tester,
+    ) async {
+      final import = FakeFileImport()
+        ..next = PickedFile(
+          name: 'morrow-backup-2026-11-05.morrow',
+          bytes: await otherBackup(),
+        );
+      await pump(tester, import: import);
+      await open(tester, 'Restore from a backup');
+      await press(tester, 'Choose backup file');
+      for (var i = 0; i < 3; i++) {
+        expect(find.text('If you no longer have the passphrase'), findsNothing);
+        await type(tester, 'Passphrase', 'wrong $i');
+        await press(tester, i == 0 ? 'Restore' : 'Try again');
+      }
+      expect(find.text('If you no longer have the passphrase'), findsOneWidget);
+      expect(await repo.all(), hasLength(2));
+    });
+
+    appTest('after adding entries, History is one tap away', (tester) async {
+      final import = FakeFileImport()
+        ..next = PickedFile(
+          name: 'morrow-backup-2026-11-05.morrow',
+          bytes: await otherBackup(),
+        );
+      await pump(tester, import: import);
+      await open(tester, 'Restore from a backup');
+      await press(tester, 'Choose backup file');
+      await type(tester, 'Passphrase', _pass);
+      await press(tester, 'Restore');
+      await press(tester, 'Open History');
+      expect(find.text('Your history'), findsOneWidget);
+      expect(find.text('Synthetic restored note'), findsOneWidget);
     });
 
     appTest('a file that is not a backup is refused before the passphrase', (
@@ -394,7 +449,7 @@ void main() {
     expect(restoreSummary(added: 1, skipped: 0), '1 entry added.');
     expect(
       restoreSummary(added: 0, skipped: 1),
-      '0 entries added. 1 was already in your journal and was skipped.',
+      'Everything in this backup is already in your journal.',
     );
     expect(formatFileSize(4000), '4 KB');
     expect(formatFileSize(3 * 1024 * 1024 + 1), '3.0 MB');

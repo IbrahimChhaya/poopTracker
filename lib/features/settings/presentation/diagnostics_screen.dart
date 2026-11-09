@@ -10,10 +10,11 @@ import '../../../core/time/local_date.dart';
 import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
+import '../../../ui/widgets/back_header.dart';
 import '../../../ui/widgets/card_group.dart';
-import '../../../ui/widgets/icon_tile.dart';
 import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/overlays.dart';
+import '../../../ui/widgets/page_layouts.dart';
 import '../../../ui/widgets/setting_row.dart';
 import '../../../ui/widgets/states.dart';
 
@@ -182,28 +183,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
                 children: [
-                  Row(
-                    children: [
-                      IconButton.outlined(
-                        onPressed: () => Navigator.of(context).maybePop(),
-                        tooltip: 'Back',
-                        icon: const Icon(Icons.arrow_back),
-                        style: IconButton.styleFrom(
-                          side: BorderSide(color: colors.line),
-                          backgroundColor: colors.card,
-                          foregroundColor: colors.ink,
-                          minimumSize: const Size(48, 48),
-                        ),
-                      ),
-                      const SizedBox(width: MorrowSpacing.md),
-                      Expanded(
-                        child: Semantics(
-                          header: true,
-                          child: Text('Diagnostics', style: text.headlineSmall),
-                        ),
-                      ),
-                    ],
-                  ),
+                  const BackHeader(title: 'Diagnostics'),
                   const SizedBox(height: MorrowSpacing.xxl),
                   Text(
                     'A short record of what the app did, kept on this phone. '
@@ -214,7 +194,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                   const SizedBox(height: MorrowSpacing.xxl),
                   const CardGroup(
                     children: [
-                      _InfoRow(
+                      InfoRow(
                         icon: Icons.notes,
                         title: 'Recorded',
                         subtitle:
@@ -222,7 +202,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                             'journal and anything that failed, with when they '
                             'happened',
                       ),
-                      _InfoRow(
+                      InfoRow(
                         icon: Icons.shield_outlined,
                         title: 'Never recorded',
                         subtitle: 'Your entries, notes, details or keys',
@@ -280,54 +260,6 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                   child: actions,
                 ),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = MorrowColors.of(context);
-    final text = Theme.of(context).textTheme;
-    return MergeSemantics(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: MorrowSpacing.lg,
-          vertical: 14,
-        ),
-        child: Row(
-          children: [
-            IconTile(icon: icon),
-            const SizedBox(width: MorrowSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: text.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: colors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: MorrowSpacing.xxs),
-                  Text(subtitle, style: text.bodySmall),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -469,7 +401,7 @@ class LogSavedScreen extends StatelessWidget {
                     style: text.bodyMedium!.copyWith(color: colors.mutedText),
                   ),
                   const SizedBox(height: MorrowSpacing.xxl),
-                  const ErrorBanner(
+                  const NoticeCard(
                     title: 'It’s no longer only on morrow',
                     message:
                         'The copy is wherever you saved it. Delete it there '

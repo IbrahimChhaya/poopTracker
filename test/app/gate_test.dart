@@ -146,7 +146,13 @@ void main() {
         await pumpApp(tester, [blockedBy(reason)]);
         expect(find.text('Your journal can’t be opened right now'), findsOne);
         expect(find.byType(MorrowNavigationBar), findsNothing);
-        expect(find.text('Try again'), findsOneWidget);
+        // After a failed erase, erasing again is the way on, not a retry.
+        expect(
+          find.text('Try again'),
+          reason == StartupBlockReason.eraseFailed
+              ? findsNothing
+              : findsOneWidget,
+        );
         expect(
           find.text(_erase),
           eraseReasons.contains(reason) ? findsOneWidget : findsNothing,
@@ -210,6 +216,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(reset.erases, 1);
       expect(bootstrap.starts, 2);
+      // Confirmed before the new journal opens, with where to restore.
+      expect(find.text('morrow’s data was erased'), findsOneWidget);
+      expect(find.textContaining('Settings > Data & privacy'), findsOneWidget);
+      expect(find.byType(MorrowNavigationBar), findsNothing);
+      await tester.tap(find.text('Start fresh'));
+      await tester.pumpAndSettle();
       expect(find.byType(MorrowNavigationBar), findsOneWidget);
     });
 

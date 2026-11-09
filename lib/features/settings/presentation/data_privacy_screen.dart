@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -154,13 +155,14 @@ class DataPrivacyScreen extends ConsumerWidget {
             CardGroup(
               children: [
                 SettingRow.navigation(
-                  icon: Icons.download_outlined,
+                  icon: Icons.save_alt_outlined,
                   title: 'Export a backup',
-                  subtitle: 'Save a copy to Files, Google Drive or iCloud',
+                  subtitle:
+                      'Save a copy to ${fileDestinations(defaultTargetPlatform)}',
                   onTap: () => context.push(SettingsScreen.exportPath),
                 ),
                 SettingRow.navigation(
-                  icon: Icons.upload_outlined,
+                  icon: Icons.restore,
                   title: 'Restore from a backup',
                   subtitle: 'Add entries from a file you saved earlier',
                   onTap: () => context.push(SettingsScreen.restorePath),

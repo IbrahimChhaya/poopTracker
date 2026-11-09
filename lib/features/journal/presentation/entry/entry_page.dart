@@ -332,7 +332,7 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
                       CardGroup(
                         children: [
                           SettingRow.navigation(
-                            icon: Icons.notes,
+                            icon: Icons.tune,
                             title: 'Context',
                             subtitle: contextSummary(s.details),
                             onTap: () =>

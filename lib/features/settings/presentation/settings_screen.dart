@@ -112,19 +112,6 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: MorrowSpacing.xxl),
-        CardGroup(
-          label: 'Data',
-          children: [
-            SettingRow.navigation(
-              icon: Icons.delete_outline,
-              title: 'Delete all data',
-              subtitle: 'Removes every entry from this phone',
-              destructive: true,
-              onTap: () => context.go(deletePath),
-            ),
-          ],
-        ),
-        const SizedBox(height: MorrowSpacing.xxl),
         if (kDebugMode || diagnosticsEnabled)
           CardGroup(
             label: 'Developer',

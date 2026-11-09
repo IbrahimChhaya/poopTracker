@@ -718,6 +718,68 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Settings shows "Data & privacy · Backups, app lock and deleting data".
   - Not checked: autosave with app lock on (needs your fingerprint), and TalkBack on the passphrase fields.
 
+### Critique fixes, P2 (9 November, built)
+- **Shared rows:** a navigation row's text action is now read out ("Time, 6:00 pm"), and switch rows no longer repeat "On"/"Off".
+- **Trends:**
+  - **Range tabs:** 48 px, with a check mark and an outline on the chosen one.
+  - **Error and empty states:** the load error has Try again, and the empty state says what's needed and links to the journal.
+  - **Figures:** "Per week · average, including this week" and "Weeks with entries · 3 of 4", so there are no slashes and the unfinished week is named. The figures themselves are unchanged.
+  - **Chart:**
+    - For 12 and 26 weeks screen readers hear one summary ("Entries each week, 26 weeks from 11 May. Highest 6, lowest 2…"), not a stop per bar.
+    - The date labels line up with the y axis at any text size.
+    - Zero weeks are flat stubs.
+  - **Stool form card:** a smaller figure, "Types 1–7" instead of "Optional · Bristol scale", and Chart Sage bars.
+  - **Journal link:** "See your weeks".
+- **Reminder:**
+  - At normal text the day circles stay in one row, with each tap area a seventh of the row and 48 px tall. At large text they grow to 52 px and wrap.
+  - The letters scale.
+  - The copy is "One weekly check-in…" (no "nudge").
+- **Settings sub-pages:**
+  - App lock, Diagnostics and Reminder use `BackHeader`, and the private info and status rows are replaced by `InfoRow` (one title style).
+  - Delete all data uses `SubPage`. Above 130% text, `SubPage` buttons scroll with the page.
+  - "Log saved" uses `NoticeCard`.
+- **Lock and startup screens:**
+  - **Unlock prompt:** cancelling returns to the plain locked screen (no error, nothing logged). A mismatch says "That didn't match".
+  - **Copy:** lockout and no-screen-lock wording explain what to do.
+  - **Blocked screen 8.8:** rebuilt on `StatusPage` with a "Still stuck?" card that names Settings > Data & privacy.
+  - **Erase:** "Erase and start fresh" shows "Erasing morrow's data…" and then "morrow's data was erased" before the new journal. After a failed erase, only erasing is offered.
+  - **Encryption copy:** no longer suggests reinstalling.
+- **Backup and restore:**
+  - **Restore errors:**
+    - "Didn't match, or the file is damaged… Check capital letters and spaces".
+    - Unaddable entries lead to "Choose another file".
+    - After three wrong tries, a calm note says the backup can't be opened without its passphrase.
+  - **Restore results:**
+    - "Everything in this backup is already in your journal" when nothing was added.
+    - Open History after a restore that added entries.
+    - Status pages announce the title and message together.
+  - **Export:**
+    - The passphrase fields keep their text after a cancelled save sheet.
+    - An empty journal can't be exported.
+  - **Data & privacy:** export and restore have clearer icons, and the destinations are named per platform (no iCloud on Android).
+- **Entry time sheet:**
+  - It follows the phone's 24-hour setting.
+  - The hour and minute wheels loop.
+  - The wheels and well grow with text size (up to 1.6×).
+  - The Context card has its own icon.
+- **Onboarding proposal (Figma):**
+  - The welcome line mentions encryption and no account, so people who skip still hear it.
+  - The Read me notes a Settings "Welcome tour" replay.
+  - The current progress dash is longer.
+  - A new frame, 1.3c, shows 200% text. *Not checked visually: Figma screenshot export timed out.*
+- **Tests:** 457 pass.
+- **Still open:**
+  - **Gate screens:** `LockedScreen` and `StartupLoadingScreen` are still on `_GateLayout` (the loading spinner isn't vertically centred).
+  - **Labels:** they always use the 12-hour clock outside the picker.
+  - **Shortcuts:** relative time shortcuts ("earlier today") need a design.
+- **Decided on 9 November:** Delete all data lives only under Data & privacy. The Settings root row is removed in code and in Figma 8.1, 8.2 and 10.1. The switch keeps the name "Stool form".
+- **Device check (S20, 9 November):**
+  - Settings has no Delete row, and "Data & privacy · Backups, app lock and deleting data" is there.
+  - Trends shows the check-marked 4-week tab, "Per week · average, including this week", "2 of 4 · Weeks with entries", and flat stubs for empty weeks.
+  - Delete all data says "all 5 entries…", and "Export a backup first" opens Export and comes back.
+  - The time sheet follows the phone's 24-hour clock (hour and minute wheels, no am/pm).
+  - **Restore file card:** its date comes from the file name.
+
 ### M11.1 — Welcome and first launch (Figma 1.1–1.4)
 - **Why:** no milestone covered the first-launch screens. Today a fresh install goes straight to the empty journal.
 - **Scope:**

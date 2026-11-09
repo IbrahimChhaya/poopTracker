@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/paths.dart';
 
 import '../../../core/backup/backup_file.dart';
 import '../../../core/time/local_date.dart';
@@ -75,16 +78,36 @@ class _RestoreBackupScreenState extends ConsumerState<RestoreBackupScreen> {
             label: 'Done',
             onPressed: () => Navigator.of(context).maybePop(),
           ),
+          // Restored entries are often in earlier weeks: History shows them.
+          if (added > 0)
+            MorrowButton(
+              label: 'Open History',
+              variant: MorrowButtonVariant.secondary,
+              onPressed: () => context.go(AppPaths.history),
+            ),
         ],
       ),
-      RestorePassphrase(:final fileName, :final sizeBytes, :final error) =>
+      RestorePassphrase(
+        :final fileName,
+        :final sizeBytes,
+        :final error,
+        :final failedAttempts,
+      ) =>
         SubPage(
           title: 'Restore from a backup',
           actions: [
-            MorrowButton(
-              label: error == null ? 'Restore' : 'Try again',
-              onPressed: _restore,
-            ),
+            // Retrying a file whose entries can't be added would fail the
+            // same way; choosing another file is the way on.
+            if (error == RestoreError.failed)
+              MorrowButton(
+                label: 'Choose another file',
+                onPressed: _controller.chooseAnother,
+              )
+            else
+              MorrowButton(
+                label: error == null ? 'Restore' : 'Try again',
+                onPressed: _restore,
+              ),
           ],
           children: [
             _FileCard(
@@ -98,15 +121,25 @@ class _RestoreBackupScreenState extends ConsumerState<RestoreBackupScreen> {
                 title: 'Couldn’t restore',
                 message: switch (error) {
                   RestoreError.cannotOpen =>
-                    'The passphrase didn’t match, or the file isn’t a '
-                        'morrow backup. Nothing was changed.',
+                    'The passphrase didn’t match, or the file is damaged. '
+                        'Nothing was changed. Check capital letters and '
+                        'spaces.',
                   RestoreError.newerVersion =>
                     'This backup was made by a newer version of morrow. '
                         'Update morrow, then try again. Nothing was changed.',
                   RestoreError.failed =>
-                    'Something went wrong while adding the entries. '
-                        'Nothing was changed.',
+                    'Some entries in this file couldn’t be added, so none '
+                        'were. Nothing was changed.',
                 },
+              ),
+              const SizedBox(height: MorrowSpacing.lg),
+            ],
+            if (failedAttempts >= 3) ...[
+              const NoticeCard(
+                title: 'If you no longer have the passphrase',
+                message:
+                    'This backup can’t be opened without it, and morrow '
+                    'can’t recover it. Your journal is unaffected.',
               ),
               const SizedBox(height: MorrowSpacing.lg),
             ],
@@ -166,6 +199,9 @@ class _RestoreBackupScreenState extends ConsumerState<RestoreBackupScreen> {
 
 /// "12 entries added. 6 were already in your journal and were skipped."
 String restoreSummary({required int added, required int skipped}) {
+  if (added == 0 && skipped > 0) {
+    return 'Everything in this backup is already in your journal.';
+  }
   final a = added == 1 ? '1 entry added.' : '$added entries added.';
   if (skipped == 0) return a;
   final s = skipped == 1

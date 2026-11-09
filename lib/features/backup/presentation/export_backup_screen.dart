@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/backup/backup_file.dart';
+import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
 import '../../../ui/widgets/card_group.dart';
@@ -52,16 +54,20 @@ class _ExportBackupScreenState extends ConsumerState<ExportBackupScreen> {
     setState(() => _checked = true);
     if (_passphraseError != null || _confirmError != null) return;
     FocusScope.of(context).unfocus();
-    final passphrase = _passphrase.text;
-    // Nothing about the passphrase stays on screen once it is used.
-    _passphrase.clear();
-    _confirm.clear();
-    _checked = false;
-    ref.read(exportControllerProvider.notifier).create(passphrase);
+    // The fields keep their text if the save sheet is cancelled, so it
+    // needn't be typed twice again; they are cleared once it is saved.
+    ref.read(exportControllerProvider.notifier).create(_passphrase.text);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(exportControllerProvider, (_, next) {
+      if (next is ExportSaved) {
+        _passphrase.clear();
+        _confirm.clear();
+        _checked = false;
+      }
+    });
     final state = ref.watch(exportControllerProvider);
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
@@ -97,16 +103,23 @@ class _ExportBackupScreenState extends ConsumerState<ExportBackupScreen> {
           ),
         ],
       ),
-      ExportReady(:final failed) => SubPage(
+      ExportReady(:final failed, :final nothingToSave) => SubPage(
         title: 'Export a backup',
         actions: [MorrowButton(label: 'Create backup', onPressed: _create)],
         children: [
           Text(
             'Save a copy of your entries to a file. You choose where it '
-            'goes, for example Files, Google Drive or iCloud Drive.',
+            'goes, for example ${fileDestinations(defaultTargetPlatform)}.',
             style: text.bodyMedium,
           ),
           const SizedBox(height: MorrowSpacing.lg),
+          if (nothingToSave) ...[
+            const NoticeCard(
+              title: 'Nothing to back up yet',
+              message: 'Add an entry first, then come back to save a copy.',
+            ),
+            const SizedBox(height: MorrowSpacing.lg),
+          ],
           if (failed) ...[
             const ErrorBanner(
               title: 'Couldn’t create the backup',

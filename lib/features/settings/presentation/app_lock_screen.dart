@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/lock/lock_controller.dart';
 import '../../../core/security/device_auth.dart';
-import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
+import '../../../ui/widgets/back_header.dart';
 import '../../../ui/widgets/card_group.dart';
 import '../../../ui/widgets/overlays.dart';
 import '../../../ui/widgets/setting_row.dart';
@@ -43,7 +43,6 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
     final on = ref.watch(appLockEnabledProvider);
     return Scaffold(
@@ -51,28 +50,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           children: [
-            Row(
-              children: [
-                IconButton.outlined(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  tooltip: 'Back',
-                  icon: const Icon(Icons.arrow_back),
-                  style: IconButton.styleFrom(
-                    side: BorderSide(color: colors.line),
-                    backgroundColor: colors.card,
-                    foregroundColor: colors.ink,
-                    minimumSize: const Size(48, 48),
-                  ),
-                ),
-                const SizedBox(width: MorrowSpacing.md),
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text('App lock', style: text.headlineSmall),
-                  ),
-                ),
-              ],
-            ),
+            const BackHeader(title: 'App lock'),
             const SizedBox(height: MorrowSpacing.xxl),
             CardGroup(
               children: [

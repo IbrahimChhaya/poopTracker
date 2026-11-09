@@ -16,9 +16,12 @@ sealed class ExportState {
 
 /// 9.1. [failed] after an error; cancelling the save sheet shows nothing.
 final class ExportReady extends ExportState {
-  const ExportReady({this.failed = false});
+  const ExportReady({this.failed = false, this.nothingToSave = false});
 
   final bool failed;
+
+  /// The journal has no entries yet, so there is nothing to back up.
+  final bool nothingToSave;
 }
 
 /// 9.2 "Creating your backup…".
@@ -59,6 +62,10 @@ class ExportController extends Notifier<ExportState> {
     try {
       final entries = await _repo.all();
       if (!ref.mounted) return;
+      if (entries.isEmpty) {
+        state = const ExportReady(nothingToSave: true);
+        return;
+      }
       state = ExportWorking(entries.length);
       final clock = ref.read(clockProvider);
       final now = clock.nowUtc();
@@ -127,11 +134,15 @@ final class RestorePassphrase extends RestoreState {
     required this.fileName,
     required this.sizeBytes,
     this.error,
+    this.failedAttempts = 0,
   });
 
   final String fileName;
   final int sizeBytes;
   final RestoreError? error;
+
+  /// Wrong passphrases so far for this file.
+  final int failedAttempts;
 }
 
 /// 9.8 "Restoring your entries…".
@@ -219,6 +230,9 @@ class RestoreController extends Notifier<RestoreState> {
         fileName: current.fileName,
         sizeBytes: current.sizeBytes,
         error: error,
+        failedAttempts: error == RestoreError.cannotOpen
+            ? current.failedAttempts + 1
+            : current.failedAttempts,
       );
     }
   }

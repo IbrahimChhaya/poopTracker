@@ -140,7 +140,7 @@ void main() {
       expect(find.text('0 entries'), findsNWidgets(2));
       expect(find.text('—'), findsOneWidget);
       expect(find.text('Nothing here yet'), findsOneWidget);
-      expect(find.text('See your patterns'), findsNothing);
+      expect(find.text('See your weeks'), findsNothing);
     });
 
     appTest('this week, then a selected day, then back (2.1, 4.1)', (
@@ -425,6 +425,18 @@ void main() {
       // The card shows just the day.
       await tapText(tester, 'Done');
       expect(find.bySemanticsLabel('Yesterday'), findsOneWidget);
+    });
+
+    appTest('a phone on a 24-hour clock gets a 24-hour wheel', (tester) async {
+      await pumpMorrowApp(tester, [
+        StartupReady(db, createdNew: false),
+      ], use24HourClock: true);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      // Hour and minute only: no am/pm wheel.
+      expect(find.byType(CupertinoPicker), findsNWidgets(2));
+      expect(find.text('am'), findsNothing);
+      expect(find.text('13'), findsWidgets);
     });
 
     appTest('a time can be added back for a past day, and removed for today', (

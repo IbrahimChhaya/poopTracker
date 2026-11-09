@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../core/time/local_date.dart';
 
 /// British English labels used across the journal, History and Trends.
@@ -107,3 +109,10 @@ String formatRatioOneDecimal(int numerator, int denominator) {
   final tenths = (numerator * 20 + denominator) ~/ (denominator * 2);
   return '${tenths ~/ 10}.${tenths % 10}';
 }
+
+/// "Files or Google Drive" on Android, "Files or iCloud Drive" on iOS: the
+/// places the phone's own save sheet usually offers.
+String fileDestinations(TargetPlatform platform) =>
+    platform == TargetPlatform.iOS
+    ? 'Files or iCloud Drive'
+    : 'Files or Google Drive';

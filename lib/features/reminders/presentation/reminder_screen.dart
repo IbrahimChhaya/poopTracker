@@ -6,9 +6,10 @@ import '../../../core/notifications/reminder_scheduler.dart';
 import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
+import '../../../ui/widgets/back_header.dart';
 import '../../../ui/widgets/card_group.dart';
-import '../../../ui/widgets/icon_tile.dart';
 import '../../../ui/widgets/morrow_button.dart';
+import '../../../ui/widgets/page_layouts.dart';
 import '../../../ui/widgets/setting_row.dart';
 import '../../../ui/widgets/states.dart';
 import '../data/reminder_repository.dart';
@@ -51,36 +52,13 @@ class ReminderScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colors = MorrowColors.of(context);
-    final text = Theme.of(context).textTheme;
     final view = ref.watch(reminderControllerProvider);
     return Scaffold(
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           children: [
-            Row(
-              children: [
-                IconButton.outlined(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  tooltip: 'Back',
-                  icon: const Icon(Icons.arrow_back),
-                  style: IconButton.styleFrom(
-                    side: BorderSide(color: colors.line),
-                    backgroundColor: colors.card,
-                    foregroundColor: colors.ink,
-                    minimumSize: const Size(48, 48),
-                  ),
-                ),
-                const SizedBox(width: MorrowSpacing.md),
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text('Weekly reminder', style: text.headlineSmall),
-                  ),
-                ),
-              ],
-            ),
+            const BackHeader(title: 'Weekly reminder'),
             const SizedBox(height: MorrowSpacing.xxl),
             ...switch (view) {
               AsyncData(:final value) => _content(context, ref, value),
@@ -141,8 +119,8 @@ class ReminderScreen extends ConsumerWidget {
       if (!on) ...[
         const SizedBox(height: MorrowSpacing.lg),
         Text(
-          'Get one gentle nudge a week to add an entry. You choose the day '
-          'and time.',
+          'One weekly check-in to add an entry. You choose the day and '
+          'time.',
           style: text.bodySmall,
         ),
       ] else ...[
@@ -200,13 +178,15 @@ class ReminderScreen extends ConsumerWidget {
           CardGroup(
             children: [
               v.scheduled
-                  ? _StatusRow(
+                  ? InfoRow(
+                      icon: Icons.check,
                       title: 'Scheduled on this phone',
                       subtitle:
                           'Your phone will show it '
                           '${reminderSummary(i).replaceFirst('Every', 'every')}.',
                     )
-                  : const _StatusRow(
+                  : const InfoRow(
+                      icon: Icons.schedule,
                       title: 'Not scheduled yet',
                       subtitle:
                           'Notifications are allowed. morrow will set it up '
@@ -238,54 +218,70 @@ class _DayPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
-    // Seven equal circles in one row, as large as fit (up to 48 px).
+    // Letters grow with the text size. At large sizes the circles grow too
+    // and wrap onto two rows; otherwise all seven share one row and each
+    // day's tap area is a full seventh of it, 48 px tall.
+    final large = MediaQuery.textScalerOf(context).scale(14) > 14 * 1.4;
+
+    Widget circle(int d, double size) => Container(
+      width: size,
+      height: size,
+      decoration: ShapeDecoration(
+        color: d == selected ? colors.primary : colors.card,
+        shape: CircleBorder(
+          side: BorderSide(color: d == selected ? colors.primary : colors.line),
+        ),
+      ),
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Padding(
+          padding: const EdgeInsets.all(MorrowSpacing.xs),
+          child: Text(
+            _weekdayNames[d - 1].substring(0, 1),
+            style: text.labelLarge!.copyWith(
+              color: d == selected ? colors.onPrimary : colors.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Widget day(int d, {required double size}) => Semantics(
+      button: true,
+      selected: d == selected,
+      inMutuallyExclusiveGroup: true,
+      label: _weekdayNames[d - 1],
+      excludeSemantics: true,
+      child: InkResponse(
+        onTap: () => onSelected(d),
+        radius: size / 2 + MorrowSpacing.xs,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: MorrowSizes.minTouchTarget,
+            minWidth: MorrowSizes.minTouchTarget,
+          ),
+          child: Center(child: circle(d, size)),
+        ),
+      ),
+    );
+
+    if (large) {
+      return Wrap(
+        spacing: MorrowSpacing.sm,
+        runSpacing: MorrowSpacing.sm,
+        children: [for (var d = 1; d <= 7; d++) day(d, size: 52)],
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
-        const gap = MorrowSpacing.xs;
-        final size = ((constraints.maxWidth - 6 * gap) / 7).clamp(
+        final size = (constraints.maxWidth / 7 - MorrowSpacing.xs).clamp(
           32.0,
-          MorrowSizes.minTouchTarget,
+          44.0,
         );
         return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            for (var d = 1; d <= 7; d++)
-              Semantics(
-                button: true,
-                selected: d == selected,
-                inMutuallyExclusiveGroup: true,
-                label: _weekdayNames[d - 1],
-                excludeSemantics: true,
-                child: SizedBox.square(
-                  dimension: size,
-                  child: Material(
-                    color: d == selected ? colors.primary : colors.card,
-                    shape: CircleBorder(
-                      side: BorderSide(
-                        color: d == selected ? colors.primary : colors.line,
-                      ),
-                    ),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: () => onSelected(d),
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            _weekdayNames[d - 1].substring(0, 1),
-                            style: text.labelLarge!.copyWith(
-                              fontSize: 14,
-                              color: d == selected
-                                  ? colors.onPrimary
-                                  : colors.ink,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            for (var d = 1; d <= 7; d++) Expanded(child: day(d, size: size)),
           ],
         );
       },
@@ -327,49 +323,6 @@ class _Preview extends StatelessWidget {
             Text(reminderTitle, style: text.titleSmall),
             const SizedBox(height: MorrowSpacing.xxs),
             Text(reminderBody, style: text.bodySmall),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusRow extends StatelessWidget {
-  const _StatusRow({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = MorrowColors.of(context);
-    final text = Theme.of(context).textTheme;
-    return MergeSemantics(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: MorrowSpacing.lg,
-          vertical: 14,
-        ),
-        child: Row(
-          children: [
-            const IconTile(icon: Icons.check),
-            const SizedBox(width: MorrowSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: text.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: colors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: MorrowSpacing.xxs),
-                  Text(subtitle, style: text.bodySmall),
-                ],
-              ),
-            ),
           ],
         ),
       ),

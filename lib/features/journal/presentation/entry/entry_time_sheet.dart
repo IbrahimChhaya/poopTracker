@@ -68,6 +68,9 @@ class _TimeSheetState extends State<_TimeSheet> {
   late final _hourCtl = FixedExtentScrollController(
     initialItem: (_hour % 12 == 0 ? 12 : _hour % 12) - 1,
   );
+
+  /// Used instead of the 12-hour wheel when the phone uses a 24-hour clock.
+  late final _hour24Ctl = FixedExtentScrollController(initialItem: _hour);
   late final _minuteCtl = FixedExtentScrollController(initialItem: _minute);
   late final _periodCtl = FixedExtentScrollController(
     initialItem: _hour < 12 ? 0 : 1,
@@ -76,6 +79,7 @@ class _TimeSheetState extends State<_TimeSheet> {
   @override
   void dispose() {
     _hourCtl.dispose();
+    _hour24Ctl.dispose();
     _minuteCtl.dispose();
     _periodCtl.dispose();
     super.dispose();
@@ -84,7 +88,8 @@ class _TimeSheetState extends State<_TimeSheet> {
   LocalDate get _yesterday => widget.today.addDays(-1);
 
   void _setHour12(int index, {bool? pm}) {
-    final h12 = index + 1; // 1..12
+    // Looping wheels report positions past the ends; wrap them.
+    final h12 = index % 12 + 1; // 1..12
     final isPm = pm ?? _hour >= 12;
     setState(() => _hour = (h12 % 12) + (isPm ? 12 : 0));
   }
@@ -112,6 +117,14 @@ class _TimeSheetState extends State<_TimeSheet> {
     final isToday = _date == widget.today;
     final isYesterday = _date == _yesterday;
     final future = widget.isInFuture(_date, _hour, _minute, hasTime: _hasTime);
+    // Follows the phone's clock setting, and grows with the text size (up
+    // to a point, so the sheet still fits).
+    final use24 = MediaQuery.alwaysUse24HourFormatOf(context);
+    final grow = (MediaQuery.textScalerOf(context).scale(10) / 10).clamp(
+      1.0,
+      1.6,
+    );
+    final itemExtent = 44 * grow;
 
     Widget wheel({
       required String label,
@@ -119,6 +132,7 @@ class _TimeSheetState extends State<_TimeSheet> {
       required int count,
       required String Function(int) itemLabel,
       required ValueChanged<int> onChanged,
+      bool looping = false,
     }) {
       // The highlight sits behind the wheel. CupertinoPicker paints its
       // selection overlay on top of the items, which hid the chosen value.
@@ -129,7 +143,7 @@ class _TimeSheetState extends State<_TimeSheet> {
             alignment: Alignment.center,
             children: [
               Container(
-                height: 44,
+                height: itemExtent,
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   color: colors.tint,
@@ -138,7 +152,8 @@ class _TimeSheetState extends State<_TimeSheet> {
               ),
               CupertinoPicker(
                 scrollController: controller,
-                itemExtent: 44,
+                itemExtent: itemExtent,
+                looping: looping,
                 onSelectedItemChanged: onChanged,
                 selectionOverlay: null,
                 children: [
@@ -209,7 +224,7 @@ class _TimeSheetState extends State<_TimeSheet> {
         if (_hasTime) ...[
           const SizedBox(height: MorrowSpacing.sm),
           Container(
-            height: 150,
+            height: 150 * grow,
             padding: const EdgeInsets.symmetric(horizontal: MorrowSpacing.md),
             decoration: BoxDecoration(
               color: colors.background,
@@ -217,28 +232,41 @@ class _TimeSheetState extends State<_TimeSheet> {
             ),
             child: Row(
               children: [
-                wheel(
-                  label: 'Hour',
-                  controller: _hourCtl,
-                  count: 12,
-                  itemLabel: (i) => '${i + 1}',
-                  onChanged: _setHour12,
-                ),
+                if (use24)
+                  wheel(
+                    label: 'Hour',
+                    controller: _hour24Ctl,
+                    count: 24,
+                    itemLabel: (i) => i.toString().padLeft(2, '0'),
+                    onChanged: (i) => setState(() => _hour = i % 24),
+                    looping: true,
+                  )
+                else
+                  wheel(
+                    label: 'Hour',
+                    controller: _hourCtl,
+                    count: 12,
+                    itemLabel: (i) => '${i + 1}',
+                    onChanged: _setHour12,
+                    looping: true,
+                  ),
                 wheel(
                   label: 'Minute',
                   controller: _minuteCtl,
                   count: 60,
                   itemLabel: (i) => i.toString().padLeft(2, '0'),
-                  onChanged: (i) => setState(() => _minute = i),
+                  onChanged: (i) => setState(() => _minute = i % 60),
+                  looping: true,
                 ),
-                wheel(
-                  label: 'am or pm',
-                  controller: _periodCtl,
-                  count: 2,
-                  itemLabel: (i) => i == 0 ? 'am' : 'pm',
-                  onChanged: (i) =>
-                      _setHour12(_hourCtl.selectedItem, pm: i == 1),
-                ),
+                if (!use24)
+                  wheel(
+                    label: 'am or pm',
+                    controller: _periodCtl,
+                    count: 2,
+                    itemLabel: (i) => i == 0 ? 'am' : 'pm',
+                    onChanged: (i) =>
+                        _setHour12(_hourCtl.selectedItem, pm: i == 1),
+                  ),
               ],
             ),
           ),

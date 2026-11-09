@@ -133,18 +133,20 @@ class LockedScreen extends StatelessWidget {
     final (String title, String message)? banner = switch (problem) {
       null => null,
       LockProblem.didNotUnlock => (
-        'Couldn’t unlock',
-        'Authentication was cancelled or didn’t match. Try again, or wait '
-            'a moment if you’ve tried several times.',
+        'That didn’t match',
+        'Try again, or use your phone’s passcode instead.',
       ),
       LockProblem.lockedOut => (
         'Too many tries',
-        'Unlocking is paused for a while. Wait a moment, then try again.',
+        'Your phone has paused unlocking for a while. Wait a little, or '
+            'unlock your phone with its passcode, then try again.',
       ),
       LockProblem.notAvailable => (
         'Set up a screen lock',
-        'morrow unlocks with your phone’s fingerprint, face or passcode. '
-            'Set a screen lock in your phone’s settings, then try again.',
+        'Your journal is safe. morrow unlocks with your phone’s '
+            'fingerprint, face or passcode, so it opens again once your phone '
+            'has a screen lock. Set one in your phone’s settings, then try '
+            'again.',
       ),
       LockProblem.promptFailed => (
         'Couldn’t show the unlock prompt',
@@ -285,17 +287,20 @@ class BlockedCopy {
     StartupBlockReason.encryptionUnavailable => const BlockedCopy(
       message:
           'This copy of morrow can’t protect your journal, so it won’t open '
-          'it. Nothing has been changed or deleted. Try updating or '
-          'reinstalling morrow.',
+          'it. Nothing has been changed or deleted. Try updating morrow.',
     ),
     StartupBlockReason.setupFailed => const BlockedCopy(
-      message: 'morrow couldn’t finish setting up. Please try again.',
+      message:
+          'morrow couldn’t finish setting up. Nothing has been changed. Try '
+          'again.',
     ),
     StartupBlockReason.eraseFailed => const BlockedCopy(
       message:
-          'morrow couldn’t finish erasing its data on this phone. You can '
-          'try erasing again.',
+          'morrow couldn’t finish erasing its data on this phone. Nothing '
+          'will be opened until it does. Try erasing again.',
       offerErase: true,
+      // Retrying startup wouldn't help; erasing again is the way on.
+      offerRetry: false,
     ),
     null => const BlockedCopy(
       message:
@@ -327,7 +332,40 @@ class BlockedScreen extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final copy = BlockedCopy.forReason(reason);
 
-    return _GateLayout(
+    return StatusPage(
+      badge: StatusBadge.problem,
+      title: 'Your journal can’t be opened right now',
+      message: copy.message,
+      below: copy.offerErase
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(MorrowSpacing.lg),
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(MorrowRadii.lg),
+                border: Border.all(color: colors.line),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text('Still stuck?', style: text.titleSmall),
+                  ),
+                  const SizedBox(height: MorrowSpacing.xs),
+                  Text(
+                    'If the key that protects your entries is gone, for '
+                    'example after this phone was restored from a backup, '
+                    'they may not be recoverable. As a last resort you can '
+                    'erase morrow’s data on this phone and start fresh. If '
+                    'you have a backup, restore it afterwards from Settings '
+                    '> Data & privacy.',
+                    style: text.bodyMedium,
+                  ),
+                ],
+              ),
+            )
+          : null,
       actions: [
         if (copy.offerRetry)
           MorrowButton(label: 'Try again', onPressed: onRetry),
@@ -338,46 +376,26 @@ class BlockedScreen extends StatelessWidget {
             onPressed: onErase,
           ),
       ],
-      children: [
-        ExcludeSemantics(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: colors.sand,
-                borderRadius: BorderRadius.circular(MorrowRadii.lg),
-              ),
-              child: Icon(Icons.error_outline, color: colors.danger),
-            ),
-          ),
-        ),
-        const SizedBox(height: MorrowSpacing.lg),
-        Semantics(
-          header: true,
-          child: Text(
-            'Your journal can’t be opened right now',
-            style: text.headlineSmall!.copyWith(fontSize: 24),
-          ),
-        ),
-        const SizedBox(height: MorrowSpacing.md),
-        Text(copy.message, style: text.bodyLarge),
-        if (copy.offerErase) ...[
-          const SizedBox(height: MorrowSpacing.xxl),
-          Text('Still stuck?', style: text.titleSmall!.copyWith(fontSize: 14)),
-          const SizedBox(height: MorrowSpacing.xs),
-          Text(
-            'If the key is gone, for example after restoring this phone from '
-            'a backup, entries may not be recoverable. As a last resort you '
-            'can erase morrow’s data on this phone and start fresh. If you '
-            'have a backup, you can restore it afterwards.',
-            style: text.bodySmall!.copyWith(fontSize: 13),
-          ),
-        ],
-      ],
     );
   }
+}
+
+/// After "Erase and start fresh": confirms it happened and says where a
+/// backup can be restored, before the new journal opens.
+class ErasedScreen extends StatelessWidget {
+  const ErasedScreen({required this.onContinue, super.key});
+
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) => StatusPage(
+    badge: StatusBadge.done,
+    title: 'morrow’s data was erased',
+    message:
+        'You can start a new journal now. If you have a backup, restore it '
+        'from Settings > Data & privacy.',
+    actions: [MorrowButton(label: 'Start fresh', onPressed: onContinue)],
+  );
 }
 
 /// "Erase and start fresh?" (screen 8.9). Completes with true only if the

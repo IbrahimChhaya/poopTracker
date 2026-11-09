@@ -51,6 +51,9 @@ class SubPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Above 130% text a pinned footer would take too much of the screen,
+    // so the buttons scroll at the end of the page instead.
+    final unpinned = MediaQuery.textScalerOf(context).scale(10) > 13;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -62,10 +65,17 @@ class SubPage extends StatelessWidget {
                   BackHeader(title: title),
                   const SizedBox(height: MorrowSpacing.xxl),
                   ...children,
+                  if (unpinned && actions.isNotEmpty) ...[
+                    const SizedBox(height: MorrowSpacing.xxl),
+                    for (var i = 0; i < actions.length; i++) ...[
+                      if (i > 0) const SizedBox(height: MorrowSpacing.md),
+                      actions[i],
+                    ],
+                  ],
                 ],
               ),
             ),
-            if (actions.isNotEmpty) ActionBar(actions: actions),
+            if (!unpinned && actions.isNotEmpty) ActionBar(actions: actions),
           ],
         ),
       ),
@@ -145,20 +155,31 @@ class StatusPage extends StatelessWidget {
                   const SizedBox(height: 120),
                   Center(child: ExcludeSemantics(child: icon)),
                   const SizedBox(height: MorrowSpacing.lg),
+                  // Title and message are announced together ("Restore
+                  // complete. 1 entry added…").
                   Semantics(
-                    header: true,
                     liveRegion: true,
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: text.headlineSmall,
+                    container: true,
+                    child: Column(
+                      children: [
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: text.headlineSmall,
+                          ),
+                        ),
+                        const SizedBox(height: MorrowSpacing.sm),
+                        Text(
+                          message,
+                          textAlign: TextAlign.center,
+                          style: text.bodyMedium!.copyWith(
+                            color: colors.mutedText,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: MorrowSpacing.sm),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: text.bodyMedium!.copyWith(color: colors.mutedText),
                   ),
                   if (extra != null) ...[
                     const SizedBox(height: MorrowSpacing.lg),
@@ -221,7 +242,13 @@ class InfoRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: text.titleSmall),
+                  Text(
+                    title,
+                    style: text.bodyLarge!.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: colors.ink,
+                    ),
+                  ),
                   const SizedBox(height: MorrowSpacing.xxs),
                   Text(
                     subtitle,

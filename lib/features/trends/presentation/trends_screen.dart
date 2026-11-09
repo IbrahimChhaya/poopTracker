@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/paths.dart';
 import '../../../app/scope.dart';
 import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
+import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/page_body.dart';
 import '../../../ui/widgets/states.dart';
 import '../domain/weekly_summary.dart';
@@ -21,19 +24,31 @@ class TrendsScreen extends ConsumerWidget {
     return PageBody(
       title: 'Your weeks',
       children: switch (view) {
-        AsyncData(:final value) when !value.enoughData => const [
-          EmptyState(
+        AsyncData(:final value) when !value.enoughData => [
+          const EmptyState(
             title: 'Not enough entries yet',
             message:
-                'Weekly trends appear once you have entries from at least two '
+                'Your weeks appear here once you have entries in two '
                 'different weeks.',
+          ),
+          const SizedBox(height: MorrowSpacing.lg),
+          MorrowButton(
+            label: 'Go to your journal',
+            variant: MorrowButtonVariant.secondary,
+            onPressed: () => context.go(AppPaths.journal),
           ),
         ],
         AsyncData(:final value) => _content(context, ref, value),
-        AsyncError() => const [
-          ErrorBanner(
+        AsyncError() => [
+          const ErrorBanner(
             title: 'Couldn’t load your weeks',
             message: 'Nothing has been changed.',
+          ),
+          const SizedBox(height: MorrowSpacing.lg),
+          MorrowButton(
+            label: 'Try again',
+            variant: MorrowButtonVariant.secondary,
+            onPressed: () => ref.invalidate(entriesProvider),
           ),
         ],
         _ => const [LoadingState(label: 'Loading…')],
@@ -64,13 +79,16 @@ class TrendsScreen extends ConsumerWidget {
           ),
           (
             value: formatRatioOneDecimal(s.totalEntries, weeks),
-            title: 'Entries / week',
-            caption: 'weekly average',
+            title: 'Per week',
+            // Said plainly, so a quiet Monday doesn't read as a lapse.
+            caption: v.includesThisWeek
+                ? 'average, including this week'
+                : 'average',
           ),
           (
-            value: '${s.weeksLogged} / $weeks',
-            title: 'Weeks logged',
-            caption: 'with an entry',
+            value: '${s.weeksLogged} of $weeks',
+            title: 'Weeks with entries',
+            caption: v.includesThisWeek ? 'including this week' : 'in range',
           ),
         ],
       ),
@@ -116,13 +134,18 @@ class _RangeTabs extends StatelessWidget {
                   color: values[i] == selected
                       ? colors.card
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(MorrowRadii.md - 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(MorrowRadii.md - 4),
+                    side: values[i] == selected
+                        ? BorderSide(color: colors.primary)
+                        : BorderSide.none,
+                  ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(MorrowRadii.md - 4),
                     onTap: () => onSelected(values[i]),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
-                        minHeight: MorrowSizes.minTouchTarget - 8,
+                        minHeight: MorrowSizes.minTouchTarget,
                       ),
                       child: Center(
                         child: Padding(
@@ -130,15 +153,30 @@ class _RangeTabs extends StatelessWidget {
                             horizontal: MorrowSpacing.xs,
                             vertical: MorrowSpacing.sm,
                           ),
-                          child: Text(
-                            '${values[i].weeks} weeks',
-                            textAlign: TextAlign.center,
-                            style: values[i] == selected
-                                ? text.labelMedium!.copyWith(
-                                    color: colors.primary,
-                                    fontWeight: FontWeight.w600,
-                                  )
-                                : text.labelMedium,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (values[i] == selected) ...[
+                                Icon(
+                                  Icons.check,
+                                  size: 14,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: MorrowSpacing.xs),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  '${values[i].weeks} weeks',
+                                  textAlign: TextAlign.center,
+                                  style: values[i] == selected
+                                      ? text.labelMedium!.copyWith(
+                                          color: colors.primary,
+                                          fontWeight: FontWeight.w600,
+                                        )
+                                      : text.labelMedium,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -285,7 +323,9 @@ class _ChartCard extends StatelessWidget {
   });
 
   final String title;
-  final String trailing;
+
+  /// A short caption beside the title, if any.
+  final String? trailing;
   final List<Widget> children;
 
   @override
@@ -312,7 +352,7 @@ class _ChartCard extends StatelessWidget {
                 header: true,
                 child: Text(title, style: text.titleMedium),
               ),
-              Text(trailing, style: text.labelSmall),
+              if (trailing case final t?) Text(t, style: text.labelSmall),
             ],
           ),
           const SizedBox(height: MorrowSpacing.lg),
@@ -352,6 +392,22 @@ class _WeeklyChart extends StatelessWidget {
         ? 8.0
         : 3.0;
     final axisStyle = text.labelSmall!;
+    // The y axis is as wide as its widest number at this text size; the
+    // date labels start after it so they sit under their bars.
+    final axisWidth = (TextPainter(
+      text: TextSpan(text: '$top', style: axisStyle),
+      textScaler: MediaQuery.textScalerOf(context),
+      textDirection: TextDirection.ltr,
+    )..layout()).width;
+    // Screen readers hear one summary; each bar only when there are few.
+    final perBar = weeks.length <= 4;
+    final counts = [for (final w in weeks) w.entries];
+    final summaryLabel =
+        'Entries each week, ${weeks.length} weeks from '
+        '${formatDayMonth(weeks.first.weekStart)}. Highest '
+        '${counts.reduce((a, b) => a > b ? a : b)}, lowest '
+        '${counts.reduce((a, b) => a < b ? a : b)}'
+        '${lastInProgress ? '. The latest week is still in progress' : ''}.';
 
     Widget bar(int i) {
       final w = weeks[i];
@@ -361,15 +417,20 @@ class _WeeklyChart extends StatelessWidget {
           '${formatEntryCount(w.entries)}${current ? ', in progress' : ''}';
       return Expanded(
         child: Semantics(
-          container: true,
-          label: label,
+          container: perBar,
+          label: perBar ? label : null,
           excludeSemantics: true,
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              height: plotHeight * w.entries / top,
+              // A week with no entries is a flat stub, not a gap.
+              height: w.entries == 0 ? 2 : plotHeight * w.entries / top,
               decoration: BoxDecoration(
-                color: current ? colors.primary : colors.chartBar,
+                color: w.entries == 0
+                    ? colors.line
+                    : current
+                    ? colors.primary
+                    : colors.chartBar,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(4),
                 ),
@@ -406,21 +467,30 @@ class _WeeklyChart extends StatelessWidget {
 
     return _ChartCard(
       title: 'Entries each week',
-      trailing: 'Entries / week',
+      trailing: null,
       children: [
+        if (!perBar)
+          Semantics(
+            container: true,
+            label: summaryLabel,
+            child: const SizedBox(),
+          ),
         SizedBox(
           height: plotHeight,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ExcludeSemantics(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    for (final n in [top, top ~/ 2, 0])
-                      Text('$n', style: axisStyle),
-                  ],
+                child: SizedBox(
+                  width: axisWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      for (final n in [top, top ~/ 2, 0])
+                        Text('$n', style: axisStyle),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: MorrowSpacing.sm),
@@ -446,7 +516,7 @@ class _WeeklyChart extends StatelessWidget {
         const SizedBox(height: MorrowSpacing.sm),
         ExcludeSemantics(
           child: Padding(
-            padding: const EdgeInsets.only(left: 18),
+            padding: EdgeInsets.only(left: axisWidth + MorrowSpacing.sm),
             child: Row(children: xLabels),
           ),
         ),
@@ -501,7 +571,7 @@ class _StoolFormCard extends StatelessWidget {
                         ? 4
                         : 4 + (_plotHeight - 4) * n / max,
                     decoration: BoxDecoration(
-                      color: n == 0 ? colors.line : colors.primary,
+                      color: n == 0 ? colors.line : colors.chartBar,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -517,7 +587,7 @@ class _StoolFormCard extends StatelessWidget {
 
     return _ChartCard(
       title: 'Stool form',
-      trailing: 'Optional · Bristol scale',
+      trailing: 'Types 1–7',
       children: [
         Semantics(
           container: true,
@@ -530,7 +600,7 @@ class _StoolFormCard extends StatelessWidget {
             children: [
               Text(
                 '$withType',
-                style: text.headlineLarge!.copyWith(color: colors.primary),
+                style: text.headlineSmall!.copyWith(color: colors.primary),
               ),
               const SizedBox(width: MorrowSpacing.md),
               Expanded(

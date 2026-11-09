@@ -53,8 +53,7 @@ void main() {
     expect(find.text('Off'), findsOneWidget);
     expect(
       find.text(
-        'Get one gentle nudge a week to add an entry. You choose the day and '
-        'time.',
+        'One weekly check-in to add an entry. You choose the day and time.',
       ),
       findsOneWidget,
     );
@@ -164,6 +163,12 @@ void main() {
       await open(tester, textScale: scale);
       await tapText(tester, 'Remind me weekly');
       expect(tester.takeException(), isNull);
+      // Every day is at least a 48 px target, at any text size.
+      for (final day in ['Monday', 'Sunday']) {
+        final r = tester.getRect(find.bySemanticsLabel(day));
+        expect(r.height, greaterThanOrEqualTo(48), reason: day);
+        expect(r.width, greaterThanOrEqualTo(scale > 1.4 ? 48 : 40));
+      }
     });
   }
 }

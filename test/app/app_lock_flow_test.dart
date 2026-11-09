@@ -64,10 +64,27 @@ void main() {
     expect(find.text('Synthetic private note'), findsOneWidget);
   });
 
-  appTest('a cancelled unlock (7.5) offers Try again', (tester) async {
+  appTest('a cancelled unlock is a choice: the plain locked screen', (
+    tester,
+  ) async {
     await pump(tester);
     await answer(tester, AuthOutcome.cancelled);
-    expect(find.text('Couldn’t unlock'), findsOneWidget);
+    expect(find.text('Couldn’t unlock'), findsNothing);
+    expect(find.text('That didn’t match'), findsNothing);
+    expect(find.text('morrow is locked'), findsOneWidget);
+    expectNothingSensitive();
+
+    await tester.tap(find.text('Unlock'));
+    await tester.pump();
+    expect(auth.reasons, hasLength(2));
+    await answer(tester, AuthOutcome.success);
+    expect(find.text('Your journal'), findsOneWidget);
+  });
+
+  appTest('a mismatch (7.5) says so and offers Try again', (tester) async {
+    await pump(tester);
+    await answer(tester, AuthOutcome.failed);
+    expect(find.text('That didn’t match'), findsOneWidget);
     expect(
       find.text('Your journal stays locked until you unlock it.'),
       findsOneWidget,
@@ -178,7 +195,7 @@ void main() {
   for (final scale in textScales) {
     appTest('locked screen at ${(scale * 100).toInt()}%', (tester) async {
       await pump(tester, textScale: scale);
-      await answer(tester, AuthOutcome.cancelled);
+      await answer(tester, AuthOutcome.failed);
       expect(tester.takeException(), isNull);
       expect(find.text('Try again'), findsOneWidget);
     });

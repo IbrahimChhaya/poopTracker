@@ -59,10 +59,12 @@ class JournalSessionController extends AsyncNotifier<StartupResult> {
   /// user has explicitly confirmed. If erasing fails, the journal stays
   /// blocked and erasing can be tried again.
   Future<void> eraseAndStartFresh() async {
+    ref.read(erasePhaseProvider.notifier).set(ErasePhase.erasing);
     state = const AsyncLoading<StartupResult>();
     try {
       await ref.read(journalResetProvider).eraseAll();
     } on Object {
+      ref.read(erasePhaseProvider.notifier).set(ErasePhase.none);
       state = const AsyncData(StartupBlocked(StartupBlockReason.eraseFailed));
       ref
           .read(diagnosticLogProvider)
@@ -70,6 +72,7 @@ class JournalSessionController extends AsyncNotifier<StartupResult> {
       return;
     }
     ref.read(diagnosticLogProvider).record(DiagnosticEvent.journalErased);
+    ref.read(erasePhaseProvider.notifier).set(ErasePhase.erased);
     ref.invalidateSelf();
   }
 }
@@ -93,3 +96,18 @@ final journalSessionProvider =
       JournalSessionController.new,
       retry: (_, _) => null,
     );
+
+/// Where "Erase and start fresh" is: erasing (the loading screen says so),
+/// erased (a confirmation is shown before the new journal), or neither.
+enum ErasePhase { none, erasing, erased }
+
+class ErasePhaseNotifier extends Notifier<ErasePhase> {
+  @override
+  ErasePhase build() => ErasePhase.none;
+
+  void set(ErasePhase phase) => state = phase;
+}
+
+final erasePhaseProvider = NotifierProvider<ErasePhaseNotifier, ErasePhase>(
+  ErasePhaseNotifier.new,
+);

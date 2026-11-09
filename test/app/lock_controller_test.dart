@@ -83,12 +83,9 @@ void main() {
 
   group('when unlocking does not work, the lock stays on', () {
     for (final (outcome, expectedState, problem, event) in [
-      (
-        AuthOutcome.cancelled,
-        AppLockState.locked,
-        LockProblem.didNotUnlock,
-        DiagnosticEvent.unlockFailed,
-      ),
+      // Cancelling is a choice: locked, but no problem shown and nothing
+      // logged.
+      (AuthOutcome.cancelled, AppLockState.locked, null, null),
       (
         AuthOutcome.failed,
         AppLockState.locked,
@@ -123,7 +120,7 @@ void main() {
         expect(lock().problem, problem);
         expect(lock().enabled, isTrue);
         expect(settings.enabled, isTrue);
-        expect(log.events, [event]);
+        expect(log.events, [?event]);
 
         // Try again works once the prompt succeeds.
         final retry = lock().unlock();

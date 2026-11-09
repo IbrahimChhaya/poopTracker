@@ -127,7 +127,12 @@ class LockController extends Notifier<AppLockState> {
       case AuthOutcome.success:
         problem = null;
         state = AppLockState.unlocked;
-      case AuthOutcome.cancelled || AuthOutcome.failed:
+      case AuthOutcome.cancelled:
+        // A deliberate choice (someone may be looking): back to the plain
+        // locked screen, with no error.
+        problem = null;
+        state = AppLockState.locked;
+      case AuthOutcome.failed:
         _log.record(DiagnosticEvent.unlockFailed);
         problem = LockProblem.didNotUnlock;
         state = AppLockState.locked;

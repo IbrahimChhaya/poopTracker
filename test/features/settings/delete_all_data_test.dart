@@ -56,6 +56,20 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Delete all data lives under Data & privacy only.
+  Future<void> openDelete(WidgetTester tester) async {
+    await openSettingsRow(tester, 'Data & privacy');
+    await tester.scrollUntilVisible(
+      find.text('Delete all data'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(find.text('Delete all data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete all data'));
+    await tester.pumpAndSettle();
+  }
+
   Future<void> tick(WidgetTester tester) async {
     const label = 'I understand this can’t be undone';
     await tester.scrollUntilVisible(
@@ -102,7 +116,7 @@ void main() {
     final app = await pumpMorrowApp(tester, [
       StartupReady(db, createdNew: false),
     ]);
-    await openSettingsRow(tester, 'Delete all data');
+    await openDelete(tester);
     // Says exactly what goes, and offers the backup first.
     expect(
       find.text(
@@ -148,7 +162,7 @@ void main() {
       reminders: reminders,
       log: log,
     );
-    await openSettingsRow(tester, 'Delete all data');
+    await openDelete(tester);
     await tick(tester);
     await tester.tap(_deleteButton);
     await tester.pumpAndSettle();
@@ -179,7 +193,7 @@ void main() {
       lockSettings: settings,
     );
     await tester.pumpAndSettle();
-    await openSettingsRow(tester, 'Delete all data');
+    await openDelete(tester);
     await tick(tester);
 
     auth.next = AuthOutcome.cancelled;
@@ -212,7 +226,7 @@ void main() {
     final app = await pumpMorrowApp(tester, [
       StartupReady(db, createdNew: false),
     ], configureEraser: (e) => e.fail = true);
-    await openSettingsRow(tester, 'Delete all data');
+    await openDelete(tester);
     await tick(tester);
     await tester.tap(_deleteButton);
     await tester.pumpAndSettle();
@@ -271,7 +285,7 @@ void main() {
         textScale: scale,
         size: scale > 1 ? smallPhone : figmaPhone,
       );
-      await openSettingsRow(tester, 'Delete all data');
+      await openDelete(tester);
       expect(tester.takeException(), isNull);
       await tick(tester);
       await tester.tap(_deleteButton);
