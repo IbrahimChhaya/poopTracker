@@ -13,8 +13,7 @@ import '../../../ui/widgets/card_group.dart';
 import '../../../ui/widgets/setting_row.dart';
 import 'settings_screen.dart';
 
-/// "Data & privacy" (8.3). Export and restore join this screen in M11;
-/// until then nothing here mentions a backup.
+/// "Data & privacy" (8.3).
 class DataPrivacyScreen extends ConsumerWidget {
   const DataPrivacyScreen({super.key});
 
@@ -155,6 +154,18 @@ class DataPrivacyScreen extends ConsumerWidget {
             CardGroup(
               children: [
                 SettingRow.navigation(
+                  icon: Icons.download_outlined,
+                  title: 'Export a backup',
+                  subtitle: 'Save a copy to Files, Google Drive or iCloud',
+                  onTap: () => context.push(SettingsScreen.exportPath),
+                ),
+                SettingRow.navigation(
+                  icon: Icons.upload_outlined,
+                  title: 'Restore from a backup',
+                  subtitle: 'Add entries from a file you saved earlier',
+                  onTap: () => context.push(SettingsScreen.restorePath),
+                ),
+                SettingRow.navigation(
                   icon: Icons.delete_outline,
                   title: 'Delete all data',
                   subtitle: 'Permanently erase this phone’s journal',
@@ -185,7 +196,8 @@ class DataPrivacyScreen extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         'Deleting the app or losing this phone erases your '
-                        'journal. There’s no account to recover it from.',
+                        'journal. Only a backup you have exported can bring '
+                        'it back.',
                         style: text.bodySmall!.copyWith(color: colors.warmText),
                       ),
                     ),

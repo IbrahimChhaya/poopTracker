@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/lock/lock_controller.dart';
 import '../../../app/providers.dart';
 import '../../../core/clock.dart';
 import '../../../core/diagnostics/diagnostic_log.dart';
@@ -42,12 +43,13 @@ class DiagnosticsController extends AsyncNotifier<DiagnosticsView> {
 
   /// Opens the save sheet. True when saved.
   Future<bool> save() async {
+    final bytes = await _bytes();
     final saved = await ref
-        .read(fileExportProvider)
-        .save(
-          fileName: fileName(),
-          bytes: await _bytes(),
-          mimeType: 'text/plain',
+        .read(lockControllerProvider.notifier)
+        .whileSystemSheet(
+          () => ref
+              .read(fileExportProvider)
+              .save(fileName: fileName(), bytes: bytes, mimeType: 'text/plain'),
         );
     if (saved) _log.record(DiagnosticEvent.logSaved);
     return saved;
@@ -55,13 +57,18 @@ class DiagnosticsController extends AsyncNotifier<DiagnosticsView> {
 
   /// Opens the share sheet, for example to email the log.
   Future<ShareOutcome> share() async {
+    final bytes = await _bytes();
     final outcome = await ref
-        .read(fileExportProvider)
-        .share(
-          fileName: fileName(),
-          bytes: await _bytes(),
-          mimeType: 'text/plain',
-          subject: 'morrow diagnostics',
+        .read(lockControllerProvider.notifier)
+        .whileSystemSheet(
+          () => ref
+              .read(fileExportProvider)
+              .share(
+                fileName: fileName(),
+                bytes: bytes,
+                mimeType: 'text/plain',
+                subject: 'morrow diagnostics',
+              ),
         );
     if (outcome == ShareOutcome.shared) _log.record(DiagnosticEvent.logShared);
     return outcome;

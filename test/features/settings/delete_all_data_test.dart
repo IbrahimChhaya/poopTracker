@@ -68,7 +68,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  appTest('Data & privacy (8.3) shows the local data and no backup rows', (
+  appTest('Data & privacy (8.3) shows the local data and the data rows', (
     tester,
   ) async {
     await pumpMorrowApp(tester, [StartupReady(db, createdNew: false)]);
@@ -78,9 +78,8 @@ void main() {
     expect(find.text('Works entirely offline'), findsOneWidget);
     expect(find.text('2 entries'), findsOneWidget);
     expect(find.text('Journal started 24 October 2026'), findsOneWidget);
-    expect(find.textContaining('Export'), findsNothing);
-    expect(find.textContaining('Restore'), findsNothing);
-    expect(find.textContaining('backup'), findsNothing);
+    expect(find.text('Export a backup'), findsOneWidget);
+    expect(find.text('Restore from a backup'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Delete all data'),
@@ -104,7 +103,10 @@ void main() {
       StartupReady(db, createdNew: false),
     ]);
     await openSettingsRow(tester, 'Delete all data');
-    expect(find.textContaining('backup'), findsNothing);
+    expect(
+      find.textContaining('Export a backup first if you want to keep a copy.'),
+      findsOneWidget,
+    );
 
     await tester.tap(_deleteButton);
     await tester.pumpAndSettle();

@@ -17,9 +17,11 @@ import 'package:poop_tracker/core/database/tables.dart';
 import 'package:poop_tracker/core/diagnostics/diagnostic_log.dart';
 import 'package:poop_tracker/core/notifications/reminder_scheduler.dart';
 import 'package:poop_tracker/core/platform/file_export.dart';
+import 'package:poop_tracker/core/platform/file_import.dart';
 import 'package:poop_tracker/core/security/device_auth.dart';
 import 'package:poop_tracker/core/security/lock_settings.dart';
 
+import 'fake_backup.dart';
 import 'fake_clock.dart';
 import 'fake_diagnostics.dart';
 import 'fake_key_store.dart';
@@ -160,6 +162,7 @@ Future<AppUnderTest> pumpMorrowApp(
   LockSettingsStore? lockSettings,
   ReminderScheduler? reminders,
   void Function(FakeEraser eraser)? configureEraser,
+  FileImport? fileImport,
 }) async {
   final bootstrap = ScriptedBootstrap(results);
   final diagnostics = log ?? MemoryDiagnosticLog();
@@ -195,6 +198,8 @@ Future<AppUnderTest> pumpMorrowApp(
       clockProvider.overrideWithValue(clock ?? figmaNow),
       diagnosticLogProvider.overrideWithValue(diagnostics),
       fileExportProvider.overrideWithValue(fileExport ?? FakeFileExport()),
+      fileImportProvider.overrideWithValue(fileImport ?? FakeFileImport()),
+      backupKeyDeriverProvider.overrideWithValue(fastKeyDeriver),
     ],
   );
   addTearDown(container.dispose);

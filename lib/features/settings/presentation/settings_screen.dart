@@ -24,6 +24,8 @@ class SettingsScreen extends ConsumerWidget {
   static const String reminderPath = '/settings/reminder';
   static const String dataPath = '/settings/data';
   static const String deletePath = '/settings/delete';
+  static const String exportPath = '/settings/export';
+  static const String restorePath = '/settings/restore';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

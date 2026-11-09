@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/diagnostics/encryption_self_check.dart';
+import '../features/backup/presentation/export_backup_screen.dart';
+import '../features/backup/presentation/restore_backup_screen.dart';
 import '../features/journal/presentation/entry/entry_page.dart';
 import '../features/journal/presentation/entry/quick_add.dart';
 import '../features/journal/presentation/history_screen.dart';
@@ -79,6 +81,14 @@ GoRouter buildAppRouter({String initialLocation = AppPaths.journal}) {
                   GoRoute(
                     path: 'data',
                     builder: (_, _) => const DataPrivacyScreen(),
+                  ),
+                  GoRoute(
+                    path: 'export',
+                    builder: (_, _) => const ExportBackupScreen(),
+                  ),
+                  GoRoute(
+                    path: 'restore',
+                    builder: (_, _) => const RestoreBackupScreen(),
                   ),
                   GoRoute(
                     path: 'delete',

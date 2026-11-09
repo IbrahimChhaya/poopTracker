@@ -1,6 +1,6 @@
 # morrow — implementation plan
 
-Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20. M8 (app lock) is built and checked on the S20; iOS and lockout checks remain. M9 (weekly reminder) is built and checked on the S20; delivery and reboot checks remain. M10 (data & privacy, delete all data, OS backup exclusion) is built and checked on the S20; iOS and device-transfer checks remain.
+Status: approved 7 November 2026, with the section 2 defaults accepted and dark mode moved to after v1. M0 to M6 are done (M3's iOS device check is still open). M6.1 is done. M6.2 (journal polish from the design critique) is done; M6.3 (one-tap entry and one entry page) is built and checked on the S20; TalkBack and iOS checks remain. M7 (weekly trends) is built and awaiting review. M7.5 (diagnostics log) is built and checked on the S20. M8 (app lock) is built and checked on the S20; iOS and lockout checks remain. M9 (weekly reminder) is built and checked on the S20; delivery and reboot checks remain. M10 (data & privacy, delete all data, OS backup exclusion) is built and checked on the S20; iOS and device-transfer checks remain. M11 (encrypted backup and restore) is built and checked on the S20 with Files; Google Drive, app lock and iOS checks remain.
 Source of truth for rules: `CLAUDE.md`. Source of truth for screens: the Figma file, sections 1–9.
 
 ## 1. Starting point
@@ -33,7 +33,7 @@ Before adding each package: read its current docs and changelog for that exact v
 
 Each has a proposed default. Milestones that depend on it are listed in brackets.
 
-1. **Encrypted backups.** Default: yes. The passphrase is at least 8 characters and can't be recovered. [M11]
+1. **Encrypted backups.** *Decided on 8 November: yes.* The passphrase is at least 8 characters and can't be recovered. [M11]
 2. **Week start.** Default: Monday to Sunday everywhere (week strip, "this week", trends), not locale-dependent. [M2]
 3. **Draft policy when the app locks.** Default: an unsaved new or edited entry is discarded when the app locks. The editor says so in small print. [M8]
 4. **Symptom severity.** *Superseded, 8 November 2026:* symptoms are no longer recorded (see M6.1).
@@ -41,7 +41,7 @@ Each has a proposed default. Milestones that depend on it are listed in brackets
 6. **Future-dated entries.** Default: not allowed beyond the current time. Any past date is allowed. [M2]
 7. **Dark mode.** Decided: after v1. v1 ships light only, with every colour in theme tokens so a dark palette can be added later. [M1]
 8. **"Optional" tags on Entry detail and Trends.** Default: keep them as designed. [M6, M7]
-9. **New dependencies for backup.** These need approval: share/save (proposed `share_plus`), file picking (proposed `file_picker`) and encryption (proposed `cryptography`: Argon2id key derivation and AES-GCM). Versions will be checked when approval is requested. [M11]
+9. **New dependencies for backup.** *Decided on 8 November:* share_plus 13.3.1 and file_picker 13.3.2 (M7.5), and `cryptography` 2.9.0 (M11). Originally proposed: share/save (proposed `share_plus`), file picking (proposed `file_picker`) and encryption (proposed `cryptography`: Argon2id key derivation and AES-GCM). Versions will be checked when approval is requested. [M11]
 10. **Native and permission changes.** These are expected and each needs approval when its milestone starts:
     - `MainActivity` becomes `FlutterFragmentActivity` (local_auth).
     - `USE_BIOMETRIC`.
@@ -598,7 +598,20 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
     - iOS (build, backup exclusion, restore).
     - TalkBack.
 
-### M11 — Backup and restore (needs decision 1 and dependency approval)
+### M11 — Backup and restore (built)
+- **Decided on 8 November:**
+  - Backups are encrypted with a passphrase the person chooses: at least 8 characters, typed twice, and impossible to recover (decision 1).
+  - The encryption package is `cryptography` 2.9.0 (dint.dev, Apache-2.0): pure Dart, no native code or permissions. There is no `cryptography_flutter`. Key derivation runs in a background isolate. On 8 November there were no GitHub advisories for it, and the repository isn't archived. Its last release was 21 November 2025.
+  - **Format version 1:** `morrow-backup-YYYY-MM-DD.morrow`.
+    - A plain header: the magic `MORROWBK`, the format, the Argon2id settings (m=19 MiB, t=2, p=1), a 16-byte salt and a 12-byte nonce. The header is authenticated as AAD.
+    - Then the AES-256-GCM body. It holds JSON with `format`, `schemaVersion`, `exportedAtUtc` and `entries`. Each entry has its uid, occurred/offset/hasTime, comment, stool type, ease, tags, and created/updated times.
+    - Reminders, settings and app lock are never included. Plain JSON never touches disk.
+  - **Restore:** it only adds entries, skips a uid that's already present, never overwrites, and runs in one transaction.
+  - **Scope:**
+    - share_plus's cache copy is deleted after each export.
+    - The Export and Restore rows and the backup wording go back on 8.3.
+    - The Welcome restore link comes in M11.1.
+    - No native or permission changes.
 - **Scope (9.1–9.10, Welcome "Restore from a backup"):**
   - Versioned JSON payload built with `dart:convert` (no codegen), encrypted in memory with Argon2id and AES-GCM.
   - Export hands the encrypted file to the OS save sheet; no plaintext file ever touches disk, and the temporary encrypted file is deleted afterwards.
@@ -611,6 +624,49 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Restore into a non-empty journal works.
   - Restoring a backup made with an older schema works.
   - Manual device checks: Files, Google Drive and iCloud Drive with real system sheets.
+- **Also decided on 8 November (during the build):** with app lock on, a system sheet morrow opens at the person's request doesn't lock the app. This covers the backup save sheet, the file picker, and the diagnostics save and share sheets. Without it, restore could never finish with app lock on. If the person is away longer than 1 minute behind the sheet (for example after pressing Home), morrow locks when they return. The privacy cover still hides the app in the app switcher.
+- **Built (8 November):**
+  - **`core/backup/backup_file.dart`:** writes and reads format 1.
+    - The header is checked before the passphrase is used: magic, then version, then Argon2id limits (8 KiB to 256 MiB, 1 to 16 passes, 1 to 8 lanes), then size (32 MB at most). This stops a crafted file from exhausting memory.
+    - Argon2id runs through `DartArgon2id` in `Isolate.run`.
+    - Encryption is AES-256-GCM with the header as AAD. A wrong passphrase and a tampered file give the same "can't open" result.
+  - **`features/journal/domain/backup_payload.dart`:** encodes the JSON. Decoding checks every field (uid, UTC instants, offset, note length, stool type, ease and tag codes) before anything is written. A schema 1 payload (no `hasTime`) restores as timed entries. A later format or schema is refused as "newer version".
+  - **`EntryRepository.restore`:** one transaction. It loads the known uids and skips duplicates, including duplicates within the file. Original created and updated times are kept, nothing is overwritten, and any invalid entry rolls everything back. Future-dated entries are allowed in a restore (the clocks may differ).
+  - **`features/backup/`:** `ExportController` and `RestoreController` live in the unlocked scope and are auto-disposed, so the picked file and the screen state go when the app locks.
+    - Export reads the entries and seals them in memory. The plain JSON is zeroed, as a best effort. The encrypted bytes go straight to file_picker's save sheet, which writes to the chosen location with no temporary copy, so share_plus is never involved.
+    - Restore reads the picked file, then calls `FilePicker.clearTemporaryFiles()` (Android copies picked files into `cache/file_picker`).
+    - Passphrase fields have autocorrect, suggestions and keyboard learning off, plus a show/hide button. They are cleared as soon as they are used.
+  - **Screens:**
+    - 9.1, 9.2, 9.4, 9.5, 9.7, 9.8, 9.9 and 9.10, on the new shared `SubPage`, `StatusPage`, `ActionBar` and `InfoRow` (`ui/widgets/page_layouts.dart`).
+    - The deleting and deleted screens (8.6, 8.7) now use `StatusPage`.
+    - 8.3 has its Export and Restore rows and the backup warning. 8.4 has "Export a backup first…".
+    - 9.1 adds a line the rules require: "Once saved, the file is outside morrow. Anyone with the file and the passphrase can read it."
+    - 9.7 adds a "Change" button to pick another file.
+    - A file that isn't a backup, or comes from a newer morrow, is refused on 9.5 before the passphrase is asked for.
+  - **Diagnostics:** backup saved, backup failed, restored, couldn't be opened, restore failed. Only events are logged, never counts or names.
+  - **Tests:** 444 pass, plus the device tests.
+    - Format: round trip, magic, no plain text, a fresh salt and nonce each time, a wrong passphrase, a changed header or body byte, cut-short files, other files, a newer format, over-limit settings refused before any key work, the size limit, and the standard settings end to end.
+    - Restore, against the real encrypted database: every field, uid and timestamp round-trips; twice is idempotent; a non-empty journal; never overwriting; an invalid entry rolls back; schema 1; payload validation cases.
+    - Flows: passphrase rules, saving encrypted bytes only (the file name and MIME type are checked), cancel, failure, a double tap, restore counts, a wrong passphrase then Try again, not a backup, a newer version, cancelling the picker, and 100% and 200% text.
+    - Lock: the sheet exemption, the result arriving before the resume, more than a minute away (both orders), normal locking afterwards, and a failed sheet.
+  - **Device check (S20, Android 13, 8 November):**
+    - `integration_test/backup_test.dart`, with real Argon2id at 19 MiB and 2 passes on 200 entries (56 KB): sealing took 0.9 to 1.1 s and opening 0.45 to 0.49 s (debug build). Restoring twice adds 200 and then 0, and a wrong passphrase is refused.
+    - All 5 device tests pass.
+    - **Manual, with the real Android save sheet and file picker (Downloads):**
+      - "Don't match" works.
+      - Cancelling the save sheet returns to 9.1 with no message and the fields cleared.
+      - Saving shows 9.4. The file is 703 bytes, starts with `MORROWBK`, and doesn't contain the passphrase.
+      - morrow's cache is empty after both saving and picking.
+      - A wrong passphrase shows 9.10.
+      - The right one gives "0 entries added. 2 were already…". After deleting one entry, "1 entry added. 1 was already…", and the entry is back.
+      - The test file was then deleted.
+    - **Uninstall again:** adb lost its connection during the first device-test run ("failed to write the SHA hash"). flutter_tools then uninstalled and reinstalled the app despite `--no-uninstall`. The phone held only an empty journal at that point.
+  - **Not checked:**
+    - Google Drive and iCloud Drive.
+    - The save sheet and picker with app lock on (needs your fingerprint), including the 1-minute rule on a real device.
+    - Large backups.
+    - iOS (no Mac: the build, the document picker, CryptoKit isn't used).
+    - TalkBack.
 
 ### M11.1 — Welcome and first launch (Figma 1.1–1.4)
 - **Why:** no milestone covered the first-launch screens. Today a fresh install goes straight to the empty journal.

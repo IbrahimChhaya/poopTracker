@@ -37,6 +37,10 @@ enum LockProblem {
 ///   start and whenever it really goes to the background, and asks again
 ///   when it comes back.
 /// - The unlock prompt's own pauses are ignored, so it never loops.
+/// - So are the pauses of a system sheet morrow opened at the person's
+///   request (save sheet, file picker, share sheet; see
+///   [whileSystemSheet]), unless they are away longer than
+///   [systemSheetAllowance] (decided 8 November 2026).
 /// - Every attempt carries a session token: a result that arrives after
 ///   the app was locked again (or a newer attempt started) is discarded.
 /// - Cancelling, failing or being locked out never turns app lock off.
@@ -44,6 +48,16 @@ enum LockProblem {
 class LockController extends Notifier<AppLockState> {
   int _session = 0;
   bool _promptShowing = false;
+
+  /// How many of morrow's own system sheets are open.
+  int _sheetsShowing = 0;
+
+  /// When the app went to the background behind one of those sheets.
+  DateTime? _leftForSheetAt;
+
+  /// Away longer than this behind a system sheet (for example after
+  /// pressing Home from the file picker) and morrow locks on return.
+  static const Duration systemSheetAllowance = Duration(minutes: 1);
 
   /// Set when the app locked itself on going to the background, so it asks
   /// again once it is back. A cancelled prompt does not set it, so
@@ -151,9 +165,51 @@ class LockController extends Notifier<AppLockState> {
     state = AppLockState.locked;
   }
 
+  /// Runs [task], which opens a system sheet the person asked for, without
+  /// the sheet's own backgrounding locking the app. Coming back after more
+  /// than [systemSheetAllowance] still locks.
+  Future<T> whileSystemSheet<T>(Future<T> Function() task) async {
+    _sheetsShowing++;
+    try {
+      return await task();
+    } finally {
+      // The time away is checked on the next resume, which can arrive
+      // before or after the sheet's result.
+      _sheetsShowing--;
+    }
+  }
+
+  bool _awayTooLong() {
+    final left = _leftForSheetAt;
+    return left != null &&
+        ref.read(clockProvider).nowUtc().difference(left) >
+            systemSheetAllowance;
+  }
+
   /// Called for every app lifecycle change.
   void onLifecycle(AppLifecycleState s) {
     if (!_enabled || _promptShowing) return;
+    // Coming back from one of morrow's sheets: only the resume matters
+    // (the hidden and inactive steps on the way back are not a new trip to
+    // the background). The resume can come before or after the sheet's
+    // result.
+    if (_leftForSheetAt != null &&
+        (_sheetsShowing == 0 || s == AppLifecycleState.resumed)) {
+      if (s != AppLifecycleState.resumed) return;
+      final tooLong = _awayTooLong();
+      _leftForSheetAt = null;
+      if (tooLong && state == AppLockState.unlocked) {
+        lock();
+        unawaited(unlock());
+      }
+      return;
+    }
+    if (_sheetsShowing > 0) {
+      if (s == AppLifecycleState.hidden || s == AppLifecycleState.paused) {
+        _leftForSheetAt ??= ref.read(clockProvider).nowUtc();
+      }
+      return;
+    }
     switch (s) {
       case AppLifecycleState.hidden || AppLifecycleState.paused:
         if (state == AppLockState.unlocked) {

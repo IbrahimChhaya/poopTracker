@@ -128,7 +128,7 @@ The following decisions were made with the product owner after the scan:
 - **8.3 Data & privacy, 8.4 Delete all data, 8.5 Confirm to delete, 8.6 Deleting data, 8.7 All data deleted:** built (M10). 8.3 has no Export or Restore rows, no backup wording and no version footer until M11, and App lock is a navigation row rather than a toggle.
 - **8.8 Journal unavailable, 8.9 Erase and start fresh?:** *Built (M4).*
 
-### 9 · Back up and restore (M11)
+### 9 · Back up and restore, built (M11)
 - **9.1 Export a backup, 9.2 Creating backup, 9.3 Native save picker** (documentation only), **9.4 Backup saved, 9.5 Restore from a backup, 9.6 Native file picker** (documentation only), **9.7 Enter passphrase, 9.8 Restoring entries, 9.9 Restore complete, 9.10 Couldn't restore.**
 
 ### 10 · Diagnostics, built (M7.5)

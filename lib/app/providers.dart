@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../core/backup/backup_file.dart';
 import '../core/clock.dart';
 import '../core/data/data_eraser.dart';
 import '../core/database/bootstrap.dart';
@@ -11,6 +12,7 @@ import '../core/database/journal_reset.dart';
 import '../core/diagnostics/diagnostic_log.dart';
 import '../core/notifications/reminder_scheduler.dart';
 import '../core/platform/file_export.dart';
+import '../core/platform/file_import.dart';
 import '../core/platform/privacy_shield.dart';
 import '../core/security/device_auth.dart';
 import '../core/security/key_store.dart';
@@ -31,6 +33,16 @@ final diagnosticLogProvider = Provider<DiagnosticLog>(
 /// The phone's save and share sheets.
 final fileExportProvider = Provider<FileExport>(
   (ref) => const PlatformFileExport(),
+);
+
+/// The phone's file picker, for restoring a backup.
+final fileImportProvider = Provider<FileImport>(
+  (ref) => const PlatformFileImport(),
+);
+
+/// Passphrase to backup key (Argon2id in a background isolate).
+final backupKeyDeriverProvider = Provider<KeyDeriver>(
+  (ref) => argon2idInIsolate,
 );
 
 /// The phone's biometric / passcode prompt (app lock).

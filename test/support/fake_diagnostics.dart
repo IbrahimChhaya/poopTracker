@@ -51,7 +51,16 @@ class MemoryDiagnosticLog implements DiagnosticLog {
 class FakeFileExport implements FileExport {
   bool saveResult = true;
   ShareOutcome shareResult = ShareOutcome.shared;
-  final List<({String name, String text, String? subject})> calls = [];
+  final List<
+    ({
+      String name,
+      String text,
+      List<int> bytes,
+      String mimeType,
+      String? subject,
+    })
+  >
+  calls = [];
 
   @override
   Future<bool> save({
@@ -62,6 +71,8 @@ class FakeFileExport implements FileExport {
     calls.add((
       name: fileName,
       text: String.fromCharCodes(bytes),
+      bytes: List.of(bytes),
+      mimeType: mimeType,
       subject: null,
     ));
     return saveResult;
@@ -77,6 +88,8 @@ class FakeFileExport implements FileExport {
     calls.add((
       name: fileName,
       text: String.fromCharCodes(bytes),
+      bytes: List.of(bytes),
+      mimeType: mimeType,
       subject: subject,
     ));
     return shareResult;

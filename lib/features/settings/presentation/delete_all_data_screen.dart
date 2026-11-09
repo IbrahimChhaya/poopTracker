@@ -95,7 +95,8 @@ class _DeleteAllDataScreenState extends ConsumerState<DeleteAllDataScreen> {
                   const SizedBox(height: MorrowSpacing.sm),
                   Text(
                     'This permanently removes every entry, setting and '
-                    'reminder from this phone. It can’t be undone.',
+                    'reminder from this phone. It can’t be undone. Export a '
+                    'backup first if you want to keep a copy.',
                     textAlign: TextAlign.center,
                     style: text.bodyMedium!.copyWith(color: colors.mutedText),
                   ),

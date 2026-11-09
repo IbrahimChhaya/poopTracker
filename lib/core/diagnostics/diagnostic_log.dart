@@ -80,6 +80,11 @@ enum DiagnosticEvent {
     'data.deletion_resumed',
     'Finished deleting data from last time',
   ),
+  backupSaved('backup.saved', 'Backup saved'),
+  backupFailed('backup.failed', 'Couldn’t create a backup'),
+  restoreDone('restore.done', 'Backup restored'),
+  restoreRefused('restore.refused', 'Backup couldn’t be opened'),
+  restoreFailed('restore.failed', 'Couldn’t restore a backup'),
   logTurnedOn('log.on', 'Log turned on'),
   logSaved('log.saved', 'Log saved'),
   logShared('log.shared', 'Log shared');

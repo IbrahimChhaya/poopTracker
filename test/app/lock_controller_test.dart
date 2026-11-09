@@ -6,6 +6,7 @@ import 'package:poop_tracker/app/providers.dart';
 import 'package:poop_tracker/core/diagnostics/diagnostic_log.dart';
 import 'package:poop_tracker/core/security/device_auth.dart';
 
+import '../support/fake_clock.dart';
 import '../support/fake_diagnostics.dart';
 import '../support/fake_lock.dart';
 
@@ -15,14 +16,17 @@ void main() {
   late FakePrivacyShield shield;
   late MemoryDiagnosticLog log;
   late ProviderContainer c;
+  late FixedClock clock;
 
   void make({bool enabled = false, bool hold = false}) {
     auth = FakeAuthenticator(hold: hold);
     settings = FakeLockSettings(enabled: enabled);
     shield = FakePrivacyShield();
     log = MemoryDiagnosticLog();
+    clock = FixedClock(DateTime.utc(2026, 11, 8, 21));
     c = ProviderContainer(
       overrides: [
+        clockProvider.overrideWithValue(clock),
         deviceAuthenticatorProvider.overrideWithValue(auth),
         lockSettingsProvider.overrideWithValue(settings),
         privacyShieldProvider.overrideWithValue(shield),
@@ -246,6 +250,91 @@ void main() {
       auth.complete(AuthOutcome.success);
       await turningOn;
       expect(state(), AppLockState.unlocked);
+    });
+  });
+
+  group('system sheets morrow opened (save sheet, file picker)', () {
+    Future<void> unlocked() async {
+      make(enabled: true);
+      await settle();
+      expect(state(), AppLockState.unlocked);
+    }
+
+    void away() {
+      lock().onLifecycle(AppLifecycleState.inactive);
+      lock().onLifecycle(AppLifecycleState.hidden);
+      lock().onLifecycle(AppLifecycleState.paused);
+    }
+
+    void back() {
+      lock().onLifecycle(AppLifecycleState.hidden);
+      lock().onLifecycle(AppLifecycleState.inactive);
+      lock().onLifecycle(AppLifecycleState.resumed);
+    }
+
+    test('the sheet backgrounding the app does not lock it', () async {
+      await unlocked();
+      final result = await lock().whileSystemSheet(() async {
+        away();
+        expect(state(), AppLockState.unlocked);
+        back();
+        return 'picked';
+      });
+      expect(result, 'picked');
+      await settle();
+      expect(state(), AppLockState.unlocked);
+      expect(auth.reasons, ['Unlock morrow']);
+    });
+
+    test('the result arriving before the resume is still fine', () async {
+      await unlocked();
+      await lock().whileSystemSheet(() async => away());
+      back();
+      await settle();
+      expect(state(), AppLockState.unlocked);
+    });
+
+    test('away longer than a minute locks on return', () async {
+      await unlocked();
+      await lock().whileSystemSheet(() async {
+        away();
+        clock.utc = clock.utc.add(const Duration(minutes: 1, seconds: 1));
+        back();
+      });
+      await settle();
+      // Locked and asked again (the fake prompt then succeeds).
+      expect(auth.reasons, ['Unlock morrow', 'Unlock morrow']);
+    });
+
+    test('away longer than a minute, result first, still locks', () async {
+      await unlocked();
+      await lock().whileSystemSheet(() async {
+        away();
+        clock.utc = clock.utc.add(const Duration(minutes: 5));
+      });
+      back();
+      await settle();
+      expect(auth.reasons, ['Unlock morrow', 'Unlock morrow']);
+    });
+
+    test('after the sheet, backgrounding locks as usual', () async {
+      await unlocked();
+      await lock().whileSystemSheet(() async {
+        away();
+        back();
+      });
+      away();
+      expect(state(), AppLockState.locked);
+    });
+
+    test('a sheet that fails still ends the exemption', () async {
+      await unlocked();
+      await expectLater(
+        lock().whileSystemSheet<void>(() async => throw StateError('x')),
+        throwsStateError,
+      );
+      away();
+      expect(state(), AppLockState.locked);
     });
   });
 }
