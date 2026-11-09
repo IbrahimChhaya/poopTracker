@@ -843,6 +843,7 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Store-facing text in neutral wording.
   - Written device test checklist with results.
 - **Accept when:** the checklist is complete on at least one physical Android device and one iPhone. Nothing is called production-ready without that evidence.
+- **Started 9 November:** the automated checks are done (accessibility guidelines, release manifest, network use, licences, advisories). The owner decisions, the device checklist and its results are tracked in `docs/release-checklist.md`.
 
 ## 6. Main risks
 
