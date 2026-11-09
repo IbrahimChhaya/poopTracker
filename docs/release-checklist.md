@@ -15,16 +15,18 @@ Key: ✅ done with evidence · ⏳ to do · 🔒 needs the owner (a decision, an
 | Licences (112 packages in the resolved tree) | ✅ All permissive: BSD-2/BSD-3, MIT or Apache-2.0. The one exception is `dbus` (MPL-2.0), used only by the Linux desktop plugins, so it isn't in the Android or iOS builds. Flutter SDK packages are BSD-3. The native SQLite3MultipleCiphers bundled through `sqlite3` is MIT. |
 | Security advisories (GitHub advisory database, Pub ecosystem) | ✅ No advisory affects a shipped version. The only package match, `http` GHSA-4rgh-jx4f-qfcq, affects versions before 0.13.3; the app ships 1.6.0. `flutter pub outdated` shows newer majors for 12 packages. That's an update question, not a security finding; it's deferred by the existing "don't chase every major" rule (for example flutter_local_notifications 23 needs AGP 9.1.1). |
 
-## 2. Decisions and setup for the owner 🔒
+## 2. Decisions and setup (9 November)
 
-1. **Android application ID.** It's `com.chhaya.poop_tracker`. That appears in the Play Store URL and in Android's app info, so it reveals what the app tracks, and it **can't be changed after the first release**. Proposed: `com.chhaya.morrow`. The iOS bundle ID `com.chhaya.poopTracker` has the same issue (proposed: `com.chhaya.morrow`). Changing either now is cheap. On Android, a phone that already has the old ID installs the new build as a separate app, with a fresh journal.
-2. **Release signing.** The release build is still signed with the debug key. You create an upload keystore (Play App Signing) and keep it **outside the repository**; the build reads it from `key.properties`, which is git-ignored. Signing material must never be committed.
-3. **Launcher icon.** It's still the Flutter default on both platforms. It needs a neutral mark, for example the sprout on cream, with no subject imagery. I can draw options in Figma; you choose.
-4. **Store listing text.** Name, short and full description, and screenshots, in neutral wording ("journal", "entry", "check-in"). I can draft it for your approval. Screenshots use synthetic data only.
-5. **iOS export compliance.** `ITSAppUsesNonExemptEncryption` isn't set. morrow uses encryption only to protect the user's own data on the device (SQLite3MultipleCiphers, plus AES-GCM for backups), which normally falls under the "exempt" categories. That's your call, though, and possibly a quick check with Apple's guidance; then the key is set in `Info.plist`.
-6. **iOS privacy manifest.** `PrivacyInfo.xcprivacy` is missing. It declares no tracking, no data collected, and any required-reason APIs the app itself uses. Adding it needs Xcode on a Mac, because the file must be added to the project.
-7. **Orientation.** Both `Info.plist` and Android allow landscape, but it was never designed or tested. Proposed: portrait only on phones for v1.
-8. **Version.** `1.0.0+1` in `pubspec.yaml`. Confirm before the first upload.
+| Item | Status |
+|---|---|
+| Application ID | ✅ Android `applicationId` and the iOS bundle ID are now `com.chhaya.morrow` (tests target `com.chhaya.morrow.RunnerTests`). The internal Kotlin namespace stays `com.chhaya.poop_tracker`; it isn't user-visible. |
+| Release signing | ✅ Upload key `morrow-upload.jks` (RSA 4096, PKCS12, alias `upload`) is in `%USERPROFILE%\.morrow-signing\`, **outside the repository**. `android/key.properties` (git-ignored) points to it and holds the passwords. `build.gradle.kts` signs release builds with it; without the file, builds fall back to the debug key and can't be uploaded. The bundle's signer is "CN=morrow, O=Ibrahim Chhaya". **The owner must back up the keystore and `key.properties` somewhere safe (a password manager), and enrol in Play App Signing.** |
+| Launcher icon | ⏳ Three options in Figma section 11 (recommended: B, cream sprout on sage). The assets are made once one is chosen. |
+| Store listing | ⏳ Draft in `docs/store-listing.md` for approval. It still needs support and privacy-policy URLs. |
+| iOS export compliance | ✅ `ITSAppUsesNonExemptEncryption` = false: encryption only protects the user's own data. |
+| Orientation | ✅ Portrait only: Android `screenOrientation="portrait"`; iOS `Info.plist` portrait for iPhone and iPad, plus `UIRequiresFullScreen`. |
+| Version | ✅ 1.0.0 (build 1), confirmed. |
+| iOS privacy manifest | ⏳ Needs a Mac (see `docs/ios-tasks.md`). |
 
 ## 3. Device checklist
 
@@ -38,14 +40,14 @@ Key: ✅ done with evidence · ⏳ to do · 🔒 needs the owner (a decision, an
 | Backup export and restore with the real save sheet and file picker (Downloads) | ✅ (M11) |
 | Welcome and tour on a new journal (device test, temporary journal) | ✅ (9 Nov) |
 | OS backup exclusion (`bmgr` refuses) | ✅ (M10) |
-| A real fresh install (deletes the phone's journal) | ⏳ Run once on a phone that holds nothing to keep |
+| A real fresh install | ✅ 9 Nov: the signed release build as `com.chhaya.morrow`, beside the old debug app, so nothing was deleted. The first launch happened behind the lock screen, which exposed a gap: an interrupted first launch never showed the welcome again. Fixed: an empty journal that hasn't finished the welcome shows it on the next start. After the fix, the welcome, the four pages and the hint appeared on the release build, with times in 24-hour format. |
 | Reminder delivered at the chosen time; after a reboot; with battery saver on; tapping it opens through the lock gate | ⏳ 🔒 |
 | App lock with fingerprint: unlock, cancel, lockout, the 1-minute system-sheet allowance, relock on backgrounding, app-switcher cover | ⏳ 🔒 |
 | Delete all data with app lock on (re-authentication) | ⏳ 🔒 |
 | TalkBack through every screen (passphrase fields, Trends summary, switches, tour pages) | ⏳ 🔒 |
 | Google Drive export and restore | ⏳ 🔒 (needs a signed-in account) |
 | Device-to-device transfer leaves morrow out | ⏳ 🔒 (needs a second phone) |
-| Release build on the phone (not just debug) | ⏳ |
+| Release build on the phone (not just debug) | ✅ 9 Nov (see the fresh install above). |
 
 ### iOS (nothing built yet)
 

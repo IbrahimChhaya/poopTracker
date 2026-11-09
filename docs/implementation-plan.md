@@ -843,6 +843,15 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Store-facing text in neutral wording.
   - Written device test checklist with results.
 - **Accept when:** the checklist is complete on at least one physical Android device and one iPhone. Nothing is called production-ready without that evidence.
+- **9 November, later:**
+  - **App ID:** `com.chhaya.morrow` on Android and iOS.
+  - **Release signing:** wired up (the key lives outside the repository).
+  - **Orientation:** portrait only.
+  - **iOS:** export compliance set to exempt.
+  - **Version:** 1.0.0 confirmed.
+  - **Docs:** a store listing draft (`docs/store-listing.md`) and the iOS task list (`docs/ios-tasks.md`).
+  - **Figma:** the 1.3c 200% frame corrected (the real switches scale), plus proposals for the launcher icon (11), quick times (12) and dark mode (13).
+  - **Fresh install** on the S20, release build: it found that an interrupted first launch lost the welcome, now fixed and tested.
 - **Started 9 November:** the automated checks are done (accessibility guidelines, release manifest, network use, licences, advisories). The owner decisions, the device checklist and its results are tracked in `docs/release-checklist.md`.
 
 ## 6. Main risks

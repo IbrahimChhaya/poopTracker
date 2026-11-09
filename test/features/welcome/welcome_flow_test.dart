@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/core/security/device_auth.dart';
+import 'package:poop_tracker/features/journal/data/entry_repository.dart';
+import 'package:poop_tracker/features/journal/domain/entry.dart';
 
 import '../../support/app_harness.dart';
+import '../../support/fake_clock.dart';
 import '../../support/fake_lock.dart';
 import '../../support/harness.dart';
 
@@ -64,10 +67,23 @@ void main() {
     expect(find.bySemanticsLabel('Quiet evening'), findsNothing);
   });
 
-  appTest('an existing journal never shows it, seen or not', (tester) async {
+  appTest('a journal with entries never shows it, seen or not', (tester) async {
+    await EntryRepository(db, figmaNow).create(
+      EntryDraft(
+        occurredAtUtc: DateTime.utc(2026, 11, 5, 9),
+        originalUtcOffsetMinutes: 0,
+      ),
+    );
     await pumpNew(tester, createdNew: false);
     expect(find.text('Your quiet journal.'), findsNothing);
     expect(find.text('Your journal'), findsOneWidget);
+  });
+
+  appTest('an empty journal whose first launch was interrupted shows it', (
+    tester,
+  ) async {
+    await pumpNew(tester, createdNew: false);
+    expect(find.text('Your quiet journal.'), findsOneWidget);
   });
 
   appTest('once seen, it never shows again', (tester) async {

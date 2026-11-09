@@ -161,3 +161,14 @@ Approved 9 November and built in M11.1. It replaced the old 1.1–1.4, which mov
 
 - Some older journal and History frames still use stat values larger than the M6.2 20 px. The "No note" lines and "No time" titles in day lists were fixed on 8 November.
 - The app has screens Figma doesn't draw: the blocked states other than the key problem (storage unavailable, encryption unavailable, setup failed), the locked placeholder, and the debug-only developer tools.
+
+### 11 · Launcher icon (proposed)
+Three options, each at store size, as Android adaptive shapes and at home-screen size: A, a sage sprout on cream; B, a cream sprout on sage (recommended); C, a sprout on a paper card.
+
+### 12 · Earlier today: quick times (proposed)
+- **12.1:** the time sheet gains an "Or pick a moment" row: 1 hour ago, 2 hours ago, This morning (8:00 am), Last night (yesterday, 9:00 pm).
+- **12.2:** "This morning" chosen.
+- The read-me card has the rules.
+
+### 13 · Dark mode (proposed, after v1)
+A palette card with every light token and its dark twin, all contrast-checked, plus dark versions of the welcome, journal, entry page, details sheet, Trends, Settings and the locked screen.
