@@ -37,6 +37,7 @@ void main() {
           keyStoreProvider.overrideWithValue(FakeKeyStore()),
           // Never read or change the phone's real app-lock setting.
           lockSettingsProvider.overrideWithValue(FakeLockSettings()),
+          welcomeStoreProvider.overrideWithValue(FakeWelcomeStore()),
           // Never schedule or cancel the phone's real reminder.
           reminderSchedulerProvider.overrideWithValue(FakeReminderScheduler()),
           // Never write test events into the phone's real diagnostics log.

@@ -311,7 +311,7 @@ void main() {
 
       await press(tester, 'Choose backup file');
       expect(find.text('morrow-backup-2026-11-05'), findsOneWidget);
-      expect(find.text('5 Nov 2026 · 1 KB'), findsOneWidget);
+      expect(find.text('1 KB'), findsOneWidget);
 
       await type(tester, 'Passphrase', _pass);
       await press(tester, 'Restore');

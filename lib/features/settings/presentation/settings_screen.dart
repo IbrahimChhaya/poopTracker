@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/lock/lock_controller.dart';
+import '../../../app/paths.dart';
 import '../../../app/scope.dart';
 import '../../../core/diagnostics/encryption_self_check.dart';
 import '../../../ui/theme/morrow_tokens.dart';
@@ -12,6 +13,7 @@ import '../../../ui/widgets/page_body.dart';
 import '../../../ui/widgets/setting_row.dart';
 import '../../reminders/presentation/reminder_controller.dart';
 import '../../reminders/presentation/reminder_screen.dart';
+import '../../welcome/presentation/welcome_controller.dart';
 
 /// Settings (8.1, 8.2).
 class SettingsScreen extends ConsumerWidget {
@@ -108,6 +110,12 @@ class SettingsScreen extends ConsumerWidget {
               title: 'Diagnostics',
               subtitle: 'App events only, never your entries',
               onTap: () => context.go(diagnosticsPath),
+            ),
+            SettingRow.navigation(
+              icon: Icons.explore_outlined,
+              title: 'Welcome tour',
+              subtitle: 'Four short pages about morrow',
+              onTap: () => context.push(AppPaths.tour, extra: TourMode.replay),
             ),
           ],
         ),

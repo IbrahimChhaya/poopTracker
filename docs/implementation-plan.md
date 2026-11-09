@@ -780,7 +780,7 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - The time sheet follows the phone's 24-hour clock (hour and minute wheels, no am/pm).
   - **Restore file card:** its date comes from the file name.
 
-### M11.1 — Welcome and first launch (Figma 1.1–1.4)
+### M11.1 — Welcome and first launch (built)
 - **Why:** no milestone covered the first-launch screens. Today a fresh install goes straight to the empty journal.
 - **Scope:**
   - **1.1 Welcome**, shown once on a fresh install, before the journal: "A little daily clarity.", three promises (stays on this phone, private by default, keep your own backup), and Get started, Set up app lock and Restore from a backup.
@@ -796,6 +796,42 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - Restore from a backup returns to Welcome on cancel.
   - 200% text works.
   - Manual device check: a fresh install on the S20.
+- **Decided on 9 November:** the Figma "1 · First launch: welcome and tour" frames were approved, with 1.3c (200%) to be improved. The owner removed the "4 short pages" caption. The old 1.1–1.4 moved to the right-hand column.
+- **Built (9 November):**
+  - **When it shows:**
+    - `WelcomeStore` (secure storage, `morrow.welcome_seen.v1`).
+    - The welcome shows only when startup has just created a journal (`StartupReady.createdNew`) and the flag isn't set.
+    - An existing journal never asks, so no extra wait.
+    - If secure storage can't be read, the journal opens.
+    - The flag is set by Skip, "Start your journal", or Done after a restore started from the welcome.
+  - **Screens:**
+    - `features/welcome/`: `WelcomeScreen` (1.1) and `TourScreen` (1.2–1.5, a `PageView`), on a shared `OnboardingLayout`. The stage fills the free space; at large text the page scrolls under a pinned button.
+    - **Previews** (`previews.dart`) are decorative: hidden from screen readers, kept at a fixed text size and shrunk to fit. **Real controls** sit on a `LiveStage` and scale.
+    - **Progress:** announced as "Page n of 4", and the current dash is longer.
+    - **Skip:** on pages 1–3, keeping any changed switch.
+    - **Back:** system back steps back a page; on iOS a back arrow appears from page 2.
+    - **Page 2:** the real Stool form and Context switches.
+    - **Page 4:**
+      - The real App lock switch, through `LockController.setEnabled`.
+      - Success shows an inline "App lock is on" (a toast would cover the button).
+      - "Not available on this phone yet" for a phone with no screen lock (1.5d).
+      - Cancel says nothing.
+  - **First run and restore:**
+    - **First-run hint:** "Start with one tap" (1.6) under Add an entry, until "Got it" or the first entry.
+    - **Restore:** from the welcome, it opens 9.5. Back returns to the welcome, and Done after a restore goes to the journal.
+  - **Replay:** Settings > Support > Welcome tour. The last button reads Done and goes back; it marks nothing.
+- **Also fixed:**
+  - Times follow the phone's 24-hour setting everywhere (`use24HourClock`, set by the app root).
+  - The locked and loading screens use `StatusPage` (centred), and `_GateLayout` is gone.
+  - The restore file card shows only the size; a date taken from the file name could be wrong.
+  - Figma 1.3c was rebuilt: page text at 200%, the preview kept and scaled, the page scrolling under a pinned Next. *Not checked visually: Figma screenshot export times out and the REST token has expired.*
+- **Tests:** 472 pass. Welcome tests cover:
+  - a new journal only, never once seen or when a journal exists, and a storage-read failure
+  - Skip and the hint, and the hint going after the first entry
+  - all four pages with real switches and app lock (success, no screen lock, cancel)
+  - back steps, restore and back, and replay from Settings
+  - 100% and 200% text
+- **Device check (S20):** `integration_test/welcome_test.dart` runs the real app on a new temporary journal: welcome, the four pages with a real switch, then the journal with the hint. The phone's own journal isn't touched. A real fresh install (which would delete the phone's journal) hasn't been done. All six device tests pass with `--no-uninstall`. `journal_flow_test` was updated for autosave: Done replaces Save, a step missed in the P1 pass, which hadn't re-run the device tests.
 
 ### M12 — Hardening and release readiness
 - **Scope:**

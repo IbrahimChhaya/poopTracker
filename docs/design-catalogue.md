@@ -76,14 +76,14 @@ The following decisions were made with the product owner after the scan:
 ### 0 · Read me
 - **0.1 How to read this file:** conventions (journeys, primary state, details on, weekly).
 
-### 1 · First launch (M8, M11)
+### Old 1 · First launch (superseded 9 November by the welcome and tour below)
 - **1.1 Welcome:** "A little daily clarity." with three promises (stays on this phone, private by default, keep your own backup), plus Get started, Set up app lock and Restore from a backup. *To build (M11.1).*
 - **1.2 Confirm to turn on app lock:** the system authentication sheet over Welcome. *To build (M11.1); uses M8.*
 - **1.3 App lock is on:** confirmation, then Continue. *To build (M11.1).*
 - **1.4 Journal · Empty:** *Built (M5).*
 
-### 1.1 · Welcome and onboarding (proposed, 9 November; awaiting approval)
-A section of its own under journey 1. If approved, it replaces 1.1–1.3 above (they move to the right-hand column), and M11.1 builds it.
+### 1 · First launch: welcome and tour, built (M11.1)
+Approved 9 November and built in M11.1. It replaced the old 1.1–1.4, which moved to the right-hand column. **1.5d** covers app lock not being available, and **1.3c** shows 200% text.
 - **Read me:** the rules. It shows once on a fresh install, Skip is on every page but the last and changes nothing, the switches are real, no permission is asked, and it reaches the first entry in one tap.
 - **1.1 Welcome:** "Your quiet journal." over a preview of the real journal (week strip, stat card, two entries), with Get started, "4 short pages. Skip any time." and Restore from a backup (to 9.5).
 - **1.2 One tap:** Add an entry, the "Added to today" banner and an entry card.

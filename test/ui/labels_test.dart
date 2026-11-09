@@ -114,4 +114,13 @@ void main() {
       expect(() => formatRatioOneDecimal(-1, 2), throwsArgumentError);
     });
   });
+
+  test('formatTime follows a 24-hour phone', () {
+    DateTime t(int h, int m) => DateTime.utc(2026, 11, 6, h, m);
+    use24HourClock = true;
+    addTearDown(() => use24HourClock = false);
+    expect(formatTime(t(13, 35)), '13:35');
+    expect(formatTime(t(8, 10)), '08:10');
+    expect(formatTime(t(0, 5)), '00:05');
+  });
 }

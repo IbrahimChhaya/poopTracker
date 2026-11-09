@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/database/bootstrap.dart';
 import '../../ui/theme/morrow_colors.dart';
 import '../../ui/theme/morrow_tokens.dart';
-import '../../ui/theme/morrow_typography.dart';
 import '../../ui/widgets/morrow_button.dart';
 import '../../ui/widgets/page_layouts.dart';
 import '../../ui/widgets/states.dart';
@@ -11,71 +10,6 @@ import '../lock/lock_controller.dart';
 import '../session/data_reset.dart';
 
 /// The wordmark and a full-screen layout shared by the gate screens. These
-/// screens never show journal content.
-class _GateLayout extends StatelessWidget {
-  const _GateLayout({required this.children, this.actions = const []});
-
-  final List<Widget> children;
-  final List<Widget> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = MorrowColors.of(context);
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                children: [
-                  Row(
-                    children: [
-                      ExcludeSemantics(
-                        child: Icon(
-                          Icons.spa_outlined,
-                          color: colors.primary,
-                          size: 23,
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      Flexible(
-                        child: Text(
-                          'morrow',
-                          style: MorrowTextStyles.of(context).wordmark,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 40),
-                  ...children,
-                ],
-              ),
-            ),
-            if (actions.isNotEmpty)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: colors.line)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < actions.length; i++) ...[
-                        if (i > 0) const SizedBox(height: MorrowSpacing.md),
-                        actions[i],
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// Shown while the journal is being opened, created or erased.
 class StartupLoadingScreen extends StatelessWidget {
@@ -85,7 +19,7 @@ class StartupLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GateLayout(children: [LoadingState(label: label)]);
+    return StatusPage(badge: StatusBadge.busy, title: label);
   }
 }
 
@@ -127,8 +61,6 @@ class LockedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = MorrowColors.of(context);
-    final text = Theme.of(context).textTheme;
     final busy = state == AppLockState.authenticating;
     final (String title, String message)? banner = switch (problem) {
       null => null,
@@ -158,7 +90,15 @@ class LockedScreen extends StatelessWidget {
             'changed. Try again in a moment.',
       ),
     };
-    return _GateLayout(
+    return StatusPage(
+      badge: StatusBadge.locked,
+      title: 'morrow is locked',
+      message: banner == null
+          ? 'Unlock with your fingerprint, face or phone passcode.'
+          : 'Your journal stays locked until you unlock it.',
+      below: banner == null
+          ? null
+          : ErrorBanner(title: banner.$1, message: banner.$2),
       actions: [
         MorrowButton(
           label: banner == null ? 'Unlock' : 'Try again',
@@ -166,43 +106,6 @@ class LockedScreen extends StatelessWidget {
           busyLabel: 'Unlocking…',
           onPressed: onUnlock,
         ),
-      ],
-      children: [
-        const SizedBox(height: 80),
-        Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: colors.tint,
-              shape: BoxShape.circle,
-            ),
-            child: ExcludeSemantics(
-              child: Icon(Icons.lock_outline, color: colors.primary),
-            ),
-          ),
-        ),
-        const SizedBox(height: MorrowSpacing.lg),
-        Semantics(
-          header: true,
-          child: Text(
-            'morrow is locked',
-            textAlign: TextAlign.center,
-            style: text.headlineSmall,
-          ),
-        ),
-        const SizedBox(height: MorrowSpacing.sm),
-        Text(
-          banner == null
-              ? 'Unlock with your fingerprint, face or phone passcode.'
-              : 'Your journal stays locked until you unlock it.',
-          textAlign: TextAlign.center,
-          style: text.bodyMedium!.copyWith(color: colors.mutedText),
-        ),
-        if (banner != null) ...[
-          const SizedBox(height: MorrowSpacing.xl),
-          ErrorBanner(title: banner.$1, message: banner.$2),
-        ],
       ],
     );
   }

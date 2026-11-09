@@ -10,4 +10,10 @@ abstract final class AppPaths {
   /// one entry. `extra`: an `EntryRoute` (the entry id, and whether it was
   /// just added).
   static const String entry = '/entry';
+
+  /// The welcome (1.1), full screen, shown once on a new journal.
+  static const String welcome = '/welcome';
+
+  /// The four tour pages (1.2–1.5). `extra`: a `TourMode`.
+  static const String tour = '/tour';
 }
