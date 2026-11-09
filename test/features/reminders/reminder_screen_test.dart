@@ -71,8 +71,12 @@ void main() {
     expect(find.text('6:00 pm'), findsOneWidget);
     expect(find.text('Weekly check-in'), findsOneWidget);
     expect(find.text('Ready to add an entry?'), findsOneWidget);
-    await reveal(tester, 'Notifications are allowed');
-    expect(find.text('Notifications are allowed'), findsOneWidget);
+    await reveal(tester, 'Scheduled on this phone');
+    expect(find.text('Scheduled on this phone'), findsOneWidget);
+    expect(
+      find.text('Your phone will show it every Sunday at 6:00 pm.'),
+      findsOneWidget,
+    );
     expect(os.pending, hasLength(1));
     expect(
       tester.getSemantics(find.bySemanticsLabel('Sunday')),
@@ -107,11 +111,23 @@ void main() {
       await open(tester);
       await tapText(tester, 'Remind me weekly');
       expect(find.text('Notifications are turned off'), findsOneWidget);
-      expect(find.text('Every Sunday at 6:00 pm'), findsOneWidget);
-      expect(find.text('Notifications are allowed'), findsNothing);
+      // The saved choice is shown, but never as if it will arrive.
+      expect(
+        find.text('Every Sunday at 6:00 pm · Notifications off'),
+        findsOneWidget,
+      );
+      expect(find.text('Scheduled on this phone'), findsNothing);
       expect(os.pending, isEmpty);
       await tapText(tester, 'Open phone settings');
       expect(os.settingsOpened, 1);
+
+      // Settings says the same, so the summary there never misleads.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Every Sunday at 6:00 pm · Notifications off'),
+        findsOneWidget,
+      );
     },
   );
 
@@ -127,8 +143,8 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
-    await reveal(tester, 'Notifications are allowed');
-    expect(find.text('Notifications are allowed'), findsOneWidget);
+    await reveal(tester, 'Scheduled on this phone');
+    expect(find.text('Scheduled on this phone'), findsOneWidget);
     expect(os.pending, hasLength(1));
   });
 

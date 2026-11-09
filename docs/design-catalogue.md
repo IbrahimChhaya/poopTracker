@@ -82,14 +82,24 @@ The following decisions were made with the product owner after the scan:
 - **1.3 App lock is on:** confirmation, then Continue. *To build (M11.1).*
 - **1.4 Journal · Empty:** *Built (M5).*
 
+### 1.1 · Welcome and onboarding (proposed, 9 November; awaiting approval)
+A section of its own under journey 1. If approved, it replaces 1.1–1.3 above (they move to the right-hand column), and M11.1 builds it.
+- **Read me:** the rules. It shows once on a fresh install, Skip is on every page but the last and changes nothing, the switches are real, no permission is asked, and it reaches the first entry in one tap.
+- **1.1 Welcome:** "Your quiet journal." over a preview of the real journal (week strip, stat card, two entries), with Get started, "4 short pages. Skip any time." and Restore from a backup (to 9.5).
+- **1.2 One tap:** Add an entry, the "Added to today" banner and an entry card.
+- **1.3 Optional details:** the real Stool form and Context switches, off by default. **1.3b** shows both on, with an entry card showing its details.
+- **1.4 Weekly:** the weekly chart and the generic "Weekly check-in" notification preview; set up in Settings.
+- **1.5 Private by design:** encrypted on this phone, no account or cloud, your own backup (export or restore), and a real App lock switch. **1.5b** shows the system prompt and **1.5c** app lock on, with a toast.
+- **1.6 Journal · First run:** the empty journal with a one-time "Start with one tap" hint under Add an entry.
+
 ### 2 · Log an entry (details off): one-tap entry, built (M6.3)
 - **2.1 Journal:** tap "Add an entry" (critique-pass style, built in M6.2).
-- **2.2 Entry added:** saved straight away with the current time; "Added to today" with Undo; close (×); the button reads "Saved", greyed out with a tick.
+- **2.2 Entry added:** saved straight away with the current time; "Added to today" with Undo; close (×); "✓ Saved" above a "Done" button (autosave, 9 November).
 - **2.3 Change date and time:** the date and time sheet over the entry page.
 - **2.4 Choose a date · No time:** the same sheet with "Record a time" off (built, M6.1).
-- **2.5 Changed · Save active:** a changed time and a note; "Unsaved changes" above "Save". The Undo banner stays until you leave the page.
+- **2.5 Changed · Saving:** a changed time and a note; "Saving…" above "Done" while the note autosaves. The Undo banner stays until you leave the page.
 - **2.6 Couldn't save changes:** error banner; the changes stay; "Try again".
-- **2.7 Discard changes?:** leaving with unsaved changes. "Your entry is already saved. Only the changes you just made to it will be lost."
+- **2.7 Discard changes?:** *superseded 9 November by autosave* and moved to the right-hand column; leaving saves first.
 - **2.8 Journal · After saving:** the updated entry at the top of the week.
 - **2.9 Journal · Large text (130%):** the stats stack (built, M6.2).
 - **2.10 Couldn't add an entry:** a failed one-tap save; an error banner under "Add an entry" reads "Nothing was saved. Try again."

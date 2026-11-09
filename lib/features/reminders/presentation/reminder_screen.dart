@@ -33,6 +33,18 @@ String reminderSummary(ReminderIntent i) =>
     'Every ${_weekdayNames[i.effectiveWeekday - 1]} at '
     '${reminderTime(i.effectiveHour, i.effectiveMinute)}';
 
+/// Why a reminder that is on won't arrive, or null when it will. Shown next
+/// to the summary wherever it appears, so the requested reminder is never
+/// presented as if the phone will deliver it.
+String? reminderProblem(ReminderView v) {
+  if (!v.intent.enabled || v.turningOn) return null;
+  if (v.permission == NotificationPermission.denied) {
+    return 'Notifications off';
+  }
+  if (v.scheduleFailed || !v.scheduled) return 'Not scheduled';
+  return null;
+}
+
 /// "Weekly reminder" (6.1–6.4).
 class ReminderScreen extends ConsumerWidget {
   const ReminderScreen({super.key});
@@ -157,7 +169,9 @@ class ReminderScreen extends ConsumerWidget {
         Semantics(
           liveRegion: true,
           child: Text(
-            reminderSummary(i),
+            reminderProblem(v) == null
+                ? reminderSummary(i)
+                : '${reminderSummary(i)} · ${reminderProblem(v)}',
             style: text.bodyMedium!.copyWith(color: colors.ink),
           ),
         ),
@@ -183,12 +197,21 @@ class ReminderScreen extends ConsumerWidget {
           const SizedBox(height: MorrowSpacing.xxl),
           Text('Status', style: text.labelMedium),
           const SizedBox(height: MorrowSpacing.sm),
-          const CardGroup(
+          CardGroup(
             children: [
-              _StatusRow(
-                title: 'Notifications are allowed',
-                subtitle: 'morrow can show your reminder',
-              ),
+              v.scheduled
+                  ? _StatusRow(
+                      title: 'Scheduled on this phone',
+                      subtitle:
+                          'Your phone will show it '
+                          '${reminderSummary(i).replaceFirst('Every', 'every')}.',
+                    )
+                  : const _StatusRow(
+                      title: 'Not scheduled yet',
+                      subtitle:
+                          'Notifications are allowed. morrow will set it up '
+                          'again the next time you open it.',
+                    ),
             ],
           ),
         ],

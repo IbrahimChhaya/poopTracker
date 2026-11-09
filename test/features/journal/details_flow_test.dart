@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/features/journal/data/entry_repository.dart';
 import 'package:poop_tracker/features/journal/domain/entry.dart';
+import 'package:poop_tracker/features/journal/presentation/entry/entry_page_controller.dart';
 import 'package:poop_tracker/features/settings/data/settings_repository.dart';
 
 import '../../support/app_harness.dart';
@@ -22,6 +23,12 @@ final Finder _vertical = find
       (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
     )
     .first;
+
+/// The details sheet's own Done (the entry page's footer also says Done).
+final Finder sheetDone = find.descendant(
+  of: find.byType(BottomSheet),
+  matching: find.text('Done'),
+);
 
 void main() {
   late TrackingDatabase db;
@@ -183,10 +190,7 @@ void main() {
             find.text('Next'),
             c.pages.length > 1 ? findsOneWidget : findsNothing,
           );
-          expect(
-            find.text('Done'),
-            c.pages.length > 1 ? findsNothing : findsOneWidget,
-          );
+          expect(sheetDone, c.pages.length > 1 ? findsNothing : findsOneWidget);
         }
       });
     }
@@ -249,7 +253,7 @@ void main() {
       await tapText(tester, 'Add an entry');
       await tapText(tester, 'Stool form');
       expect(find.bySemanticsLabel('Page 2 of 2'), findsOneWidget);
-      expect(find.text('Done'), findsOneWidget);
+      expect(sheetDone, findsOneWidget);
       await tester.fling(find.byType(PageView), const Offset(300, 0), 1000);
       await tester.pumpAndSettle();
       expect(find.bySemanticsLabel('Page 1 of 2'), findsOneWidget);
@@ -310,7 +314,7 @@ void main() {
       expect(find.text('Not added'), findsOneWidget);
     });
 
-    appTest('details are never an unsaved change; the note is', (tester) async {
+    appTest('details and the note both save by themselves', (tester) async {
       await configure(stool: true, context: false);
       await pump(tester);
       await tapText(tester, 'Add an entry');
@@ -319,12 +323,11 @@ void main() {
       await tapText(tester, 'Stool form');
       await tapText(tester, '3 · Cracked surface');
       await tapText(tester, 'Done');
-      // The note still needs Save; the type is already stored.
-      expect(find.text('Unsaved changes'), findsOneWidget);
-      final stored = (await repo.all()).single;
-      expect(stored.stoolType, 3);
-      expect(stored.comment, isNull);
-      await tapText(tester, 'Save');
+      // The type was stored when chosen; the note saves by itself too.
+      expect((await repo.all()).single.stoolType, 3);
+      await tester.pump(autosaveDelay);
+      await tester.pumpAndSettle();
+      expect(find.text('Saved'), findsOneWidget);
       final saved = (await repo.all()).single;
       expect(saved.stoolType, 3);
       expect(saved.comment, 'Synthetic note');
@@ -344,7 +347,7 @@ void main() {
       await tapText(tester, 'Today · 1:35 pm');
       await tester.enterText(find.byType(TextField), 'Edited while hidden');
       await tester.pump();
-      await tapText(tester, 'Save');
+      await tapText(tester, 'Done');
       final saved = (await repo.byId(original.id))!;
       expect(saved.comment, 'Edited while hidden');
       expect(saved.stoolType, 5);

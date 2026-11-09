@@ -89,6 +89,28 @@ class StartupLoadingScreen extends StatelessWidget {
   }
 }
 
+/// Shown for the moment before the app-lock setting has been read. It
+/// says nothing about a lock, because most people have none: just the
+/// sprout on the page, like the privacy cover.
+class StartingScreen extends StatelessWidget {
+  const StartingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = MorrowColors.of(context);
+    return Scaffold(
+      body: Semantics(
+        label: 'morrow is starting',
+        child: Center(
+          child: ExcludeSemantics(
+            child: Icon(Icons.spa_outlined, color: colors.primary, size: 40),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// "morrow is locked" (7.4) and "Couldn’t unlock" (7.5). Contains no
 /// journal content.
 class LockedScreen extends StatelessWidget {
@@ -107,9 +129,7 @@ class LockedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
-    final busy =
-        state == AppLockState.authenticating ||
-        state == AppLockState.uninitialised;
+    final busy = state == AppLockState.authenticating;
     final (String title, String message)? banner = switch (problem) {
       null => null,
       LockProblem.didNotUnlock => (

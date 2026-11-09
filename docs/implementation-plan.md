@@ -35,7 +35,7 @@ Each has a proposed default. Milestones that depend on it are listed in brackets
 
 1. **Encrypted backups.** *Decided on 8 November: yes.* The passphrase is at least 8 characters and can't be recovered. [M11]
 2. **Week start.** Default: Monday to Sunday everywhere (week strip, "this week", trends), not locale-dependent. [M2]
-3. **Draft policy when the app locks.** Default: an unsaved new or edited entry is discarded when the app locks. The editor says so in small print. [M8]
+3. **Draft policy when the app locks.** *Superseded, 9 November 2026:* the entry page autosaves (see "Critique fixes" below), so there is no unsaved draft to discard. The note saves 0.6 s after typing stops and as soon as the app leaves the foreground, before it can lock. Only a keystroke made in the instant before backgrounding could miss the save. [M8]
 4. **Symptom severity.** *Superseded, 8 November 2026:* symptoms are no longer recorded (see M6.1).
 5. **"None" symptom chip.** *Superseded, 8 November 2026:* symptoms are no longer recorded (see M6.1).
 6. **Future-dated entries.** Default: not allowed beyond the current time. Any past date is allowed. [M2]
@@ -667,6 +667,56 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
     - Large backups.
     - iOS (no Mac: the build, the document picker, CryptoKit isn't used).
     - TalkBack.
+
+### Critique fixes, P1 (9 November, built)
+- **Source:** six `/impeccable critique` reviews on 9 November, each a design review only (native platform):
+  - entry page 29/40
+  - Trends 26/40
+  - Settings 28/40
+  - backup 26/40
+  - gate screens 27/40
+  - onboarding proposal 26/40
+
+  The snapshots are in `.impeccable/critique/`. The owner chose: the honesty bugs first, autosave everything (ending on Done), and all P1s in this pass.
+- **Honesty:**
+  - Before the lock setting is read, startup shows a plain sprout (`StartingScreen`) instead of "morrow is locked / Unlocking…", which people without app lock saw at every launch.
+  - The Settings reminder row and the Reminder screen add "· Notifications off" or "· Not scheduled" (`reminderProblem`). The status card now reports whether the phone holds the reminder ("Scheduled on this phone"), not just the permission.
+- **Entry page save model (CLAUDE.md updated):**
+  - The note autosaves 600 ms after typing stops and when the app becomes inactive or hidden. The date and time save when the time sheet closes. Saves run one at a time; text typed during a save is kept and saved next, and trailing spaces aren't a change.
+  - The footer is "Done", with a "Saved / Saving… / Not saved yet" status; after a failure the button reads "Try again". × and system back save first. "Discard changes?" is gone (Figma 2.7 moved to the right-hand column; 2.2–4.9 redrawn with Done).
+  - The title follows the date being edited, the future-time message sits under When, and "Couldn't open this entry" has a Close button.
+- **Backup and Data & privacy:**
+  - **Settings row:** renamed "Data & privacy · Backups, app lock and deleting data". Icons: shield for privacy, receipt for Diagnostics, and a neutral tune icon for Context (no heart monitor).
+  - **Delete all data:** states exactly what goes ("all 18 entries, your settings and reminder, and turns off app lock"), with an "Export a backup first" link that returns.
+  - **Export:** the can't-recover warning sits above the passphrase fields at body size, with "At least 8 characters" helper text. "Backup saved" uses a neutral `NoticeCard` instead of error styling.
+  - **Passphrase fields:** each one carries its label for screen readers, with a test.
+- **Onboarding proposal (Figma 1.1):**
+  - **Previews:** no chevrons or week arrows; the preview "Add an entry" is an outline; the 1.3b card shows only "Type 4 · Easy".
+  - **Copy:** a 1.3 body that's true for both states, and a positive backup line on 1.5.
+  - **App lock:** 1.5b is labelled as a stand-in for the phone's prompt, and a new 1.5d covers "not available on this phone".
+  - **Layout:** the 1.4 chart fits, and the 1.5c toast no longer covers the headline.
+  - **Read me:** says Skip keeps any switch already changed.
+- **Tests:** 449 pass. New or updated:
+  - the starting screen
+  - reminder wording in both places
+  - autosave (after typing stops, leaving, backgrounding, back-to-back saves, typing during a save, trailing spaces, flush)
+  - the Delete summary and export link
+  - the backup warning and helper
+  - passphrase field semantics
+- **Still to do (P2 list):**
+  - Trends: range tabs at 48 px with a check, error retry, empty-state path, the unfinished-week wording, a chart summary for screen readers, and quieter Stool form styling.
+  - Reminder day circles at 48 px with scaling letters.
+  - Settings sub-pages moved onto `SubPage` and `InfoRow`.
+  - Gate screens: cancel not shown as an error, 8.8 rebuilt to match Figma, the erase ending and route to restore, lockout copy.
+  - Backup: restore error copy, results visible in History, keeping fields after cancel.
+  - Onboarding: privacy placement, a tour replay, and a 200% frame.
+- **Device check (S20, 9 November):**
+  - A note typed and followed straight away by Home, then a Force Stop, was still there after reopening ("Synthetic autosave check").
+  - The footer shows "Saving…" and then "✓ Saved" above Done, and stays above the keyboard.
+  - Done returns to the journal with the edited note.
+  - Cold start goes from a plain sprout to "Opening your journal…" to the journal, with no "morrow is locked".
+  - Settings shows "Data & privacy · Backups, app lock and deleting data".
+  - Not checked: autosave with app lock on (needs your fingerprint), and TalkBack on the passphrase fields.
 
 ### M11.1 — Welcome and first launch (Figma 1.1–1.4)
 - **Why:** no milestone covered the first-launch screens. Today a fresh install goes straight to the empty journal.

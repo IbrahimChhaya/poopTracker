@@ -256,11 +256,39 @@ void main() {
       expect((await repo.byId(entry.id))!.comment, 'Edited note');
     });
 
-    test('a second Save while one is running is ignored', () async {
-      final p = page()..setComment('Once');
-      final first = p.save();
+    test(
+      'saves run one at a time; a change during one saves after it',
+      () async {
+        final p = page()..setComment('Once');
+        final first = p.save();
+        p.setComment('Twice');
+        final second = p.save();
+        expect(await first, SaveOutcome.saved);
+        expect(await second, SaveOutcome.saved);
+        expect((await repo.byId(entry.id))!.comment, 'Twice');
+        expect(state().hasChanges, isFalse);
+      },
+    );
+
+    test('text typed while a save runs is kept and saved next', () async {
+      final p = page()..setComment('First');
+      final run = p.save();
+      p.setComment('First and more');
+      await run;
+      expect(state().comment, 'First and more');
+      expect((await repo.byId(entry.id))!.comment, 'First and more');
+    });
+
+    test('trailing spaces are not a change to save', () async {
+      final p = page()..setComment('Original note  ');
+      expect(state().hasChanges, isFalse);
       expect(await p.save(), SaveOutcome.ignored);
-      expect(await first, SaveOutcome.saved);
+    });
+
+    test('flush saves what is waiting and reports success', () async {
+      final p = page()..setComment('Before leaving');
+      expect(await p.flush(), isTrue);
+      expect((await repo.byId(entry.id))!.comment, 'Before leaving');
     });
 
     group('details save as chosen', () {

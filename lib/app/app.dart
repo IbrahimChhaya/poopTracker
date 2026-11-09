@@ -72,6 +72,9 @@ class _MorrowAppState extends ConsumerState<MorrowApp> {
           )
         : lock == AppLockState.unlocked
         ? const _JournalGate()
+        // Before the lock setting is read: no claim about a lock.
+        : lock == AppLockState.uninitialised
+        ? const _GateApp(home: StartingScreen())
         : _GateApp(
             home: LockedScreen(
               state: lock,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/lock/lock_controller.dart';
 import '../../../app/scope.dart';
@@ -10,6 +11,7 @@ import '../../../ui/theme/morrow_tokens.dart';
 import '../../../ui/widgets/back_header.dart';
 import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/overlays.dart';
+import 'settings_screen.dart';
 
 /// "Delete all data" (8.4). The button works only once the person ticks
 /// "I understand"; with app lock on, the system prompt confirms it's them
@@ -94,13 +96,22 @@ class _DeleteAllDataScreenState extends ConsumerState<DeleteAllDataScreen> {
                   ),
                   const SizedBox(height: MorrowSpacing.sm),
                   Text(
-                    'This permanently removes every entry, setting and '
-                    'reminder from this phone. It can’t be undone. Export a '
-                    'backup first if you want to keep a copy.',
+                    deleteSummary(ref.watch(entriesProvider).value?.length),
                     textAlign: TextAlign.center,
                     style: text.bodyMedium!.copyWith(color: colors.mutedText),
                   ),
-                  const SizedBox(height: MorrowSpacing.lg),
+                  const SizedBox(height: MorrowSpacing.sm),
+                  // The only way to keep a copy: one tap away, and back.
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => context.push(SettingsScreen.exportPath),
+                      icon: const Icon(Icons.download_outlined, size: 18),
+                      label: const Text('Export a backup first'),
+                    ),
+                  ),
+                  const SizedBox(height: MorrowSpacing.md),
                   Material(
                     color: colors.card,
                     shape: RoundedRectangleBorder(
@@ -160,4 +171,15 @@ class _DeleteAllDataScreenState extends ConsumerState<DeleteAllDataScreen> {
       ),
     );
   }
+}
+
+/// "This permanently removes 18 entries, …". Says exactly what goes.
+String deleteSummary(int? entryCount) {
+  final entries = switch (entryCount) {
+    null => 'every entry',
+    1 => 'your 1 entry',
+    final n => 'all $n entries',
+  };
+  return 'This permanently removes $entries, your settings and reminder, '
+      'and turns off app lock on this phone. It can’t be undone.';
 }

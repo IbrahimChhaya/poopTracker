@@ -84,7 +84,7 @@ class _ExportBackupScreenState extends ConsumerState<ExportBackupScreen> {
         message:
             '${fileName.replaceAll('.morrow', '')} contains '
             '${_entries(entryCount)}.',
-        below: const ErrorBanner(
+        below: const NoticeCard(
           title: 'Keep your passphrase safe',
           message:
               'Without it, this backup can’t be opened and morrow can’t '
@@ -130,8 +130,16 @@ class _ExportBackupScreenState extends ConsumerState<ExportBackupScreen> {
             ],
           ),
           const SizedBox(height: MorrowSpacing.xxl),
+          // Said before the choice, while it can still change behaviour.
+          Text(
+            'Choose a passphrase you’ll remember. If you forget it, this '
+            'backup can’t be opened, and morrow can’t recover it.',
+            style: text.bodyMedium,
+          ),
+          const SizedBox(height: MorrowSpacing.lg),
           PassphraseField(
             label: 'Protect it with a passphrase',
+            helperText: 'At least $minPassphraseLength characters',
             controller: _passphrase,
             errorText: _passphraseError,
             textInputAction: TextInputAction.next,
@@ -146,12 +154,6 @@ class _ExportBackupScreenState extends ConsumerState<ExportBackupScreen> {
             onSubmitted: (_) => _create(),
           ),
           const SizedBox(height: MorrowSpacing.lg),
-          Text(
-            'If you forget this passphrase, the backup can’t be opened. '
-            'morrow can’t recover it.',
-            style: text.bodySmall!.copyWith(color: colors.mutedText),
-          ),
-          const SizedBox(height: MorrowSpacing.md),
           Text(
             'Once saved, the file is outside morrow. Anyone with the file '
             'and the passphrase can read it.',

@@ -284,6 +284,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         expect(bootstrap.starts, 0);
         expect(find.byType(MorrowNavigationBar), findsNothing);
+        // Most people have no app lock: before the setting is read, nothing
+        // claims the app is locked.
+        if (state == AppLockState.uninitialised) {
+          expect(find.text('morrow is locked'), findsNothing);
+          expect(find.text('Unlocking…'), findsNothing);
+          expect(find.bySemanticsLabel('morrow is starting'), findsOneWidget);
+        }
       });
     }
   });

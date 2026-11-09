@@ -136,3 +136,50 @@ class LoadingState extends StatelessWidget {
     );
   }
 }
+
+/// A calm, neutral note that isn't an error, for example "Keep your
+/// passphrase safe" after a backup is saved. Sage Tint, an info icon and an
+/// Ink title; not announced on arrival.
+class NoticeCard extends StatelessWidget {
+  const NoticeCard({required this.title, required this.message, super.key});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = MorrowColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return Semantics(
+      container: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colors.tint,
+          borderRadius: BorderRadius.circular(MorrowRadii.md),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ExcludeSemantics(
+              child: Icon(Icons.info_outline, size: 20, color: colors.primary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: text.titleSmall),
+                  const SizedBox(height: MorrowSpacing.xxs),
+                  Text(message, style: text.bodyMedium),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

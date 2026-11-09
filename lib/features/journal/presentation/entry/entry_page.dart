@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,13 +57,25 @@ class EntryPage extends ConsumerWidget {
       AsyncData(value: final Entry e) => _EntryPageBody(
         target: (entry: e, isNew: r.isNew),
       ),
-      AsyncError() => const Scaffold(
+      AsyncError() => Scaffold(
         body: SafeArea(
           child: Padding(
-            padding: EdgeInsets.all(24),
-            child: ErrorBanner(
-              title: 'Couldn’t open this entry',
-              message: 'Nothing has been changed.',
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IconButton.outlined(
+                  onPressed: () => context.pop(),
+                  tooltip: 'Close',
+                  icon: const Icon(Icons.close),
+                  style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+                ),
+                const SizedBox(height: MorrowSpacing.xxl),
+                const ErrorBanner(
+                  title: 'Couldn’t open this entry',
+                  message: 'Nothing has been changed. Close it and try again.',
+                ),
+              ],
             ),
           ),
         ),
@@ -128,9 +142,17 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
   EntryPageController get _controller =>
       ref.read(entryPageProvider(_target).notifier);
 
+  /// Saves the note the moment the app leaves the foreground, before it can
+  /// lock.
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onInactive: () => unawaited(_controller.save()),
+    onHide: () => unawaited(_controller.save()),
+  );
+
   @override
   void initState() {
     super.initState();
+    _lifecycle;
     // A toast from the journal ("Changes saved") would otherwise float over
     // this page's Save bar.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -140,6 +162,7 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -166,31 +189,18 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
     }
   }
 
-  Future<void> _save() async {
-    final outcome = await _controller.save();
-    if (!mounted || outcome != SaveOutcome.saved) return;
-    showMorrowToast(context, 'Changes saved');
+  bool _leaving = false;
+
+  /// Done, ×, or system back: saves anything still waiting, then returns
+  /// to the journal. If that save fails, the page stays with Try again.
+  Future<void> _done() async {
+    if (_leaving) return;
+    _leaving = true;
+    final ok = await _controller.flush();
+    _leaving = false;
+    if (!mounted || !ok) return;
+    if (_controller.edited) showMorrowToast(context, 'Changes saved');
     context.pop();
-  }
-
-  /// "Discard changes?" (2.7). The entry itself is already saved.
-  Future<bool> _confirmDiscard() => showMorrowConfirmDialog(
-    context,
-    title: 'Discard changes?',
-    message:
-        'Your entry is already saved. Only the changes you just made to it '
-        'will be lost.',
-    confirmLabel: 'Discard changes',
-    cancelLabel: 'Keep editing',
-    destructive: true,
-  );
-
-  Future<void> _close() async {
-    final s = ref.read(entryPageProvider(_target));
-    if (s.saving) return;
-    if (!s.hasChanges || await _confirmDiscard()) {
-      if (mounted) context.pop();
-    }
   }
 
   /// Undo for a just-added entry (2.2, 2.11). Asks first once anything has
@@ -219,6 +229,7 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
   }
 
   Future<void> _delete() async {
+    _controller.cancelAutosave();
     final deleted = await confirmAndDeleteEntry(context, ref, _target.entry.id);
     if (deleted && mounted) context.pop();
   }
@@ -240,7 +251,7 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
     return PopScope(
       canPop: !s.hasChanges && !s.saving,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _close();
+        if (!didPop) _done();
       },
       child: Scaffold(
         body: SafeArea(
@@ -253,7 +264,7 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
                     Row(
                       children: [
                         IconButton.outlined(
-                          onPressed: _close,
+                          onPressed: _done,
                           tooltip: 'Close',
                           icon: const Icon(Icons.close),
                           style: IconButton.styleFrom(
@@ -268,7 +279,7 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
                           child: Semantics(
                             header: true,
                             child: Text(
-                              entryPageTitle(s.saved.localDate, today: today),
+                              entryPageTitle(s.date, today: today),
                               style: text.headlineSmall,
                             ),
                           ),
@@ -307,6 +318,15 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
                         ),
                       ],
                     ),
+                    if (s.errors.contains(EntryValidationError.inFuture))
+                      Padding(
+                        padding: const EdgeInsets.only(top: MorrowSpacing.md),
+                        child: Text(
+                          'That time hasn’t happened yet. Choose an earlier '
+                          'time.',
+                          style: text.bodySmall!.copyWith(color: colors.danger),
+                        ),
+                      ),
                     if (display.showContext) ...[
                       const SizedBox(height: MorrowSpacing.md),
                       CardGroup(
@@ -343,7 +363,6 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
                     TextField(
                       controller: _note,
                       onChanged: _controller.setComment,
-                      enabled: !s.saving,
                       minLines: 4,
                       maxLines: 10,
                       keyboardType: TextInputType.multiline,
@@ -366,15 +385,6 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
                                 '$currentLength of $maxLength characters',
                           ),
                     ),
-                    if (s.errors.contains(EntryValidationError.inFuture))
-                      Padding(
-                        padding: const EdgeInsets.only(top: MorrowSpacing.md),
-                        child: Text(
-                          'That time hasn’t happened yet. Choose an earlier '
-                          'time.',
-                          style: text.bodySmall!.copyWith(color: colors.danger),
-                        ),
-                      ),
                     // A just-added entry is removed with Undo instead.
                     if (!isNew) ...[
                       const SizedBox(height: MorrowSpacing.xl),
@@ -392,7 +402,11 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
                   ],
                 ),
               ),
-              _SaveBar(state: s, onSave: _save),
+              _SaveBar(
+                state: s,
+                onDone: _done,
+                onRetry: () => unawaited(_controller.save()),
+              ),
             ],
           ),
         ),
@@ -443,19 +457,29 @@ class _AddedBanner extends StatelessWidget {
   }
 }
 
-/// The bottom bar: "Saved" (disabled, with a tick) until the date, time or
-/// note changes, then "Save" with "Unsaved changes" above it (2.2, 2.5, 2.6).
+/// The bottom bar (2.2, 2.5, 2.6): "Done", with the save status above it:
+/// "Saved", "Saving…", or after a failure "Not saved yet" and Try again.
 class _SaveBar extends StatelessWidget {
-  const _SaveBar({required this.state, required this.onSave});
+  const _SaveBar({
+    required this.state,
+    required this.onDone,
+    required this.onRetry,
+  });
 
   final EntryPageState state;
-  final VoidCallback onSave;
+  final VoidCallback onDone;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final colors = MorrowColors.of(context);
     final text = Theme.of(context).textTheme;
     final s = state;
+    final status = s.saveFailed
+        ? 'Not saved yet'
+        : s.saving || s.hasChanges
+        ? 'Saving…'
+        : 'Saved';
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: colors.line)),
@@ -465,23 +489,32 @@ class _SaveBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (s.hasChanges) ...[
-              Text(
-                s.saveFailed ? 'Not saved yet' : 'Unsaved changes',
-                style: text.labelSmall,
+            // Announced only when it matters: a failed save.
+            Semantics(
+              liveRegion: s.saveFailed,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (status == 'Saved') ...[
+                    ExcludeSemantics(
+                      child: Icon(Icons.check, size: 14, color: colors.primary),
+                    ),
+                    const SizedBox(width: MorrowSpacing.xs),
+                  ],
+                  Flexible(
+                    child: Text(
+                      status,
+                      textAlign: TextAlign.center,
+                      style: text.labelSmall,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: MorrowSpacing.sm),
-            ],
+            ),
+            const SizedBox(height: MorrowSpacing.sm),
             MorrowButton(
-              label: !s.hasChanges
-                  ? 'Saved'
-                  : s.saveFailed
-                  ? 'Try again'
-                  : 'Save',
-              icon: s.hasChanges ? null : Icons.check,
-              busyLabel: 'Saving…',
-              busy: s.saving,
-              onPressed: s.hasChanges ? onSave : null,
+              label: s.saveFailed ? 'Try again' : 'Done',
+              onPressed: s.saveFailed ? onRetry : onDone,
             ),
           ],
         ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers.dart';
@@ -8,8 +10,11 @@ import '../../../../core/time/local_date.dart';
 import '../../data/entry_repository.dart';
 import '../../domain/entry.dart';
 
-/// Outcome of pressing Save.
+/// Outcome of saving the date, time or note.
 enum SaveOutcome { saved, failed, invalid, ignored }
+
+/// How long after the last keystroke the note saves by itself.
+const Duration autosaveDelay = Duration(milliseconds: 600);
 
 /// The optional details of an entry.
 final class EntryDetails {
@@ -38,10 +43,10 @@ final class EntryDetails {
       Object.hash(stoolType, ease, Object.hashAllUnordered(tags));
 }
 
-/// The entry page's state: the stored entry plus any unsaved date, time or
-/// note changes. Kept only in memory inside the unlocked scope, so unsaved
-/// changes are discarded when the app locks (the entry itself is already
-/// saved).
+/// The entry page's state: the stored entry plus date, time or note changes
+/// that are about to be saved. Everything saves as it is made (the note
+/// shortly after typing stops, and as soon as the app leaves the
+/// foreground), so nothing is left waiting for a Save button.
 final class EntryPageState {
   const EntryPageState({
     required this.saved,
@@ -89,7 +94,7 @@ final class EntryPageState {
   final bool detailsFailed;
   final List<EntryValidationError> errors;
 
-  /// Unsaved date, time or note changes: the button reads "Save".
+  /// Date, time or note changes not stored yet ("Saving…").
   bool get hasChanges => timeChanged || commentChanged;
 
   /// Wall-clock fields as a [DateTime], for formatting.
@@ -137,8 +142,16 @@ class EntryPageController extends Notifier<EntryPageState> {
 
   final EntryTarget target;
 
-  /// Detail writes run one at a time, in order, and Save waits for them.
+  /// Detail writes run one at a time, in order, and saves wait for them.
   Future<void> _writes = Future.value();
+
+  /// The note's pending autosave.
+  Timer? _autosave;
+
+  /// The save that is running, if any, and whether another change arrived
+  /// while it ran.
+  Future<SaveOutcome>? _saving;
+  bool _saveAgain = false;
 
   /// True once something on this page has been stored (a detail choice).
   bool _storedChange = false;
@@ -147,7 +160,10 @@ class EntryPageController extends Notifier<EntryPageState> {
   EntryRepository get _repo => ref.read(entryRepositoryProvider);
 
   @override
-  EntryPageState build() => _fromSaved(target.entry);
+  EntryPageState build() {
+    ref.onDispose(() => _autosave?.cancel());
+    return _fromSaved(target.entry);
+  }
 
   EntryPageState _fromSaved(Entry e) {
     final wall = e.localTime ?? _clock.nowLocalWall();
@@ -166,15 +182,35 @@ class EntryPageController extends Notifier<EntryPageState> {
   /// not. Undo then asks first.
   bool get edited => state.hasChanges || _storedChange;
 
-  // Date, time and note: unsaved until Save.
+  // Date, time and note: saved as they change.
 
+  /// The note as typed. It saves [autosaveDelay] after typing stops.
   void setComment(String value) {
     state = state.copyWith(
       comment: value,
-      commentChanged: value != (state.saved.comment ?? ''),
+      commentChanged: normaliseComment(value) != state.saved.comment,
       errors: const [],
     );
+    _autosave?.cancel();
+    if (state.hasChanges) {
+      _autosave = Timer(autosaveDelay, () => unawaited(save()));
+    }
   }
+
+  /// Stops a pending autosave (before the entry is deleted or undone).
+  void cancelAutosave() => _autosave?.cancel();
+
+  static bool _sameTime(
+    Entry e,
+    LocalDate date,
+    int hour,
+    int minute, {
+    required bool hasTime,
+  }) =>
+      date == e.localDate &&
+      hasTime == e.hasTime &&
+      (!hasTime ||
+          (hour == e.localWallClock.hour && minute == e.localWallClock.minute));
 
   /// True when [date] (at [hour]:[minute] if [hasTime]) has not happened yet.
   /// Without a time only the day counts, so today is always allowed.
@@ -196,28 +232,58 @@ class EntryPageController extends Notifier<EntryPageState> {
     int minute, {
     bool hasTime = true,
   }) {
-    final o = state.saved;
-    final unchanged =
-        date == o.localDate &&
-        hasTime == o.hasTime &&
-        (!hasTime ||
-            (hour == o.localWallClock.hour &&
-                minute == o.localWallClock.minute));
     state = state.copyWith(
       date: date,
       hour: hour,
       minute: minute,
       hasTime: hasTime,
-      timeChanged: !unchanged,
+      timeChanged: !_sameTime(
+        state.saved,
+        date,
+        hour,
+        minute,
+        hasTime: hasTime,
+      ),
       errors: const [],
     );
+    // Chosen with Done on the time sheet: save straight away.
+    if (state.timeChanged) unawaited(save());
   }
 
-  /// Stores the date, time and note changes. Ignored while a save is
-  /// running, so a double tap saves once. Reports success only after the
-  /// database commit.
-  Future<SaveOutcome> save() async {
-    if (state.saving || !state.hasChanges) return SaveOutcome.ignored;
+  /// Saves whatever is waiting now (Done, leaving, or the app going to the
+  /// background). True when nothing is left unsaved.
+  Future<bool> flush() async {
+    await save();
+    return ref.mounted && !state.hasChanges && !state.saveFailed;
+  }
+
+  /// Stores the date, time and note changes. Saves run one at a time: a
+  /// change made while one runs is saved straight after it. Reports success
+  /// only after the database commit.
+  Future<SaveOutcome> save() {
+    _autosave?.cancel();
+    final running = _saving;
+    if (running != null) {
+      _saveAgain = true;
+      return running;
+    }
+    final run = _saveUntilDone();
+    _saving = run;
+    return run.whenComplete(() => _saving = null);
+  }
+
+  Future<SaveOutcome> _saveUntilDone() async {
+    var outcome = SaveOutcome.ignored;
+    do {
+      _saveAgain = false;
+      if (!ref.mounted || !state.hasChanges) break;
+      outcome = await _saveOnce();
+      if (outcome != SaveOutcome.saved) break;
+    } while (_saveAgain || (ref.mounted && state.hasChanges));
+    return outcome;
+  }
+
+  Future<SaveOutcome> _saveOnce() async {
     state = state.copyWith(saving: true, saveFailed: false, errors: const []);
     await _writes;
     if (!ref.mounted) return SaveOutcome.ignored;
@@ -246,7 +312,24 @@ class EntryPageController extends Notifier<EntryPageState> {
     );
     try {
       final stored = await _repo.update(o.id, draft);
-      if (ref.mounted) state = _fromSaved(stored);
+      _storedChange = true;
+      if (ref.mounted) {
+        // Keep anything typed while this save ran; it saves next.
+        final now = state;
+        state = now.copyWith(
+          saved: stored,
+          saving: false,
+          saveFailed: false,
+          commentChanged: normaliseComment(now.comment) != stored.comment,
+          timeChanged: !_sameTime(
+            stored,
+            now.date,
+            now.hour,
+            now.minute,
+            hasTime: now.hasTime,
+          ),
+        );
+      }
       return SaveOutcome.saved;
     } on EntryValidationException catch (e) {
       if (ref.mounted) state = state.copyWith(saving: false, errors: e.errors);
@@ -336,6 +419,8 @@ class EntryPageController extends Notifier<EntryPageState> {
 
   /// Undo for a just-added entry: deletes it. True when it is gone.
   Future<bool> undo() async {
+    _autosave?.cancel();
+    await _saving;
     await _writes;
     try {
       await _repo.delete(state.saved.id);

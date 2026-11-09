@@ -32,7 +32,11 @@ class SettingsScreen extends ConsumerWidget {
     final display = ref.watch(displayProvider);
     final repo = ref.read(settingsRepositoryProvider);
     final lockOn = ref.watch(appLockEnabledProvider);
-    final reminder = ref.watch(reminderControllerProvider).value?.intent;
+    final reminderView = ref.watch(reminderControllerProvider).value;
+    final reminder = reminderView?.intent;
+    final reminderIssue = reminderView == null
+        ? null
+        : reminderProblem(reminderView);
     return PageBody(
       title: 'Settings',
       children: [
@@ -42,9 +46,11 @@ class SettingsScreen extends ConsumerWidget {
             SettingRow.navigation(
               icon: Icons.notifications_none,
               title: 'Weekly reminder',
-              subtitle: reminder != null && reminder.enabled
+              subtitle: reminder == null || !reminder.enabled
+                  ? 'Off'
+                  : reminderIssue == null
                   ? reminderSummary(reminder)
-                  : 'Off',
+                  : '${reminderSummary(reminder)} · $reminderIssue',
               onTap: () => context.go(reminderPath),
             ),
           ],
@@ -60,9 +66,9 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.go(appLockPath),
             ),
             SettingRow.navigation(
-              icon: Icons.phone_android_outlined,
-              title: 'Local data and privacy',
-              subtitle: 'Everything stays on this phone',
+              icon: Icons.shield_outlined,
+              title: 'Data & privacy',
+              subtitle: 'Backups, app lock and deleting data',
               onTap: () => context.go(dataPath),
             ),
           ],
@@ -83,7 +89,7 @@ class SettingsScreen extends ConsumerWidget {
               onChanged: repo.setShowStoolForm,
             ),
             SettingRow.toggle(
-              icon: Icons.monitor_heart_outlined,
+              icon: Icons.tune,
               title: 'Context',
               subtitle:
                   'Add how it felt and what was going on to entries, and '
@@ -98,7 +104,7 @@ class SettingsScreen extends ConsumerWidget {
           label: 'Support',
           children: [
             SettingRow.navigation(
-              icon: Icons.shield_outlined,
+              icon: Icons.receipt_long_outlined,
               title: 'Diagnostics',
               subtitle: 'App events only, never your entries',
               onTap: () => context.go(diagnosticsPath),

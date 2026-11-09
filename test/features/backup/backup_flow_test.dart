@@ -72,12 +72,12 @@ void main() {
     await tester.tap(find.text('Settings').last);
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('Local data and privacy'),
+      find.text('Data & privacy'),
       200,
       scrollable: _vertical,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Local data and privacy'));
+    await tester.tap(find.text('Data & privacy'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text(row), 200, scrollable: _vertical);
     await tester.ensureVisible(find.text(row));
@@ -139,7 +139,7 @@ void main() {
       await pump(tester);
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Local data and privacy'));
+      await tester.tap(find.text('Data & privacy'));
       await tester.pumpAndSettle();
       expect(find.text('Export a backup'), findsOneWidget);
       expect(find.text('Restore from a backup'), findsOneWidget);
@@ -165,6 +165,20 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Reminders, settings and app lock'), findsOneWidget);
+      // The can't-recover warning comes before the passphrase is chosen.
+      expect(
+        find.text(
+          'Choose a passphrase you’ll remember. If you forget it, this '
+          'backup can’t be opened, and morrow can’t recover it.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('At least 8 characters'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.textContaining('Once saved, the file is outside morrow'),
+        150,
+        scrollable: _vertical,
+      );
       expect(
         find.textContaining('Once saved, the file is outside morrow'),
         findsOneWidget,

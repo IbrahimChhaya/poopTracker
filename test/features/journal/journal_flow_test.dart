@@ -8,6 +8,7 @@ import 'package:poop_tracker/app/scope.dart';
 import 'package:poop_tracker/core/database/bootstrap.dart';
 import 'package:poop_tracker/features/journal/data/entry_repository.dart';
 import 'package:poop_tracker/features/journal/domain/entry.dart';
+import 'package:poop_tracker/features/journal/presentation/entry/entry_page_controller.dart';
 import 'package:poop_tracker/ui/theme/morrow_theme.dart';
 import 'package:poop_tracker/ui/theme/morrow_typography.dart';
 
@@ -311,13 +312,15 @@ void main() {
       expect(find.text('Undo'), findsOneWidget);
       expect(find.text('Today · 1:41 pm'), findsOneWidget);
       expect(find.text('0 / 500'), findsOneWidget);
-      // Nothing to save: "Saved", disabled, with a tick.
+      // Already saved: the status says so and Done is ready.
       expect(find.text('Saved'), findsOneWidget);
       expect(
-        tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
-        isNull,
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Done'))
+            .onPressed,
+        isNotNull,
       );
-      expect(find.text('Unsaved changes'), findsNothing);
+      expect(find.text('Saving…'), findsNothing);
       // A just-added entry has Undo instead of Delete.
       expect(find.text('Delete this entry'), findsNothing);
 
@@ -340,19 +343,21 @@ void main() {
       expect(await seed.all(), hasLength(1));
     });
 
-    appTest('a note wakes Save; Save stores it and returns (2.5, 2.8)', (
-      tester,
-    ) async {
+    appTest('a note saves by itself; Done returns (2.5, 2.8)', (tester) async {
       await pumpReady(tester);
       await tapText(tester, 'Add an entry');
       await tester.enterText(noteField(), 'Felt fine after lunch');
       await tester.pump();
       expect(find.text('21 / 500'), findsOneWidget);
-      expect(find.text('Unsaved changes'), findsOneWidget);
-      expect(find.text('Saved'), findsNothing);
+      expect(find.text('Saving…'), findsOneWidget);
+      // Saved shortly after typing stops, without pressing anything.
+      await tester.pump(autosaveDelay);
+      await tester.pumpAndSettle();
+      expect(find.text('Saved'), findsOneWidget);
+      expect((await seed.all()).single.comment, 'Felt fine after lunch');
       // Undo stays until the page is left.
       expect(find.text('Undo'), findsOneWidget);
-      await tapText(tester, 'Save');
+      await tapText(tester, 'Done');
       expect(find.text('Changes saved'), findsOneWidget);
       expect(find.text('Today’s entry'), findsNothing);
       expect(find.text('Felt fine after lunch'), findsOneWidget);
@@ -365,7 +370,7 @@ void main() {
       await tester.enterText(noteField(), 'a' * 600);
       await tester.pump();
       expect(find.text('500 / 500'), findsOneWidget);
-      await tapText(tester, 'Save');
+      await tapText(tester, 'Done');
       expect((await seed.all()).single.comment, hasLength(500));
     });
 
@@ -411,12 +416,14 @@ void main() {
       expect(find.byType(CupertinoPicker), findsNothing);
       await tapText(tester, 'Done');
       expect(find.text('Yesterday · No time'), findsOneWidget);
-      expect(find.text('Unsaved changes'), findsOneWidget);
-      await tapText(tester, 'Save');
+      // Saved as soon as the time sheet closed.
+      expect(find.text('Saved'), findsOneWidget);
+      expect(find.text('Yesterday’s entry'), findsOneWidget);
       final saved = (await seed.all()).single;
       expect(saved.localDate.day, 5);
       expect(saved.hasTime, isFalse);
       // The card shows just the day.
+      await tapText(tester, 'Done');
       expect(find.bySemanticsLabel('Yesterday'), findsOneWidget);
     });
 
@@ -437,10 +444,10 @@ void main() {
       await tapText(tester, 'Record a time');
       await tapText(tester, 'Done');
       expect(find.text('Today · No time'), findsOneWidget);
-      await tapText(tester, 'Save');
       final saved = (await seed.all()).single;
       expect(saved.hasTime, isFalse);
       expect(saved.localDate.day, 6);
+      await tapText(tester, 'Done');
       expect(find.bySemanticsLabel('Today'), findsOneWidget);
     });
 
@@ -455,8 +462,8 @@ void main() {
     });
   });
 
-  group('leaving with unsaved changes', () {
-    appTest('Close asks first; Keep editing keeps the note (2.7)', (
+  group('leaving straight after typing', () {
+    appTest('Close saves the note first; there is no discard prompt', (
       tester,
     ) async {
       await pumpReady(tester);
@@ -464,36 +471,33 @@ void main() {
       await tester.enterText(noteField(), 'Draft');
       await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
-      expect(find.text('Discard changes?'), findsOneWidget);
-      expect(
-        find.text(
-          'Your entry is already saved. Only the changes you just made to it '
-          'will be lost.',
-        ),
-        findsOneWidget,
-      );
-      await tapText(tester, 'Keep editing');
-      expect(find.text('Draft'), findsOneWidget);
-
-      await tester.tap(find.byTooltip('Close'));
-      await tester.pumpAndSettle();
-      await tapText(tester, 'Discard changes');
+      expect(find.text('Discard changes?'), findsNothing);
       expect(find.text('Your journal'), findsOneWidget);
-      // The entry stays; only the note was discarded.
-      expect((await seed.all()).single.comment, isNull);
+      expect((await seed.all()).single.comment, 'Draft');
     });
 
-    appTest('the system back gesture also asks first', (tester) async {
+    appTest('the system back gesture also saves first', (tester) async {
       await pumpReady(tester);
       await tapText(tester, 'Add an entry');
       await tester.enterText(noteField(), 'Draft');
       await tester.pump(); // a frame passes between typing and going back
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      expect(find.text('Discard changes?'), findsOneWidget);
-      expect(find.text('Today’s entry'), findsOneWidget);
-      await tapText(tester, 'Keep editing');
-      expect(find.text('Draft'), findsOneWidget);
+      expect(find.text('Discard changes?'), findsNothing);
+      expect(find.text('Your journal'), findsOneWidget);
+      expect((await seed.all()).single.comment, 'Draft');
+    });
+
+    appTest('going to the background saves the note at once', (tester) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tester.enterText(noteField(), 'Draft');
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pumpAndSettle();
+      expect((await seed.all()).single.comment, 'Draft');
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
     });
   });
 
@@ -534,7 +538,7 @@ void main() {
       await pumpReady(tester);
       await tapText(tester, 'Today · 1:35 pm');
       await tester.enterText(noteField(), 'Felt fine after a late lunch');
-      await tapText(tester, 'Save');
+      await tapText(tester, 'Done');
       expect(find.text('Changes saved'), findsOneWidget);
       expect(find.text('Felt fine after a late lunch'), findsOneWidget);
       final all = await seed.all();
@@ -691,11 +695,9 @@ void main() {
         await reveal(tester, noteField());
         await tester.enterText(noteField(), 'Synthetic note');
         await tester.pump();
-        expect(tester.takeException(), isNull, reason: 'unsaved changes');
+        expect(tester.takeException(), isNull, reason: 'saving');
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull, reason: 'discard dialog');
-        await tapText(tester, 'Discard changes');
         await tester.tap(find.text('History').last);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: 'history');
@@ -758,7 +760,8 @@ void main() {
       await pumpWithRepository(tester, flaky);
       await tapText(tester, 'Add an entry');
       await tester.enterText(noteField(), 'Felt fine after lunch');
-      await tapText(tester, 'Save');
+      await tapText(tester, 'Done');
+      // The page stays, with the note, until it is saved.
       expect(find.text('Couldn’t save your changes'), findsOneWidget);
       expect(find.text('Felt fine after lunch'), findsOneWidget);
       expect(find.text('Not saved yet'), findsOneWidget);
@@ -768,8 +771,10 @@ void main() {
 
       await tapText(tester, 'Try again');
       expect(flaky.updates, 2);
-      expect(find.text('Your journal'), findsOneWidget);
+      expect(find.text('Saved'), findsOneWidget);
       expect((await seed.all()).single.comment, 'Felt fine after lunch');
+      await tapText(tester, 'Done');
+      expect(find.text('Your journal'), findsOneWidget);
     });
   });
 }

@@ -72,7 +72,7 @@ void main() {
     tester,
   ) async {
     await pumpMorrowApp(tester, [StartupReady(db, createdNew: false)]);
-    await openSettingsRow(tester, 'Local data and privacy');
+    await openSettingsRow(tester, 'Data & privacy');
 
     expect(find.text('Private by design.'), findsOneWidget);
     expect(find.text('Works entirely offline'), findsOneWidget);
@@ -103,10 +103,20 @@ void main() {
       StartupReady(db, createdNew: false),
     ]);
     await openSettingsRow(tester, 'Delete all data');
+    // Says exactly what goes, and offers the backup first.
     expect(
-      find.textContaining('Export a backup first if you want to keep a copy.'),
+      find.text(
+        'This permanently removes all 2 entries, your settings and reminder, '
+        'and turns off app lock on this phone. It can’t be undone.',
+      ),
       findsOneWidget,
     );
+    await tester.tap(find.text('Export a backup first'));
+    await tester.pumpAndSettle();
+    expect(find.text('Export a backup'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Delete everything?'), findsOneWidget);
 
     await tester.tap(_deleteButton);
     await tester.pumpAndSettle();
