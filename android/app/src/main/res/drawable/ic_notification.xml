@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for the weekly reminder: the sprout, white on clear.
+     Android uses only the alpha channel of notification icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M12,21 L12,12 M12,12 C12,8 15,6 19,6 C19,10 16,12 12,12 Z M12,14 C12,11 10,9 6,9 C6,12 8,14 12,14 Z"
+        android:strokeWidth="1.8"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

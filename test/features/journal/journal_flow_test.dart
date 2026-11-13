@@ -481,6 +481,152 @@ void main() {
     });
   });
 
+  group('quick times', () {
+    // figmaNow is Friday 6 November, 1:41 pm.
+    bool chipSelected(WidgetTester tester, String label) => tester
+        .widget<FilterChip>(find.widgetWithText(FilterChip, label))
+        .selected;
+
+    List<int> wheelItems(WidgetTester tester) => [
+      for (final p in tester.widgetList<CupertinoPicker>(
+        find.byType(CupertinoPicker),
+      ))
+        p.scrollController!.selectedItem,
+    ];
+
+    appTest('the sheet offers the hours ago and the moments that have '
+        'passed, in order', (tester) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      expect(find.text('Or pick a moment'), findsOneWidget);
+      final labels = [
+        for (final c in tester.widgetList<FilterChip>(find.byType(FilterChip)))
+          ((c.label as Text).data!),
+      ];
+      expect(labels, [
+        'Today',
+        'Yesterday',
+        'Other date',
+        '1 hour ago',
+        '2 hours ago',
+        'Last night',
+        'This morning',
+      ]);
+      // Screen readers hear the time each one stands for.
+      expect(find.bySemanticsLabel('This morning, 8:00 am'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Last night, yesterday 9:00 pm'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('1 hour ago, 12:41 pm'), findsOneWidget);
+    });
+
+    appTest('a tap checks the chip, moves the wheels and saves on Done', (
+      tester,
+    ) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      await tapText(tester, 'This morning');
+      expect(chipSelected(tester, 'This morning'), isTrue);
+      expect(chipSelected(tester, 'Today'), isTrue);
+      // 8 (index 7 on the 1-12 wheel), 00, am, allowing for looping.
+      final items = wheelItems(tester);
+      expect(items[0] % 12, 7);
+      expect(items[1] % 60, 0);
+      expect(items[2], 0);
+      await tester.tap(sheetDoneOrLast());
+      await tester.pumpAndSettle();
+      expect(find.text('Today · 8:00 am'), findsOneWidget);
+      final saved = (await seed.all()).single;
+      expect(saved.hasTime, isTrue);
+    });
+
+    appTest('Last night sets the day to yesterday', (tester) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      await tapText(tester, 'Last night');
+      expect(chipSelected(tester, 'Yesterday'), isTrue);
+      await tester.tap(sheetDoneOrLast());
+      await tester.pumpAndSettle();
+      expect(find.text('Yesterday · 9:00 pm'), findsOneWidget);
+    });
+
+    appTest('changing the day clears the chip', (tester) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      await tapText(tester, '2 hours ago');
+      expect(chipSelected(tester, '2 hours ago'), isTrue);
+      await tapText(tester, 'Yesterday');
+      expect(chipSelected(tester, '2 hours ago'), isFalse);
+      await tester.tap(sheetDoneOrLast());
+      await tester.pumpAndSettle();
+      // The time stays; only the day moved.
+      expect(find.text('Yesterday · 11:41 am'), findsOneWidget);
+    });
+
+    appTest('turning a wheel clears the chip', (tester) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      await tapText(tester, 'This morning');
+      await tester.drag(
+        find.byType(CupertinoPicker).at(1),
+        const Offset(0, -60),
+      );
+      await tester.pumpAndSettle();
+      expect(chipSelected(tester, 'This morning'), isFalse);
+    });
+
+    appTest('with no time recorded, a chip turns the time on', (tester) async {
+      await pumpReady(tester);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      await tapText(tester, 'Yesterday');
+      expect(find.byType(CupertinoPicker), findsNothing);
+      await tapText(tester, 'This morning');
+      expect(find.byType(CupertinoPicker), findsNWidgets(3));
+      expect(wheelItems(tester)[0] % 12, 7);
+      await tester.tap(sheetDoneOrLast());
+      await tester.pumpAndSettle();
+      expect(find.text('Today · 8:00 am'), findsOneWidget);
+    });
+
+    appTest('at 200% text the chips wrap and Done is still reachable', (
+      tester,
+    ) async {
+      await pumpReady(tester, textScale: 2);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      await tapText(tester, 'This morning');
+      await tester.ensureVisible(sheetDoneOrLast());
+      await tester.pumpAndSettle();
+      await tester.tap(sheetDoneOrLast());
+      await tester.pumpAndSettle();
+      expect(find.text('Today · 8:00 am'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    appTest('on a 24-hour phone the times read the 24-hour way', (
+      tester,
+    ) async {
+      await pumpMorrowApp(tester, [
+        StartupReady(db, createdNew: false),
+      ], use24HourClock: true);
+      await tapText(tester, 'Add an entry');
+      await tapText(tester, 'When');
+      expect(find.bySemanticsLabel('This morning, 08:00'), findsOneWidget);
+      await tapText(tester, 'This morning');
+      expect(wheelItems(tester)[0] % 24, 8);
+      await tester.tap(sheetDoneOrLast());
+      await tester.pumpAndSettle();
+      expect(find.text('Today · 08:00'), findsOneWidget);
+    });
+  });
+
   group('leaving straight after typing', () {
     appTest('Close saves the note first; there is no discard prompt', (
       tester,

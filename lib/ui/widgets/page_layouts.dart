@@ -5,6 +5,7 @@ import '../theme/morrow_tokens.dart';
 import '../theme/morrow_typography.dart';
 import 'back_header.dart';
 import 'icon_tile.dart';
+import 'sprout_mark.dart';
 
 /// The bar of full-width buttons at the bottom of a page.
 class ActionBar extends StatelessWidget {
@@ -141,11 +142,7 @@ class StatusPage extends StatelessWidget {
                   Row(
                     children: [
                       ExcludeSemantics(
-                        child: Icon(
-                          Icons.spa_outlined,
-                          color: colors.primary,
-                          size: 23,
-                        ),
+                        child: SproutMark(color: colors.primary, size: 23),
                       ),
                       const SizedBox(width: 7),
                       Flexible(

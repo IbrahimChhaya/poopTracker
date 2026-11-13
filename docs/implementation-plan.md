@@ -852,6 +852,21 @@ Each milestone is one reviewable change. Each ends with `dart format --output=no
   - **Docs:** a store listing draft (`docs/store-listing.md`) and the iOS task list (`docs/ios-tasks.md`).
   - **Figma:** the 1.3c 200% frame corrected (the real switches scale), plus proposals for the launcher icon (11), quick times (12) and dark mode (13).
   - **Fresh install** on the S20, release build: it found that an interrupted first launch lost the welcome, now fixed and tested.
+- **9 November, evening:**
+  - **Launcher icon A** built for Android and iOS, along with the cream splash.
+  - **Store listing text** approved. Screenshots and the feature graphic are proposed in Figma section 14.
+  - **Quick-times proposal** revised in Figma section 12.
+  - **Dark mode design** approved, to be built after v1.
+  - **Both apps** uninstalled from the S20.
+- **13 November:**
+  - **In-app mark:** the wordmark, starting screen, privacy cover and reminder preview use the launcher's sprout (`SproutMark`). The reminder notification uses a monochrome sprout, `@drawable/ic_notification`, instead of the launcher icon.
+  - **Quick times:** approved and merged into Figma journey 2.
+  - **Store:** the listing and screenshots now say plainly what morrow is for (CLAUDE.md updated).
+  - **URLs:** the privacy policy and support page are drafted.
+  - **Later the same day:**
+    - **Quick times built.** `quickTimes()` is unit-tested at every hour and across midnight and month ends. The time sheet's "Or pick a moment" chips check themselves while they match, move the wheels, turn the time on, and read their time aloud. They're widget-tested in 12- and 24-hour and at 200% text, and checked on the S20.
+    - **Store:** the listing and screenshots are approved, with Ibrahim as the developer name.
+    - **Repository:** it's to be made public for GitHub Pages.
 - **Started 9 November:** the automated checks are done (accessibility guidelines, release manifest, network use, licences, advisories). The owner decisions, the device checklist and its results are tracked in `docs/release-checklist.md`.
 
 ## 6. Main risks

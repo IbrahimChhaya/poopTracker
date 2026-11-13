@@ -30,7 +30,8 @@ Nothing has been built for iOS yet. The code is cross-platform and the iOS nativ
    Plugins ship their own manifests; check they're included in the archive's privacy report.
 2. **Export compliance.** `ITSAppUsesNonExemptEncryption` = false is set in `Info.plist` (decided 9 November). Encryption only protects the user's own data on the device: the encrypted SQLite journal and AES-GCM backups.
    - **Done when:** App Store Connect doesn't ask the encryption question on upload.
-3. **App icon.** Add the chosen launcher icon (see Figma "Launcher icon") to `Assets.xcassets/AppIcon.appiconset` at 1024×1024, with no transparency.
+3. **App icon.** Already generated: option A, the sage sprout on cream. `tool/generate_launcher_icons.py` writes every file in `Assets.xcassets/AppIcon.appiconset`, all opaque, including the 1024×1024.
+   - **Done when:** Xcode shows no AppIcon warnings and the archive validates. If Xcode asks for the single-size 1024 format, regenerate or let Xcode convert.
 4. **Launch screen.** `LaunchScreen.storyboard` should be the cream background with the sprout, matching the Android splash.
 
 ## 3. Security and privacy checks on the iPhone

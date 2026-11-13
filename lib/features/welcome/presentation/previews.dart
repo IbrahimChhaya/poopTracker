@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../ui/format/labels.dart';
 import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
+import '../../../ui/widgets/sprout_mark.dart';
 
 /// Decorative slices of the real screens for the welcome and tour pages.
 /// They show, they don't invite taps: no chevrons, arrows or live buttons.
@@ -353,11 +354,7 @@ class WeeklyPreview extends StatelessWidget {
                   color: colors.tint,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  Icons.spa_outlined,
-                  color: colors.primary,
-                  size: 20,
-                ),
+                child: SproutMark(color: colors.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(

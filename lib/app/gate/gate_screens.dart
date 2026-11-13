@@ -5,6 +5,7 @@ import '../../ui/theme/morrow_colors.dart';
 import '../../ui/theme/morrow_tokens.dart';
 import '../../ui/widgets/morrow_button.dart';
 import '../../ui/widgets/page_layouts.dart';
+import '../../ui/widgets/sprout_mark.dart';
 import '../../ui/widgets/states.dart';
 import '../lock/lock_controller.dart';
 import '../session/data_reset.dart';
@@ -37,7 +38,7 @@ class StartingScreen extends StatelessWidget {
         label: 'morrow is starting',
         child: Center(
           child: ExcludeSemantics(
-            child: Icon(Icons.spa_outlined, color: colors.primary, size: 40),
+            child: SproutMark(color: colors.primary, size: 40),
           ),
         ),
       ),

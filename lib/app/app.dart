@@ -10,6 +10,7 @@ import '../features/welcome/presentation/welcome_controller.dart';
 import '../ui/format/labels.dart';
 import '../ui/theme/morrow_colors.dart';
 import '../ui/theme/morrow_theme.dart';
+import '../ui/widgets/sprout_mark.dart';
 import 'gate/gate_screens.dart';
 import 'lock/lock_controller.dart';
 import 'paths.dart';
@@ -107,9 +108,7 @@ class _PrivacyCover extends StatelessWidget {
     const colors = MorrowColors.light;
     return ColoredBox(
       color: colors.background,
-      child: Center(
-        child: Icon(Icons.spa_outlined, color: colors.primary, size: 40),
-      ),
+      child: Center(child: SproutMark(color: colors.primary, size: 40)),
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../../ui/theme/morrow_colors.dart';
 import '../../../ui/theme/morrow_tokens.dart';
 import '../../../ui/theme/morrow_typography.dart';
 import '../../../ui/widgets/morrow_button.dart';
+import '../../../ui/widgets/sprout_mark.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'onboarding_layout.dart';
 import 'previews.dart';
@@ -27,7 +28,7 @@ class WelcomeScreen extends ConsumerWidget {
         child: Row(
           children: [
             ExcludeSemantics(
-              child: Icon(Icons.spa_outlined, color: colors.primary, size: 23),
+              child: SproutMark(color: colors.primary, size: 23),
             ),
             const SizedBox(width: 7),
             Flexible(

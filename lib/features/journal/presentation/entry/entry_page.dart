@@ -18,6 +18,7 @@ import '../../../../ui/widgets/overlays.dart';
 import '../../../../ui/widgets/setting_row.dart';
 import '../../../../ui/widgets/states.dart';
 import '../../domain/entry.dart';
+import '../../domain/quick_times.dart';
 import '../delete_entry.dart';
 import '../detail_labels.dart';
 import 'details_sheet.dart';
@@ -168,6 +169,12 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
   }
 
   Future<void> _chooseTime(EntryPageState s) async {
+    final clock = ref.read(clockProvider);
+    final today = clock.today();
+    // Local wall-clock time now; quick times count back from it.
+    final wall = clock.nowUtc().add(
+      Duration(minutes: clock.currentUtcOffsetMinutes()),
+    );
     final picked = await showEntryTimeSheet(
       context,
       initial: (
@@ -176,7 +183,12 @@ class _EntryPageBodyState extends ConsumerState<_EntryPageBody> {
         minute: s.minute,
         hasTime: s.hasTime,
       ),
-      today: ref.read(clockProvider).today(),
+      today: today,
+      quickTimes: quickTimes(
+        today: today,
+        hour: wall.hour,
+        minute: wall.minute,
+      ),
       isInFuture: _controller.isInFuture,
     );
     if (picked != null) {

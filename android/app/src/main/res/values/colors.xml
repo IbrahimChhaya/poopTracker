@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MorrowColors.background: the launcher icon and splash background. -->
+    <color name="ic_launcher_background">#F7F4EC</color>
+</resources>
