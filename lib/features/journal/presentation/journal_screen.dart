@@ -10,6 +10,7 @@ import '../../../ui/theme/morrow_tokens.dart';
 import '../../../ui/theme/morrow_typography.dart';
 import '../../../ui/widgets/icon_tile.dart';
 import '../../../ui/widgets/morrow_button.dart';
+import '../../../ui/widgets/sprout_mark.dart';
 import '../../../ui/widgets/states.dart';
 import '../../../ui/widgets/week_strip.dart';
 import '../../welcome/presentation/welcome_controller.dart';
@@ -163,9 +164,7 @@ class _BrandRow extends StatelessWidget {
     final colors = MorrowColors.of(context);
     return Row(
       children: [
-        ExcludeSemantics(
-          child: Icon(Icons.spa_outlined, color: colors.primary, size: 23),
-        ),
+        ExcludeSemantics(child: SproutMark(color: colors.primary, size: 23)),
         const SizedBox(width: 7),
         Flexible(
           child: Text('morrow', style: MorrowTextStyles.of(context).wordmark),

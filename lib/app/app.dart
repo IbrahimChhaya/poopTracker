@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +10,7 @@ import '../features/welcome/presentation/welcome_controller.dart';
 import '../ui/format/labels.dart';
 import '../ui/theme/morrow_colors.dart';
 import '../ui/theme/morrow_theme.dart';
+import '../ui/widgets/sprout_mark.dart';
 import 'gate/gate_screens.dart';
 import 'lock/lock_controller.dart';
 import 'paths.dart';
@@ -105,9 +108,7 @@ class _PrivacyCover extends StatelessWidget {
     const colors = MorrowColors.light;
     return ColoredBox(
       color: colors.background,
-      child: Center(
-        child: Icon(Icons.spa_outlined, color: colors.primary, size: 40),
-      ),
+      child: Center(child: SproutMark(color: colors.primary, size: 40)),
     );
   }
 }
@@ -160,11 +161,16 @@ class _JournalGate extends ConsumerWidget {
                 ref.read(erasePhaseProvider.notifier).set(ErasePhase.none),
           ),
         ),
-      // An existing journal never shows the welcome: no need to ask.
+      // An existing journal opens at once. If it is still empty and the
+      // welcome was never finished (a first launch that was interrupted),
+      // the welcome follows; a journal with entries never shows it.
       AsyncData(value: StartupReady(:final database, createdNew: false)) =>
         UnlockedScope(
           database: database,
-          child: const _UnlockedApp(startAtWelcome: false),
+          child: const _UnlockedApp(
+            startAtWelcome: false,
+            welcomeIfEmpty: true,
+          ),
         ),
       AsyncData(value: StartupReady(:final database, :final createdNew)) =>
         switch (ref.watch(_welcomeDueProvider(createdNew))) {
@@ -196,9 +202,15 @@ final _welcomeDueProvider = FutureProvider.autoDispose.family<bool, bool>(
 );
 
 class _UnlockedApp extends ConsumerStatefulWidget {
-  const _UnlockedApp({required this.startAtWelcome});
+  const _UnlockedApp({
+    required this.startAtWelcome,
+    this.welcomeIfEmpty = false,
+  });
 
   final bool startAtWelcome;
+
+  /// Check after opening whether an empty journal still owes the welcome.
+  final bool welcomeIfEmpty;
 
   @override
   ConsumerState<_UnlockedApp> createState() => _UnlockedAppState();
@@ -227,8 +239,21 @@ class _UnlockedAppState extends ConsumerState<_UnlockedApp> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _reconcileReminder);
+    if (widget.welcomeIfEmpty) unawaited(_welcomeIfStillDue());
     // Building the controller reconciles once.
     ref.read(reminderControllerProvider);
+  }
+
+  Future<void> _welcomeIfStillDue() async {
+    final bool seen;
+    try {
+      seen = await ref.read(welcomeStoreProvider).readSeen();
+    } on Object {
+      return;
+    }
+    if (seen || !mounted) return;
+    final entries = await ref.read(entryRepositoryProvider).all();
+    if (entries.isEmpty && mounted) _router.go(AppPaths.welcome);
   }
 
   @override

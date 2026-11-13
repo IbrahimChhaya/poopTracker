@@ -8,24 +8,31 @@ import '../../../../ui/theme/morrow_tokens.dart';
 import '../../../../ui/widgets/morrow_button.dart';
 import '../../../../ui/widgets/morrow_chip.dart';
 import '../../../../ui/widgets/overlays.dart';
+import '../../domain/quick_times.dart';
 
 typedef EntryTime = ({LocalDate date, int hour, int minute, bool hasTime});
 
-/// "When did this happen?" (2.3, 2.8). Completes with the chosen local date
+/// "When did this happen?" (2.3–2.3c). Completes with the chosen local date
 /// and, if "Record a time" is on, the time; null if dismissed. Times that have
-/// not happened yet cannot be chosen.
+/// not happened yet cannot be chosen. [quickTimes] are the "Or pick a moment"
+/// chips (see `quickTimes()`).
 Future<EntryTime?> showEntryTimeSheet(
   BuildContext context, {
   required EntryTime initial,
   required LocalDate today,
+  required List<QuickTime> quickTimes,
   required bool Function(LocalDate date, int hour, int minute, {bool hasTime})
   isInFuture,
 }) {
   return showMorrowSheet<EntryTime>(
     context,
     title: 'When did this happen?',
-    builder: (context) =>
-        _TimeSheet(initial: initial, today: today, isInFuture: isInFuture),
+    builder: (context) => _TimeSheet(
+      initial: initial,
+      today: today,
+      quickTimes: quickTimes,
+      isInFuture: isInFuture,
+    ),
   );
 }
 
@@ -33,11 +40,13 @@ class _TimeSheet extends StatefulWidget {
   const _TimeSheet({
     required this.initial,
     required this.today,
+    required this.quickTimes,
     required this.isInFuture,
   });
 
   final EntryTime initial;
   final LocalDate today;
+  final List<QuickTime> quickTimes;
   final bool Function(LocalDate date, int hour, int minute, {bool hasTime})
   isInFuture;
 
@@ -55,10 +64,73 @@ class _TimeSheetState extends State<_TimeSheet> {
   /// on and picking a past day turns it off.
   bool _timeTouched = false;
 
-  void _setHasTime(bool v) => setState(() {
-    _hasTime = v;
-    _timeTouched = true;
-  });
+  void _setHasTime(bool v) {
+    setState(() {
+      _hasTime = v;
+      _timeTouched = true;
+    });
+    if (v) _syncWheels();
+  }
+
+  /// A quick time sets the day, turns "Record a time" on and moves the
+  /// wheels. Its chip stays checked until the day or a wheel changes.
+  void _pickQuickTime(QuickTime q) {
+    setState(() {
+      _date = q.date;
+      _hour = q.hour;
+      _minute = q.minute;
+      _hasTime = true;
+      _timeTouched = true;
+    });
+    _syncWheels();
+  }
+
+  /// Moves the wheels to the chosen time once they're on screen (they may
+  /// only appear in the next frame). Jumps rather than animates: an
+  /// animated wheel reports every value it passes.
+  void _syncWheels() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final hour = _hour;
+      _jump(_hourCtl, (hour % 12 == 0 ? 12 : hour % 12) - 1, loop: 12);
+      _jump(_hour24Ctl, hour, loop: 24);
+      _jump(_minuteCtl, _minute, loop: 60);
+      _jump(_periodCtl, hour < 12 ? 0 : 1);
+    });
+  }
+
+  static void _jump(FixedExtentScrollController c, int index, {int? loop}) {
+    if (!c.hasClients) return;
+    var target = index;
+    if (loop != null) {
+      // Looping wheels count past their ends; go to the nearest copy.
+      final current = c.selectedItem;
+      target = current - current % loop + index;
+      if (target - current > loop ~/ 2) target -= loop;
+      if (current - target > loop ~/ 2) target += loop;
+    }
+    if (c.selectedItem != target) c.jumpToItem(target);
+  }
+
+  /// The chip that matches the sheet's day and time exactly, if any (only
+  /// the first, should two land on the same minute).
+  QuickTime? get _matchingQuickTime {
+    if (!_hasTime) return null;
+    for (final q in widget.quickTimes) {
+      if (q.date == _date && q.hour == _hour && q.minute == _minute) return q;
+    }
+    return null;
+  }
+
+  String _spoken(QuickTime q) {
+    final time = formatTime(DateTime(2000, 1, 1, q.hour, q.minute));
+    final day = q.date == widget.today
+        ? ''
+        : q.date == _yesterday
+        ? 'yesterday '
+        : '${formatDayMonth(q.date)} ';
+    return '${q.label}, $day$time';
+  }
 
   void _pickDate(LocalDate d) => setState(() {
     _date = d;
@@ -117,6 +189,7 @@ class _TimeSheetState extends State<_TimeSheet> {
     final isToday = _date == widget.today;
     final isYesterday = _date == _yesterday;
     final future = widget.isInFuture(_date, _hour, _minute, hasTime: _hasTime);
+    final matching = _matchingQuickTime;
     // Follows the phone's clock setting, and grows with the text size (up
     // to a point, so the sheet still fits).
     final use24 = MediaQuery.alwaysUse24HourFormatOf(context);
@@ -200,6 +273,25 @@ class _TimeSheetState extends State<_TimeSheet> {
             ),
           ],
         ),
+        if (widget.quickTimes.isNotEmpty) ...[
+          const SizedBox(height: MorrowSpacing.md),
+          Text(
+            'Or pick a moment',
+            style: text.bodySmall!.copyWith(color: colors.mutedText),
+          ),
+          const SizedBox(height: MorrowSpacing.sm),
+          ChipWrap(
+            children: [
+              for (final q in widget.quickTimes)
+                MorrowChip(
+                  label: q.label,
+                  semanticLabel: _spoken(q),
+                  selected: identical(q, matching),
+                  onSelected: (_) => _pickQuickTime(q),
+                ),
+            ],
+          ),
+        ],
         const SizedBox(height: MorrowSpacing.md),
         // The whole row toggles the switch, not just the switch itself.
         MergeSemantics(

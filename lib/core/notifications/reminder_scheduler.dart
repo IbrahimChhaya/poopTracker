@@ -110,7 +110,9 @@ class PluginReminderScheduler implements ReminderScheduler {
     tz_data.initializeTimeZones();
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        // A monochrome sprout: Android draws notification icons from alpha
+        // only, so the full-colour launcher icon would show as a blank blob.
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
         // Ask only when the reminder is switched on, never at startup.
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,

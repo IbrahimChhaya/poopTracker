@@ -156,8 +156,32 @@ Approved 9 November and built in M11.1. It replaced the old 1.1–1.4, which mov
   - **Replaced by one-tap entry and the entry page (M6.3):** old 2.2–2.7, 3.1–3.3, 4.7–4.10, and the 11.2 note.
   - **Replaced by the critique pass (M6.2):** old 2.1 and 4.2, the section 10 frames (10.1, 10.4) and the 10.0 note. 10.2 and 10.3 moved into journeys 2 and 4.
 - **Rejected · Context on the editor (was 11.1)** and **Rejected · Context as a full sheet (was 11).**
+- **Rejected · Launcher icon options B and C (was 11):** A was chosen on 9 November.
+- **Superseded:** "Old · 2.3 Change date and time", replaced by quick times (2.3–2.3c) on 13 November.
 
 ## Known gaps between Figma and the app
 
 - Some older journal and History frames still use stat values larger than the M6.2 20 px. The "No note" lines and "No time" titles in day lists were fixed on 8 November.
 - The app has screens Figma doesn't draw: the blocked states other than the key problem (storage unavailable, encryption unavailable, setup failed), the locked placeholder, and the debug-only developer tools.
+
+### 11 · Launcher icon (approved: A, built M12)
+Option A, the sage sprout on cream, approved 9 November. Shown at store size, as Android adaptive shapes and at home-screen size. *Built in M12 from `tool/generate_launcher_icons.py`: the Android adaptive icon (vector foreground, cream background, monochrome layer for themed icons), legacy Android icons, the iOS AppIcon set and the 512 px Play icon (`docs/store/icon-512.png`). Options B and C moved to the rejected column.*
+
+*The in-app mark (the wordmark, starting screen, privacy cover and reminder preview) uses the same sprout, `SproutMark`, from 13 November, and so does the Android notification icon.*
+
+### 12 · Earlier today: quick times (approved 13 November, merged into journey 2 as 2.3, 2.3b and 2.3c)
+*Built 13 November (`quickTimes()` in `features/journal/domain/quick_times.dart`, the "Or pick a moment" row on the time sheet).* The section was removed; the old 2.3 moved to the superseded column. Rules (revised 9 November):
+- **The chips:** "1 hour ago" and "2 hours ago" always show. They are followed by the two most recent moments that have already passed, earlier first. The moments are Last night (yesterday 9:00 pm), This morning (8:00 am), This afternoon (2:00 pm) and This evening (7:00 pm). There are at most four chips.
+- **2.3 (was 12.1):** the sheet at 12:00 pm, offering 1 hour ago, 2 hours ago, Last night and This morning.
+- **2.3b (was 12.2):** the same sheet with "This morning" tapped: the chip shows a check and the wheels move to 8:00 am.
+- **2.3c (was 12.3):** the sheet at 5:00 pm, offering 1 hour ago, 2 hours ago, This morning and This afternoon.
+- The read-me card has the rules and the 8:00 pm and before-8:00 am examples.
+
+### 13 · Dark mode (approved 9 November, build after v1)
+A palette card with every light token and its dark twin, all contrast-checked, plus dark versions of the welcome, journal, entry page, details sheet, Trends, Settings and the locked screen.
+
+### 14 · Store screenshots and feature graphic (approved 13 November)
+- **What it holds:** seven App Store screenshots (430 × 932, exported at 3× = 1290 × 2796), seven Google Play screenshots (360 × 640, at 3× = 1080 × 1920) and the Play feature graphic (1024 × 500).
+- **Wording:** the captions say plainly what morrow is for: "Log your bowel movements privately", the Bristol stool type, and "Discreet: your phone just says morrow". The captions are in `docs/store-listing.md`.
+- **Data:** the screens are the approved Figma frames, with details on and synthetic data. Before upload they're replaced with captures of the release build.
+- The read-me card has the reasoning.

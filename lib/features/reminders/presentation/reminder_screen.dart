@@ -11,6 +11,7 @@ import '../../../ui/widgets/card_group.dart';
 import '../../../ui/widgets/morrow_button.dart';
 import '../../../ui/widgets/page_layouts.dart';
 import '../../../ui/widgets/setting_row.dart';
+import '../../../ui/widgets/sprout_mark.dart';
 import '../../../ui/widgets/states.dart';
 import '../data/reminder_repository.dart';
 import 'reminder_controller.dart';
@@ -314,7 +315,7 @@ class _Preview extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.spa_outlined, size: 14, color: colors.primary),
+                SproutMark(color: colors.primary, size: 14),
                 const SizedBox(width: MorrowSpacing.xs),
                 Text('morrow · now', style: text.labelSmall),
               ],

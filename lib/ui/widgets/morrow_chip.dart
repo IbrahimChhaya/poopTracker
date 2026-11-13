@@ -12,10 +12,15 @@ class MorrowChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onSelected,
+    this.semanticLabel,
     super.key,
   });
 
   final String label;
+
+  /// Read by screen readers instead of [label], for example to add the time
+  /// a quick-time chip stands for.
+  final String? semanticLabel;
   final bool selected;
   final ValueChanged<bool>? onSelected;
 
@@ -24,7 +29,7 @@ class MorrowChip extends StatelessWidget {
     final colors = MorrowColors.of(context);
     final base = Theme.of(context).textTheme.bodySmall!;
     return FilterChip(
-      label: Text(label),
+      label: Text(label, semanticsLabel: semanticLabel),
       selected: selected,
       onSelected: onSelected,
       labelStyle: selected
